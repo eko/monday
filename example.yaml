@@ -1,0 +1,133 @@
+# Settings
+
+#gopath: /Users/vincent/golang # Optional, default to user's $GOPATH env var
+
+# Local applications
+
+<: &graphql-local
+  name: graphql
+  path: github.com/eko/graphql # Will find in GOPATH (as executable is "go")
+  executable: go
+  args:
+    - run
+    - cmd/main.go
+
+<: &grpc-api-local
+  name: grpc-api
+  path: github.com/eko/grpc-api # Will find in GOPATH (as executable is "go")
+  executable: go
+  args:
+    - run
+    - main.go
+
+<: &search-api-local
+  name: search-api
+  path: github.com/eko/search-api # Will find in GOPATH (as executable is "go")
+  executable: go
+  args:
+    - run
+    - main.go
+
+<: &pub-front-local
+  name: pub-front
+  path: /Users/vincent/dev/pub-front
+  executable: npm
+  args:
+    - run
+    - start
+
+<: &elasticsearch-local
+  name: elasticsearch
+  path: /Users/vincent/dev/docker
+  executable: docker
+  args:
+    - start
+    - -i
+    - elastic
+
+# Kubernetes forwards
+
+<: &kubernetes-context preprod
+
+<: &graphql-forward
+  name: graphql
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: graphql
+    hostname: graphql.svc.local # Optional
+    ports:
+     - 8080:8000
+
+<: &grpc-api-forward
+  name: grpc-api
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: grpc-api
+    hostname: grpc-api.svc.local # Optional
+    ports:
+     - 8080:8080
+
+<: &search-api-forward
+  name: search-api
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: search-api
+    hostname: search-api.svc.local # Optional
+    ports:
+     - 8080:8080
+
+<: &pub-front-forward
+  name: pub-front
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: frontend
+    labels:
+      app: pub-front
+    hostname: pub-front.svc.local # Optional
+    ports:
+     - 8080:8080
+
+<: &composieux-fr
+  name: composieux-fr
+  type: ssh
+  values:
+    remote: vincent@composieux.fr # SSH <user>@<hostname>
+    hostname: composieux.fr.svc.local # Optional
+    ports:
+     - 8080:80
+
+# Projects
+
+projects:
+ - name: full
+   local:
+    - *graphql-local
+    - *grpc-api-local
+    - *search-api-local
+    - *pub-front-local
+    - *elasticsearch-local
+
+ - name: graphql
+   local:
+    - *graphql-local
+   forward:
+    - *grpc-api-forward
+    - *search-api-forward
+    - *pub-front-forward
+
+ - name: forward-only
+   forward:
+    - *graphql-forward
+    - *grpc-api-forward
+    - *search-api-forward
+    - *pub-front-forward

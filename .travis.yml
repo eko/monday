@@ -1,0 +1,38 @@
+language: go
+matrix:
+  include:
+    - go: 1.x
+      env: LATEST=true
+    - go: 1.10.x
+    - go: 1.11.x
+    - go: 1.12.x
+    - go: tip
+  allow_failures:
+    - go: tip
+
+before_install:
+  - go get github.com/mitchellh/gox
+
+install:
+  - export GO111MODULE=on
+  - go get -t -v ./...
+
+script:
+  - go test -v -race ./...
+  - if [ "${LATEST}" = "true" ]; then gox -ldflags "-s -w -X main.Version=$TRAVIS_TAG" -os="linux darwin" -arch="386 amd64" -osarch="linux/arm" -output="monday-{{.OS}}-{{.Arch}}"  -verbose ./...; fi
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: $GITHUB_TOKEN
+  file:
+    - monday-darwin-386
+    - monday-darwin-amd64
+    - monday-linux-386
+    - monday-linux-amd64
+    - monday-linux-arm
+  on:
+    repo: eko/monday
+    tags: true
+    condition: $LATEST = true
