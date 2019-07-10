@@ -23,6 +23,14 @@ Your new microservice local environment friend. This CLI tool allows you to defi
 
 ## Installation
 
+### One-liner
+
+You can download and setup Monday binary by running the following command on your terminal:
+
+```bash
+$ curl http://composieux.fr/getmonday.sh | sh
+```
+
 ### Download binary
 
 You can download the latest version of the binary built for your architecture here:
