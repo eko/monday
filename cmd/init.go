@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/spf13/cobra"
 	"github.com/eko/monday/internal/config"
+	"github.com/spf13/cobra"
 )
 
 var initCmd = &cobra.Command{

@@ -14,13 +14,21 @@ var editCmd = &cobra.Command{
 	Long: `For more information about the configuration, see the "example.yaml" file available
 in the source code repository.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Check for multiple configuration file
+		files := config.FindMultipleConfigFiles()
+
+		// Check for single configuration file
 		err := config.CheckConfigFileExists()
 		if err != nil {
 			fmt.Printf("❌  %v\n", err)
 			return
 		}
 
-		command := exec.Command("open", config.Filepath)
+		if len(files) == 0 {
+			files = []string{config.Filepath}
+		}
+
+		command := exec.Command("open", files...)
 
 		if err := command.Start(); err != nil {
 			fmt.Printf("❌  Cannot run the 'open' command to edit config file: %v\n", err)

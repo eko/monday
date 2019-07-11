@@ -99,7 +99,14 @@ $ monday edit
 
 ## Configuration example
 
-Here is a configuration example that allows you to see all the things you could do with Monday:
+Here is a configuration example on a single file that allows you to see all the things you could do with Monday.
+
+Please note that you can also split this configuration in multiple files by respecting the following pattern: `~/monday.<something>.yaml`, for instance:
+* `~/monday.localapps.yaml`
+* `~/monday.forwards.yaml`
+* `~/monday.projects.yaml`
+
+This will help you in having smaller and more readable configuration files.
 
 ```yaml
 # Settings

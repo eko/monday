@@ -6,31 +6,50 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 )
 
 const (
-	// Filename is the name of the YAML configuration file
+	// Filename is the name single YAML configuration file name
 	Filename = "monday.yaml"
+	// MultipleFilenamePattern is the name pattern for multiple YAML configuration files
+	MultipleFilenamePattern = "monday*.yaml"
 )
 
 var (
-	Filepath = fmt.Sprintf("%s/%s", os.Getenv("HOME"), Filename)
+	homeDirectory = os.Getenv("HOME")
+	Filepath      = fmt.Sprintf("%s/%s", homeDirectory, Filename)
+
+	// MultipleFilepath is the path of the YAML configuration files when
+	// you define multiple config files
+	MultipleFilepath = fmt.Sprintf("%s/%s", homeDirectory, MultipleFilenamePattern)
 )
 
 // Load method loads the configuration from the YAML configuration file
 func Load() (*Config, error) {
 	if err := CheckConfigFileExists(); err != nil {
-		return nil, err
+		files := FindMultipleConfigFiles()
+		if len(files) == 0 {
+			return nil, err
+		}
+
+		err := createConfigFromMultiple(files)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	// Check for multiple config files
+	var conf Config
 
 	file, err := ioutil.ReadFile(Filepath)
 	if err != nil {
 		log.Printf("Error while reading config file: #%v", err)
 	}
 
-	var conf Config
 	err = yaml.Unmarshal(file, &conf)
 	if err != nil {
 		panic(fmt.Sprintf("An error has occured while reading configuration file:\n%v", err))
@@ -42,6 +61,45 @@ func Load() (*Config, error) {
 	}
 
 	return &conf, nil
+}
+
+// FindMultipleConfigFiles finds if multiple configuration files has been created
+func FindMultipleConfigFiles() []string {
+	matches, _ := filepath.Glob(MultipleFilepath)
+
+	for i, match := range matches {
+		if strings.Contains(match, Filepath) {
+			matches = append(matches[:i], matches[i+1:]...)
+		}
+	}
+
+	return matches
+}
+
+// Merge multiple configuration files into a single one
+func createConfigFromMultiple(matches []string) error {
+	configFile, err := os.Create(Filepath)
+	if err != nil {
+		return err
+	}
+	defer configFile.Close()
+
+	added := 0
+	for _, match := range matches {
+		file, err := ioutil.ReadFile(match)
+		if err != nil {
+			continue
+		}
+
+		configFile.Write(file)
+		added++
+	}
+
+	if added == 0 {
+		return errors.New("Unable to process any configuration file")
+	}
+
+	return nil
 }
 
 // CheckConfigFileExists ensures that config file is present before going further
