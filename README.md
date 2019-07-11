@@ -69,7 +69,7 @@ $ go build -o monday .
 
 ## Usage
 
-First, you have to initialize monday and edit your configuration file (you have a [configuration example file here](https://raw.githubusercontent.com/eko/monday/example.yaml)).
+First, you have to initialize monday and edit your configuration file (you have a [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml)).
 Run the following command and edit the `~/monday.yaml` configuration file just created for you:
 
 ⚠️ *Important note*: Because Monday tries to be your best dev tool and manage things for you, you have to give it some chances to help you in editing host file and manipulating network interface for IP/port mapping.
