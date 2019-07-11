@@ -12,7 +12,7 @@ import (
 
 const (
 	// Filename is the name of the YAML configuration file
-	Filename = "launcher.yaml"
+	Filename = "monday.yaml"
 )
 
 var (
