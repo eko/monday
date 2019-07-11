@@ -111,6 +111,7 @@ gopath: /Users/vincent/golang # Optional, default to user's $GOPATH env var
 <: &graphql-local
   name: graphql
   path: github.com/acme/graphql # Will find in GOPATH (as executable is "go")
+  watch: true # Default: false (do not watch directory)
   executable: go
   args:
     - run
@@ -119,26 +120,11 @@ gopath: /Users/vincent/golang # Optional, default to user's $GOPATH env var
 <: &grpc-api-local
   name: grpc-api
   path: github.com/acme/grpc-api # Will find in GOPATH (as executable is "go")
+  watch: true # Default: false (do not watch directory)
   executable: go
   args:
     - run
     - main.go
-
-<: &search-api-local
-  name: search-api
-  path: github.com/acme/search-api # Will find in GOPATH (as executable is "go")
-  executable: go
-  args:
-    - run
-    - main.go
-
-<: &pub-front-local
-  name: pub-front
-  path: /Users/vincent/dev/pub-front
-  executable: npm
-  args:
-    - run
-    - start
 
 <: &elasticsearch-local
   name: elasticsearch
@@ -177,30 +163,6 @@ gopath: /Users/vincent/golang # Optional, default to user's $GOPATH env var
     ports:
      - 8080:8080
 
-<: &search-api-forward
-  name: search-api
-  type: kubernetes
-  values:
-    context: *kubernetes-context
-    namespace: backend
-    labels:
-      app: search-api
-    hostname: search-api.svc.local # Optional
-    ports:
-     - 8080:8080
-
-<: &pub-front-forward
-  name: pub-front
-  type: kubernetes
-  values:
-    context: *kubernetes-context
-    namespace: frontend
-    labels:
-      app: pub-front
-    hostname: pub-front.svc.local # Optional
-    ports:
-     - 8080:8080
-
 <: &composieux-fr
   name: composieux-fr
   type: ssh
@@ -217,8 +179,6 @@ projects:
    local:
     - *graphql-local
     - *grpc-api-local
-    - *search-api-local
-    - *pub-front-local
     - *elasticsearch-local
 
  - name: graphql
@@ -226,15 +186,11 @@ projects:
     - *graphql-local
    forward:
     - *grpc-api-forward
-    - *search-api-forward
-    - *pub-front-forward
 
  - name: forward-only
    forward:
     - *graphql-forward
     - *grpc-api-forward
-    - *search-api-forward
-    - *pub-front-forward
 
 ```
 

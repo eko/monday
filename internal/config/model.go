@@ -38,6 +38,7 @@ type Application struct {
 	Name       string   `yaml:"name"`
 	Path       string   `yaml:"path"`
 	Executable string   `yaml:"executable"`
+	Watch      bool     `yaml:"watch"`
 	Args       []string `yaml:"args"`
 }
 
