@@ -35,10 +35,13 @@ func (w *Watcher) Watch() {
 	w.runner.RunAll()
 
 	for _, application := range w.project.Applications {
-		err := w.watchApplication(application)
-		if err != nil {
-			fmt.Printf("❌  ERROR: %v\n", err)
+		if !application.Watch || application.Watch == false {
+			continue
 		}
+
+		fmt.Println(application.Name)
+
+		go w.watchApplication(application)
 	}
 }
 
@@ -48,7 +51,7 @@ func (w *Watcher) watchApplication(application *config.Application) error {
 	fileWatcher.FilterOps(watcher.Write, watcher.Create, watcher.Remove)
 
 	if err := fileWatcher.AddRecursive(application.GetPath()); err != nil {
-		return err
+		fmt.Printf("❌  Unable to watch directory of application '%s': %v\n", application.Name, err)
 	}
 
 	go func() {
