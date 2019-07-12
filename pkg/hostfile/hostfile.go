@@ -21,7 +21,10 @@ func AddHost(ip, hostname string) error {
 	}
 
 	client.AddHost(ip, hostname)
-	client.Save()
+	err = client.Save()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
