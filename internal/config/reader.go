@@ -30,16 +30,18 @@ var (
 
 // Load method loads the configuration from the YAML configuration file
 func Load() (*Config, error) {
-	if err := CheckConfigFileExists(); err != nil {
-		files := FindMultipleConfigFiles()
-		if len(files) == 0 {
-			return nil, err
-		}
+	files := FindMultipleConfigFiles()
 
+	if len(files) > 0 {
 		err := createConfigFromMultiple(files)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	err := CheckConfigFileExists()
+	if err != nil {
+		return nil, err
 	}
 
 	// Check for multiple config files
