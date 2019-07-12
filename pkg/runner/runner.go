@@ -38,7 +38,7 @@ func (r *Runner) Run(application *config.Application) {
 		return
 	}
 
-	fmt.Printf("⚙️   Running local app '%s'...\n", application.Path)
+	fmt.Printf("⚙️   Running local app '%s' (%s)...\n", application.Name, application.Path)
 
 	applicationPath := application.GetPath()
 
