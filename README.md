@@ -15,7 +15,9 @@ Your new microservice local environment friend. This CLI tool allows you to defi
 
 ✅ Hot reload your applications automatically when a change is made locally
 
-✅ Port-forward an application on Kubernetes (targeting a pod via label) or over SSH
+✅ Port-forward an application locally using a remote one on Kubernetes (targeting a pod via label) or over SSH
+
+✅ Forward traffic of a remote application over SSH locally (see forward type ssh-remote)
 
 ✅ Auto reconnect when a port-forward connection is lost
 
@@ -78,7 +80,7 @@ That's why I suggest to add your current user to the `/etc/hosts` file access li
 
 ```bash
 sudo chmod +a "$USER allow read,write" /etc/hosts
-alias monday='sudo -E -u $USER monday'
+alias monday='sudo -E monday'
 ```
 
 ```bash
@@ -97,9 +99,11 @@ When you want to edit your configuration again, simply run this command to open 
 $ monday edit
 ```
 
-## Configuration example
+## Configuration
 
-Here is a configuration example on a single file that allows you to see all the things you could do with Monday.
+Configuration of Monday lives in one or multiple YAML files, depending on how you want to organize your files.
+
+By default, `monday init` will initiates a `~/monday.yaml` file.
 
 Please note that you can also split this configuration in multiple files by respecting the following pattern: `~/monday.<something>.yaml`, for instance:
 * `~/monday.localapps.yaml`
@@ -108,98 +112,7 @@ Please note that you can also split this configuration in multiple files by resp
 
 This will help you in having smaller and more readable configuration files.
 
-```yaml
-# Settings
-
-gopath: /Users/vincent/golang # Optional, default to user's $GOPATH env var
-
-# Local applications
-
-<: &graphql-local
-  name: graphql
-  path: github.com/acme/graphql # Will find in GOPATH (as executable is "go")
-  watch: true # Default: false (do not watch directory)
-  executable: go
-  args:
-    - run
-    - cmd/main.go
-
-<: &grpc-api-local
-  name: grpc-api
-  path: github.com/acme/grpc-api # Will find in GOPATH (as executable is "go")
-  watch: true # Default: false (do not watch directory)
-  executable: go
-  args:
-    - run
-    - main.go
-
-<: &elasticsearch-local
-  name: elasticsearch
-  path: /Users/vincent/dev/docker
-  executable: docker
-  args:
-    - start
-    - -i
-    - elastic
-
-# Kubernetes forwards
-
-<: &kubernetes-context preprod
-
-<: &graphql-forward
-  name: graphql
-  type: kubernetes
-  values:
-    context: *kubernetes-context
-    namespace: backend
-    labels:
-      app: graphql
-    hostname: graphql.svc.local # Optional
-    ports:
-     - 8080:8000
-
-<: &grpc-api-forward
-  name: grpc-api
-  type: kubernetes
-  values:
-    context: *kubernetes-context
-    namespace: backend
-    labels:
-      app: grpc-api
-    hostname: grpc-api.svc.local # Optional
-    ports:
-     - 8080:8080
-
-<: &composieux-fr
-  name: composieux-fr
-  type: ssh
-  values:
-    remote: vincent@composieux.fr # SSH <user>@<hostname>
-    hostname: composieux.fr.svc.local # Optional
-    ports:
-     - 8080:80
-
-# Projects
-
-projects:
- - name: full
-   local:
-    - *graphql-local
-    - *grpc-api-local
-    - *elasticsearch-local
-
- - name: graphql
-   local:
-    - *graphql-local
-   forward:
-    - *grpc-api-forward
-
- - name: forward-only
-   forward:
-    - *graphql-forward
-    - *grpc-api-forward
-
-```
+For an overview of what's possible with configuration file, please look at the [configuration example file here](https://raw.githubusercontent.com/eko/monday/example.yaml).
 
 ## Run tests
 

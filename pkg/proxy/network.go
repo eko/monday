@@ -46,7 +46,7 @@ func generateIP(a byte, b byte, c byte, d int, port string) (net.IP, error) {
 		}
 
 		conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", ip.String(), port))
-		if err != nil {
+		if err == nil {
 			return net.IPv4(a, b, c, byte(i)), nil
 		}
 		conn.Close()

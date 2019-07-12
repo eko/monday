@@ -36,6 +36,9 @@
 
 <: &kubernetes-context preprod
 
+# Example of Kubernetes local port-forward: forward a specific pod port locally
+# This is cool for avoiding to run applications locally and hit an environment from your
+# local machine
 <: &graphql-forward
   name: graphql
   type: kubernetes
@@ -60,12 +63,29 @@
     ports:
      - 8080:8080
 
-<: &composieux-fr
-  name: composieux-fr
+# Example of SSH local forward: forward a specific remote port locally
+# Here, I'm forwarding on port 8080 locally my production website (port 80)
+<: &composieux-fr-local
+  name: composieux-fr-local
   type: ssh
   values:
     remote: vincent@composieux.fr # SSH <user>@<hostname>
+    args:
+      - "-i/Users/name/.ssh/private_key"
     hostname: composieux.fr.svc.local # Optional
+    ports:
+     - 8080:80
+
+# Example of SSH remote forward: forward all trafic on remote to a local application
+# You don't have to do this at home but here, I'm forwarding all my production traffic
+# on my local machine.
+<: &composieux-fr-remote
+  name: composieux-fr-remote
+  type: ssh-remote
+  values:
+    remote: vincent@composieux.fr # SSH <user>@<hostname>
+    args:
+      - "-i/Users/name/.ssh/private_key"
     ports:
      - 8080:80
 

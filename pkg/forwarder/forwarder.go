@@ -66,48 +66,78 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	// Initiates proxy for port-forwarding with hostnames
 	proxifiedPorts := make([]string, 0)
 
-	for _, ports := range values.Ports {
-		localPort, forwardPort := splitLocalAndForwardPorts(ports)
+	if forward.IsProxified() {
+		for _, ports := range values.Ports {
+			localPort, forwardPort := splitLocalAndForwardPorts(ports)
 
-		proxyForward := proxy.NewProxyForward(forward.Name, values.Hostname, localPort, forwardPort)
-		f.proxy.AddProxyForward(forward.Name, proxyForward)
+			proxyForward := proxy.NewProxyForward(forward.Name, values.Hostname, localPort, forwardPort)
+			f.proxy.AddProxyForward(forward.Name, proxyForward)
 
-		proxifiedPorts = append(proxifiedPorts, proxyForward.GetProxifiedPorts())
+			proxifiedPorts = append(proxifiedPorts, proxyForward.GetProxifiedPorts())
+		}
 	}
 
 	// Run forwards depending on types
-	var forwarder ForwarderInterface
-	var err error
+	var forwarders = make([]ForwarderInterface, 0)
 
 	switch forward.Type {
+	// Kubernetes local port-forward: give proxy port as local port and forwarded port, use proxy
 	case config.ForwarderKubernetes:
-		forwarder, err = kubernetes.NewForwarder(values.Context, values.Namespace, proxifiedPorts, values.Labels)
+		forwarder, err := kubernetes.NewForwarder(values.Context, values.Namespace, proxifiedPorts, values.Labels)
+		if err != nil {
+			fmt.Printf("❌  %s\n", err.Error())
+			return
+		}
 
+		forwarders = append(forwarders, forwarder)
+
+	// SSH local forward: give proxy port as local port and forwarded port, use proxy
 	case config.ForwarderSSH:
 		proxyForward := f.proxy.GetFirstProxyForward(forward.Name)
-		forwarder, err = ssh.NewForwarder(values.Remote, proxyForward.ProxyPort, proxyForward.ForwardPort)
-	}
-
-	if err != nil {
-		fmt.Printf("❌  %s\n", err.Error())
-		return
-	}
-
-	go func() {
-		for {
-			err := forwarder.Forward()
-			if err != nil {
-				time.Sleep(1 * time.Second)
-				fmt.Printf("%v\n👓  Forwarder: lost port-forward connection trying to reconnect...\n", err)
-			}
+		forwarder, err := ssh.NewForwarder(forward.Type, values.Remote, proxyForward.ProxyPort, proxyForward.ForwardPort, values.Args)
+		if err != nil {
+			fmt.Printf("❌  %s\n", err.Error())
+			return
 		}
-	}()
+
+		forwarders = append(forwarders, forwarder)
+
+	// SSH remote forward: give local port and forwarded port, do not proxy
+	case config.ForwarderSSHRemote:
+		for _, ports := range values.Ports {
+			localPort, forwardPort := splitLocalAndForwardPorts(ports)
+			forwarder, err := ssh.NewForwarder(forward.Type, values.Remote, localPort, forwardPort, values.Args)
+			if err != nil {
+				fmt.Printf("❌  %s\n", err.Error())
+				return
+			}
+
+			forwarders = append(forwarders, forwarder)
+		}
+	}
+
+	for _, forwarder := range forwarders {
+		go func(forwarder ForwarderInterface) {
+			for {
+				err := forwarder.Forward()
+				if err != nil {
+					time.Sleep(1 * time.Second)
+					fmt.Printf("%v\n👓  Forwarder: lost port-forward connection trying to reconnect...\n", err)
+				}
+			}
+		}(forwarder)
+	}
 }
 
 func (f *Forwarder) checkForwardEnvironment(forward *config.Forward) error {
 	// Check executable is already managed
 	if result, ok := config.AvailableForwarders[forward.Type]; !ok || !result {
-		return fmt.Errorf("The '%s' specified forward type is not managed actually for forward named %s", forward.Type, forward.Name)
+		return fmt.Errorf("The '%s' specified forward type named '%s' is not managed actually", forward.Type, forward.Name)
+	}
+
+	// Check if at least 1 port is filled
+	if len(forward.Values.Ports) < 1 {
+		return fmt.Errorf("The '%s' specified forward type named '%s' does not have any port to forward, please specify them", forward.Type, forward.Name)
 	}
 
 	return nil

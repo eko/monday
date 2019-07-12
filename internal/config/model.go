@@ -10,11 +10,19 @@ const (
 
 	ForwarderKubernetes = "kubernetes"
 	ForwarderSSH        = "ssh"
+	ForwarderSSHRemote  = "ssh-remote"
 )
 
 var (
 	// AvailableForwarders lists all ready-to-use forwarders
 	AvailableForwarders = map[string]bool{
+		ForwarderKubernetes: true,
+		ForwarderSSH:        true,
+		ForwarderSSHRemote:  true,
+	}
+
+	// ProxifiedForwarders lists all forwarders that will use the proxy
+	ProxifiedForwarders = map[string]bool{
 		ForwarderKubernetes: true,
 		ForwarderSSH:        true,
 	}
@@ -63,6 +71,16 @@ type Forward struct {
 	Values ForwardValues `yaml:"values"`
 }
 
+// IsProxified indicates if the current forward rule will use the proxy
+func (f *Forward) IsProxified() bool {
+	if value, ok := ProxifiedForwarders[f.Type]; ok && value {
+		return true
+	}
+
+	return false
+}
+
+// ForwardValues represents the available values for each forward type
 type ForwardValues struct {
 	Context   string            `yaml:"context"`
 	Namespace string            `yaml:"namespace"`
@@ -70,4 +88,5 @@ type ForwardValues struct {
 	Hostname  string            `yaml:"hostname"`
 	Ports     []string          `yaml:"ports"`
 	Remote    string            `yaml:"remote"`
+	Args      []string          `yaml:"args"`
 }
