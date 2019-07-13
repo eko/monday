@@ -5,7 +5,7 @@
 [![GoReportCard](https://goreportcard.com/badge/github.com/eko/monday)](https://goreportcard.com/report/github.com/eko/monday)
 
 
-Your new microservice local environment friend. This CLI tool allows you to define a configuration to do (or mix) both local applications (Go, NodeJS, Rust or others) and also forward other applications over Kubernetes in case you don't want to run them locally.
+Your new microservice development environment friend. This CLI tool allows you to define a configuration to work with both local applications (Go, NodeJS, Rust or others) and forward some other applications over Kubernetes in case you don't want to run them locally.
 
 ![Schema](https://github.com/eko/monday/blob/master/misc/schema.jpg?raw=true)
 
