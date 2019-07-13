@@ -13,6 +13,7 @@ type Forwarder struct {
 	localPort   string
 	forwardPort string
 	args        []string
+	cmd         *exec.Cmd
 }
 
 func NewForwarder(forwardType, remote, localPort, forwardPort string, args []string) (*Forwarder, error) {
@@ -23,6 +24,10 @@ func NewForwarder(forwardType, remote, localPort, forwardPort string, args []str
 		forwardPort: forwardPort,
 		args:        args,
 	}, nil
+}
+
+func (f *Forwarder) GetForwardType() string {
+	return f.forwardType
 }
 
 func (f *Forwarder) Forward() error {
@@ -51,14 +56,28 @@ func (f *Forwarder) Forward() error {
 		host,
 	}, f.args...)
 
-	cmd := exec.Command("ssh", arguments...)
+	f.cmd = exec.Command("ssh", arguments...)
 
-	if err := cmd.Start(); err != nil {
+	if err := f.cmd.Start(); err != nil {
 		return fmt.Errorf("Cannot run the SSH command for port-forwarding '%s' on host '%s': %v", mapping, host, err)
 	}
 
-	if err := cmd.Wait(); err != nil {
+	if err := f.cmd.Wait(); err != nil {
 		return fmt.Errorf("SSH forwarding of '%s' on host '%s' returned an error: %v", mapping, host, err)
+	}
+
+	return nil
+}
+
+// Stop stops the current forwarder
+func (f *Forwarder) Stop() error {
+	if f.cmd == nil {
+		return nil
+	}
+
+	err := f.cmd.Process.Kill()
+	if err != nil {
+		return err
 	}
 
 	return nil

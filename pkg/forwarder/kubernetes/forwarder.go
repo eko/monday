@@ -6,7 +6,11 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/eko/monday/internal/config"
+	appsv1 "k8s.io/api/apps/v1"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
@@ -15,16 +19,40 @@ import (
 	"k8s.io/client-go/transport/spdy"
 )
 
-type Forwarder struct {
-	clientConfig *restclient.Config
-	clientSet    *kubernetes.Clientset
-	context      string
-	namespace    string
-	ports        []string
-	labels       map[string]string
+const (
+	// RemoteSSHProxyPort is the SSH proxy port used by the 'ekofr/monday-proxy' docker image
+	// to make a remote-forward on the Kubernetes pod to be able to next forward trafic locally
+	RemoteSSHProxyPort = 5022
+
+	// ProxyDockerImage is the path to the public Docker image acting as a proxy in the
+	// Kubernetes cluster
+	ProxyDockerImage = "ekofr/monday-proxy"
+
+	// ProxyPortName is the name given to the SSH port used when deploying the proxy image into the
+	// cluster
+	ProxyPortName = "ssh-proxy"
+)
+
+type DeploymentBackup struct {
+	OldImage   string
+	OldPorts   []apiv1.ContainerPort
+	Deployment *appsv1.Deployment
 }
 
-func NewForwarder(context, namespace string, ports []string, labels map[string]string) (*Forwarder, error) {
+type Forwarder struct {
+	forwardType    string
+	name           string
+	clientConfig   *restclient.Config
+	clientSet      *kubernetes.Clientset
+	context        string
+	namespace      string
+	ports          []string
+	labels         map[string]string
+	portForwarders map[string]*portforward.PortForwarder
+	deployments    map[string]*DeploymentBackup
+}
+
+func NewForwarder(forwardType, name, context, namespace string, ports []string, labels map[string]string) (*Forwarder, error) {
 	clientConfig, err := initializeClientConfig(context)
 	if err != nil {
 		return nil, err
@@ -36,13 +64,21 @@ func NewForwarder(context, namespace string, ports []string, labels map[string]s
 	}
 
 	return &Forwarder{
-		clientConfig: clientConfig,
-		clientSet:    clientSet,
-		context:      context,
-		namespace:    namespace,
-		labels:       labels,
-		ports:        ports,
+		forwardType:    forwardType,
+		name:           name,
+		context:        context,
+		namespace:      namespace,
+		labels:         labels,
+		ports:          ports,
+		clientConfig:   clientConfig,
+		clientSet:      clientSet,
+		portForwarders: make(map[string]*portforward.PortForwarder, 0),
+		deployments:    make(map[string]*DeploymentBackup, 0),
 	}, nil
+}
+
+func (f *Forwarder) GetForwardType() string {
+	return f.forwardType
 }
 
 func (f *Forwarder) Forward() error {
@@ -52,6 +88,61 @@ func (f *Forwarder) Forward() error {
 		return fmt.Errorf("Please provide a selector of labels in order to use Kubernetes forwarding")
 	}
 
+	switch f.forwardType {
+	case config.ForwarderKubernetes:
+		err := f.forwardLocal(selector)
+		if err != nil {
+			return err
+		}
+
+	case config.ForwarderKubernetesRemote:
+		err := f.forwardRemote(selector)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Stop stops the current forwarder
+func (f *Forwarder) Stop() error {
+	// Close port-forwards currently active connections
+	for _, portForwarder := range f.portForwarders {
+		portForwarder.Close()
+	}
+
+	deploymentsClient := f.clientSet.AppsV1().Deployments(f.namespace)
+
+	// Reset currently active remote-forward deployment proxies
+	for _, backup := range f.deployments {
+		selector := f.getSelector()
+
+		deployments, err := deploymentsClient.List(metav1.ListOptions{LabelSelector: selector})
+		if err != nil {
+			continue
+		}
+
+		if len(deployments.Items) < 1 {
+			continue
+		}
+
+		// Take first pod matching at the moment, maybe we should take all?
+		deployment := deployments.Items[0]
+
+		deployment.Spec.Template.Spec.Containers[0].Image = backup.OldImage
+		deployment.Spec.Template.Spec.Containers[0].Ports = backup.OldPorts
+
+		_, err = deploymentsClient.Update(&deployment)
+		if err != nil {
+			fmt.Printf("❌  An error has occured while stopping/resetting a deployment: %v\n", err)
+		}
+	}
+
+	return nil
+}
+
+func (f *Forwarder) forwardLocal(selector string) error {
 	pods, err := f.clientSet.CoreV1().Pods(f.namespace).List(
 		metav1.ListOptions{LabelSelector: selector},
 	)
@@ -92,10 +183,74 @@ func (f *Forwarder) Forward() error {
 		return err
 	}
 
+	f.portForwarders[f.name] = fw
+
 	err = fw.ForwardPorts()
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (f *Forwarder) forwardRemote(selector string) error {
+	deploymentsClient := f.clientSet.AppsV1().Deployments(f.namespace)
+
+	deployments, err := deploymentsClient.List(
+		metav1.ListOptions{LabelSelector: selector},
+	)
+	if err != nil {
+		return err
+	}
+
+	if len(deployments.Items) < 1 {
+		return fmt.Errorf("No deployment available for selector '%s': %v", selector, err)
+	}
+
+	// Take first pod matching at the moment, maybe we should take all?
+	deployment := deployments.Items[0]
+	container := deployment.Spec.Template.Spec.Containers[0]
+
+	fmt.Printf("📡  Setting up proxy on application '%s', please wait some seconds for pod to be ready...\n", deployment.Name)
+
+	f.deployments[f.name] = &DeploymentBackup{
+		OldImage:   container.Image,
+		OldPorts:   container.Ports,
+		Deployment: &deployment,
+	}
+
+	container.Image = ProxyDockerImage
+
+	ports := make([]apiv1.ContainerPort, 0)
+
+	for _, port := range container.Ports {
+		if port.Name == ProxyPortName {
+			continue
+		}
+
+		ports = append(ports, port)
+	}
+
+	ports = append(ports, apiv1.ContainerPort{
+		Name:          ProxyPortName,
+		Protocol:      apiv1.ProtocolTCP,
+		ContainerPort: RemoteSSHProxyPort,
+	})
+
+	container.Ports = ports
+
+	deployment.Spec.Template.Spec.Containers[0] = container
+	deployment.Spec.Template.Spec.ReadinessGates = []apiv1.PodReadinessGate{}
+
+	_, err = deploymentsClient.Update(&deployment)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	time.Sleep(time.Duration(5 * time.Second))
+
+	// Deployment has been updated with proxy, now forward ports locally
+	f.forwardLocal(selector)
 
 	return nil
 }

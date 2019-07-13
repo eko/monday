@@ -51,6 +51,21 @@
     ports:
      - 8080:8000
 
+# Example of Kubernetes remote-forward: this replaces your current pod in an environment with
+# a proxy that allows us to forward traffic locally. This is really cool to debug on an environment
+# but we disaprove using it on your production environment!
+<: &grpc-api-kubernetes-remote
+  name: grpc-api
+  type: kubernetes-remote
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: grpc-api
+    ports:
+     - 8080:8080
+     - 8001:8001
+
 <: &grpc-api-forward
   name: grpc-api
   type: kubernetes

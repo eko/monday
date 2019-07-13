@@ -8,23 +8,26 @@ import (
 const (
 	ExecutableGo = "go"
 
-	ForwarderKubernetes = "kubernetes"
-	ForwarderSSH        = "ssh"
-	ForwarderSSHRemote  = "ssh-remote"
+	ForwarderKubernetes       = "kubernetes"
+	ForwarderKubernetesRemote = "kubernetes-remote"
+	ForwarderSSH              = "ssh"
+	ForwarderSSHRemote        = "ssh-remote"
 )
 
 var (
 	// AvailableForwarders lists all ready-to-use forwarders
 	AvailableForwarders = map[string]bool{
-		ForwarderKubernetes: true,
-		ForwarderSSH:        true,
-		ForwarderSSHRemote:  true,
+		ForwarderKubernetes:       true,
+		ForwarderKubernetesRemote: true,
+		ForwarderSSH:              true,
+		ForwarderSSHRemote:        true,
 	}
 
 	// ProxifiedForwarders lists all forwarders that will use the proxy
 	ProxifiedForwarders = map[string]bool{
-		ForwarderKubernetes: true,
-		ForwarderSSH:        true,
+		ForwarderKubernetes:       true,
+		ForwarderKubernetesRemote: true,
+		ForwarderSSH:              true,
 	}
 )
 

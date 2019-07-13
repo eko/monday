@@ -12,7 +12,7 @@ import (
 type Runner struct {
 	projectName  string
 	applications []*config.Application
-	runs         map[string]*exec.Cmd
+	cmds         map[string]*exec.Cmd
 }
 
 // NewRunner instancites a Runner struct from configuration data
@@ -20,7 +20,7 @@ func NewRunner(project *config.Project) *Runner {
 	return &Runner{
 		projectName:  project.Name,
 		applications: project.Applications,
-		runs:         make(map[string]*exec.Cmd, 0),
+		cmds:         make(map[string]*exec.Cmd, 0),
 	}
 }
 
@@ -50,7 +50,7 @@ func (r *Runner) Run(application *config.Application) {
 	cmd.Stdout = stdoutStream
 	cmd.Stderr = stderrStream
 
-	r.runs[application.Name] = cmd
+	r.cmds[application.Name] = cmd
 
 	if err := cmd.Start(); err != nil {
 		fmt.Printf("❌  Cannot run the following application: %s: %v\n", applicationPath, err)
@@ -65,13 +65,25 @@ func (r *Runner) Run(application *config.Application) {
 
 // Restart kills the current application launch (if it exists) and launch a new one
 func (r *Runner) Restart(application *config.Application) {
-	if cmd, ok := r.runs[application.Name]; ok {
+	if cmd, ok := r.cmds[application.Name]; ok {
 		if err := cmd.Process.Kill(); err != nil {
 			fmt.Printf("❌  Unable to kill application: %v\n", err)
 		}
 	}
 
 	go r.Run(application)
+}
+
+// Stop stops all the currently active local applications
+func (r *Runner) Stop() error {
+	for name, cmd := range r.cmds {
+		err := cmd.Process.Kill()
+		if err != nil {
+			fmt.Printf("❌  An error has occured while stopping local application '%s': %v\n", name, err)
+		}
+	}
+
+	return nil
 }
 
 func (r *Runner) checkApplicationExecutableEnvironment(application *config.Application) error {

@@ -2,6 +2,7 @@ package forwarder
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -14,24 +15,28 @@ import (
 
 // ForwarderInterface represents all kinds of forwarders (Kubernetes, others...)
 type ForwarderInterface interface {
+	GetForwardType() string
 	Forward() error
+	Stop() error
 }
 
 // Forwarder is the struct that manage running local applications
 type Forwarder struct {
-	proxy    *proxy.Proxy
-	forwards []*config.Forward
+	proxy      *proxy.Proxy
+	forwards   []*config.Forward
+	forwarders []ForwarderInterface
 }
 
 // NewForwarder instancites a Forwarder struct from configuration data
 func NewForwarder(proxy *proxy.Proxy, project *config.Project) *Forwarder {
 	return &Forwarder{
-		proxy:    proxy,
-		forwards: project.Forwards,
+		proxy:      proxy,
+		forwards:   project.Forwards,
+		forwarders: make([]ForwarderInterface, 0),
 	}
 }
 
-// ForwardAll runs all local applications in separated goroutines
+// ForwardAll runs all applications forwarders in separated goroutines
 func (f *Forwarder) ForwardAll() {
 	var wg sync.WaitGroup
 	for _, forward := range f.forwards {
@@ -51,6 +56,13 @@ func (f *Forwarder) ForwardAll() {
 	}()
 }
 
+// Stop stops all currently active forwarders
+func (f *Forwarder) Stop() {
+	for _, forwarder := range f.forwarders {
+		forwarder.Stop()
+	}
+}
+
 func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -65,58 +77,106 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 
 	// Initiates proxy for port-forwarding with hostnames
 	proxifiedPorts := make([]string, 0)
+	proxyForwards := make([]*proxy.ProxyForward, 0)
 
 	if forward.IsProxified() {
+	PortsLoop:
 		for _, ports := range values.Ports {
 			localPort, forwardPort := splitLocalAndForwardPorts(ports)
 
-			proxyForward := proxy.NewProxyForward(forward.Name, values.Hostname, localPort, forwardPort)
-			f.proxy.AddProxyForward(forward.Name, proxyForward)
+			var proxyForward *proxy.ProxyForward
 
-			proxifiedPorts = append(proxifiedPorts, proxyForward.GetProxifiedPorts())
+			switch forward.Type {
+			case config.ForwarderKubernetesRemote:
+				remoteProxyPort := strconv.Itoa(kubernetes.RemoteSSHProxyPort)
+				proxyForward = proxy.NewProxyForward(forward.Name, values.Hostname, remoteProxyPort, remoteProxyPort)
+				proxyForwards = append(proxyForwards, proxyForward)
+				f.proxy.AddProxyForward(forward.Name, proxyForward)
+
+				proxifiedPorts = append(proxifiedPorts, proxyForward.GetProxifiedPorts())
+
+				break PortsLoop
+
+			default:
+				proxyForward = proxy.NewProxyForward(forward.Name, values.Hostname, localPort, forwardPort)
+				proxyForwards = append(proxyForwards, proxyForward)
+				f.proxy.AddProxyForward(forward.Name, proxyForward)
+
+				proxifiedPorts = append(proxifiedPorts, proxyForward.GetProxifiedPorts())
+			}
+		}
+
+		err := f.proxy.GenerateIPs()
+		if err != nil {
+			fmt.Println(err)
 		}
 	}
-
-	// Run forwards depending on types
-	var forwarders = make([]ForwarderInterface, 0)
 
 	switch forward.Type {
 	// Kubernetes local port-forward: give proxy port as local port and forwarded port, use proxy
 	case config.ForwarderKubernetes:
-		forwarder, err := kubernetes.NewForwarder(values.Context, values.Namespace, proxifiedPorts, values.Labels)
+		forwarder, err := kubernetes.NewForwarder(forward.Type, forward.Name, values.Context, values.Namespace, proxifiedPorts, values.Labels)
 		if err != nil {
 			fmt.Printf("❌  %s\n", err.Error())
 			return
 		}
 
-		forwarders = append(forwarders, forwarder)
+		f.forwarders = append(f.forwarders, forwarder)
+
+	// Kubernetes remote forward: open both a SSH remote-forward connection and a Kubernetes port-forward, use proxy
+	case config.ForwarderKubernetesRemote:
+		// First, set pod's proxy
+		forwarder, err := kubernetes.NewForwarder(forward.Type, forward.Name, values.Context, values.Namespace, proxifiedPorts, values.Labels)
+		if err != nil {
+			fmt.Printf("❌  %s\n", err.Error())
+			return
+		}
+
+		f.forwarders = append(f.forwarders, forwarder)
+
+		// Then, ssh remote-forward for all specified ports to pod's container
+		for _, ports := range values.Ports {
+			for _, proxyForward := range proxyForwards {
+				localPort, forwardPort := splitLocalAndForwardPorts(ports)
+				values.Remote = "root@127.0.0.1"
+				args := append(values.Args, fmt.Sprintf("-p %s", proxyForward.ProxyPort))
+
+				forwarder, err := ssh.NewForwarder(config.ForwarderSSHRemote, values.Remote, localPort, forwardPort, args)
+				if err != nil {
+					fmt.Printf("❌  %s\n", err.Error())
+					return
+				}
+
+				f.forwarders = append(f.forwarders, forwarder)
+			}
+		}
 
 	// SSH local forward: give proxy port as local port and forwarded port, use proxy
 	case config.ForwarderSSH:
-		proxyForward := f.proxy.GetFirstProxyForward(forward.Name)
-		forwarder, err := ssh.NewForwarder(forward.Type, values.Remote, proxyForward.ProxyPort, proxyForward.ForwardPort, values.Args)
-		if err != nil {
-			fmt.Printf("❌  %s\n", err.Error())
-			return
-		}
-
-		forwarders = append(forwarders, forwarder)
-
-	// SSH remote forward: give local port and forwarded port, do not proxy
-	case config.ForwarderSSHRemote:
-		for _, ports := range values.Ports {
-			localPort, forwardPort := splitLocalAndForwardPorts(ports)
-			forwarder, err := ssh.NewForwarder(forward.Type, values.Remote, localPort, forwardPort, values.Args)
+		for _, proxyForward := range proxyForwards {
+			forwarder, err := ssh.NewForwarder(forward.Type, values.Remote, proxyForward.ProxyPort, proxyForward.ForwardPort, values.Args)
 			if err != nil {
 				fmt.Printf("❌  %s\n", err.Error())
 				return
 			}
 
-			forwarders = append(forwarders, forwarder)
+			f.forwarders = append(f.forwarders, forwarder)
+		}
+
+	// SSH remote forward: give local port and forwarded port, do not proxy
+	case config.ForwarderSSHRemote:
+		for _, proxyForward := range proxyForwards {
+			forwarder, err := ssh.NewForwarder(forward.Type, values.Remote, proxyForward.LocalPort, proxyForward.ForwardPort, values.Args)
+			if err != nil {
+				fmt.Printf("❌  %s\n", err.Error())
+				return
+			}
+
+			f.forwarders = append(f.forwarders, forwarder)
 		}
 	}
 
-	for _, forwarder := range forwarders {
+	for _, forwarder := range f.forwarders {
 		go func(forwarder ForwarderInterface) {
 			for {
 				err := forwarder.Forward()
@@ -126,6 +186,13 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 				}
 			}
 		}(forwarder)
+
+		switch forwarder.GetForwardType() {
+		case config.ForwarderKubernetesRemote:
+			// Wait some seconds for the proxy to be ready before going next
+			// with the SSH remote-forwards
+			time.Sleep(time.Duration(5 * time.Second))
+		}
 	}
 }
 

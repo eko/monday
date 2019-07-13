@@ -21,6 +21,11 @@ const (
 
 var (
 	Version string
+
+	proxyComponent     *proxy.Proxy
+	forwarderComponent *forwarder.Forwarder
+	runnerComponent    *runner.Runner
+	watcherComponent   *watcher.Watcher
 )
 
 func main() {
@@ -59,17 +64,17 @@ func executeApp(conf *config.Config) {
 	}
 
 	// Initializes runner
-	runner := runner.NewRunner(project)
+	runnerComponent = runner.NewRunner(project)
 
 	// Initializes proxy
-	proxy := proxy.NewProxy()
+	proxyComponent = proxy.NewProxy()
 
 	// Initializes forwarder
-	forwarder := forwarder.NewForwarder(proxy, project)
+	forwarderComponent = forwarder.NewForwarder(proxyComponent, project)
 
 	// Initializes watcher
-	watcher := watcher.NewWatcher(runner, forwarder, project)
-	watcher.Watch()
+	watcherComponent = watcher.NewWatcher(runnerComponent, forwarderComponent, project)
+	watcherComponent.Watch()
 }
 
 func executeCommands() {
@@ -97,4 +102,11 @@ func handleExitSignal() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	<-stop
+
+	fmt.Println("\n👋  Bye, closing your local applications and remote connections now")
+
+	forwarderComponent.Stop()
+	proxyComponent.Stop()
+	runnerComponent.Stop()
+	watcherComponent.Stop()
 }

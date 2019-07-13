@@ -43,6 +43,15 @@ func (w *Watcher) Watch() {
 	}
 }
 
+// Stop stops all currently active file watchers on local running applications
+func (w *Watcher) Stop() error {
+	for _, fileWatcher := range w.fileWatchers {
+		fileWatcher.Close()
+	}
+
+	return nil
+}
+
 func (w *Watcher) watchApplication(application *config.Application) error {
 	fileWatcher := watcher.New()
 	fileWatcher.SetMaxEvents(1)

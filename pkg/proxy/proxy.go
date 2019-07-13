@@ -16,53 +16,32 @@ const (
 
 type Proxy struct {
 	ProxyForwards map[string][]*ProxyForward
-	Listeners     map[string]net.Listener
+	listeners     map[string]net.Listener
 	mux           sync.Mutex
 	latestPort    string
+	attributedIPs map[string]net.IP
 }
 
 func NewProxy() *Proxy {
 	return &Proxy{
 		ProxyForwards: make(map[string][]*ProxyForward, 0),
-		Listeners:     make(map[string]net.Listener),
+		listeners:     make(map[string]net.Listener),
 		latestPort:    ProxyPortStart,
+		attributedIPs: make(map[string]net.IP, 0),
 	}
 }
 
 func (p *Proxy) Listen() error {
-	d := 1
-
-	var attributedIPs = make(map[string]net.IP, 0)
-
 	for name, pfs := range p.ProxyForwards {
 		for _, pf := range pfs {
 			key := fmt.Sprintf("%s_%s", name, pf.LocalPort)
 
 			// We already have a listening port
-			if _, ok := p.Listeners[key]; ok {
+			if _, ok := p.listeners[key]; ok {
 				return nil
 			}
 
-			// Create new listener on a dedicated IP address if the service
-			// does not already have an IP address attributed, elsewhere give the already
-			// attributed address
-			var localIP net.IP
-			var err error
-			if v, ok := attributedIPs[name]; ok {
-				localIP = v
-			} else {
-				localIP, err = generateIP(127, 1, 2, d, pf.LocalPort)
-				d = d + 1
-				if err != nil {
-					return err
-				}
-
-				attributedIPs[name] = localIP
-			}
-
-			pf.SetLocalIP(localIP.String())
-
-			err = hostfile.AddHost(localIP.String(), pf.GetHostname())
+			err := hostfile.AddHost(pf.LocalIP, pf.GetHostname())
 			if err != nil {
 				return err
 			}
@@ -76,13 +55,25 @@ func (p *Proxy) Listen() error {
 	return nil
 }
 
+// Stop stops all currently active proxy listeners
+func (p *Proxy) Stop() error {
+	for name, listener := range p.listeners {
+		err := listener.Close()
+		if err != nil {
+			fmt.Printf("❌  An error has occured while stopping proxy listener '%s': %v\n", name, err)
+		}
+	}
+
+	return nil
+}
+
 func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", pf.LocalIP, pf.LocalPort))
 	if err != nil {
 		fmt.Printf("❌  Could not create proxy listener for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
 	}
 
-	p.Listeners[key] = listener
+	p.listeners[key] = listener
 
 	// Accept clients and proxify calls
 	for {
@@ -123,10 +114,28 @@ func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 	}
 }
 
-func (p *Proxy) GetFirstProxyForward(name string) *ProxyForward {
-	for forwardName, pf := range p.ProxyForwards {
-		if forwardName == name {
-			return pf[0]
+func (p *Proxy) GenerateIPs() error {
+	d := 1
+
+	for name, proxyForward := range p.ProxyForwards {
+		for _, pf := range proxyForward {
+			// Create new listener on a dedicated IP address if the service
+			// does not already have an IP address attributed, elsewhere give the already
+			// attributed address
+			var localIP net.IP
+			var err error
+			if v, ok := p.attributedIPs[name]; ok {
+				localIP = v
+			} else {
+				localIP, err = generateIP(127, 1, 2, d, pf.LocalPort)
+				d = d + 1
+				if err != nil {
+					return err
+				}
+			}
+
+			p.attributedIPs[name] = localIP
+			pf.SetLocalIP(localIP.String())
 		}
 	}
 
