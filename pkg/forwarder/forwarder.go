@@ -26,7 +26,7 @@ type ForwarderInterface interface {
 type Forwarder struct {
 	proxy      *proxy.Proxy
 	forwards   []*config.Forward
-	forwarders []ForwarderInterface
+	forwarders map[string][]ForwarderInterface
 }
 
 // NewForwarder instancites a Forwarder struct from configuration data
@@ -34,7 +34,7 @@ func NewForwarder(proxy *proxy.Proxy, project *config.Project) *Forwarder {
 	return &Forwarder{
 		proxy:      proxy,
 		forwards:   project.Forwards,
-		forwarders: make([]ForwarderInterface, 0),
+		forwarders: make(map[string][]ForwarderInterface, 0),
 	}
 }
 
@@ -48,6 +48,9 @@ func (f *Forwarder) ForwardAll() {
 
 	wg.Wait()
 
+	// Generate proxy IPs
+	f.proxy.GenerateIPs()
+
 	// Run proxy for port-forwarning
 	go func() {
 		err := f.proxy.Listen()
@@ -60,9 +63,15 @@ func (f *Forwarder) ForwardAll() {
 
 // Stop stops all currently active forwarders
 func (f *Forwarder) Stop() {
-	for _, forwarder := range f.forwarders {
-		forwarder.Stop()
+	for _, serviceForwarders := range f.forwarders {
+		for _, forwarder := range serviceForwarders {
+			forwarder.Stop()
+		}
 	}
+}
+
+func (f *Forwarder) addForwarder(name string, forwarder ForwarderInterface) {
+	f.forwarders[name] = append(f.forwarders[name], forwarder)
 }
 
 func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
@@ -107,11 +116,6 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 				proxifiedPorts = append(proxifiedPorts, proxyForward.GetProxifiedPorts())
 			}
 		}
-
-		err := f.proxy.GenerateIPs()
-		if err != nil {
-			fmt.Println(err)
-		}
 	}
 
 	switch forward.Type {
@@ -123,7 +127,7 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 			return
 		}
 
-		f.forwarders = append(f.forwarders, forwarder)
+		f.addForwarder(forward.Name, forwarder)
 
 	// Kubernetes remote forward: open both a SSH remote-forward connection and a Kubernetes port-forward, use proxy
 	case config.ForwarderKubernetesRemote:
@@ -134,7 +138,7 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 			return
 		}
 
-		f.forwarders = append(f.forwarders, forwarder)
+		f.addForwarder(forward.Name, forwarder)
 
 		// Then, ssh remote-forward for all specified ports to pod's container
 		for _, ports := range values.Ports {
@@ -149,7 +153,7 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 					return
 				}
 
-				f.forwarders = append(f.forwarders, forwarder)
+				f.addForwarder(forward.Name, forwarder)
 			}
 		}
 
@@ -162,7 +166,7 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 				return
 			}
 
-			f.forwarders = append(f.forwarders, forwarder)
+			f.addForwarder(forward.Name, forwarder)
 		}
 
 	// SSH remote forward: give local port and forwarded port, do not proxy
@@ -174,11 +178,11 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 				return
 			}
 
-			f.forwarders = append(f.forwarders, forwarder)
+			f.addForwarder(forward.Name, forwarder)
 		}
 	}
 
-	for _, forwarder := range f.forwarders {
+	for _, forwarder := range f.forwarders[forward.Name] {
 		go func(forwarder ForwarderInterface) {
 			for {
 				err := forwarder.Forward()
