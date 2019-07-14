@@ -17,6 +17,7 @@ const (
 type Proxy struct {
 	ProxyForwards map[string][]*ProxyForward
 	listeners     map[string]net.Listener
+	listening     bool
 	mux           sync.Mutex
 	latestPort    string
 	attributedIPs map[string]net.IP
@@ -26,6 +27,7 @@ func NewProxy() *Proxy {
 	return &Proxy{
 		ProxyForwards: make(map[string][]*ProxyForward, 0),
 		listeners:     make(map[string]net.Listener),
+		listening:     true,
 		latestPort:    ProxyPortStart,
 		attributedIPs: make(map[string]net.IP, 0),
 	}
@@ -57,6 +59,8 @@ func (p *Proxy) Listen() error {
 
 // Stop stops all currently active proxy listeners
 func (p *Proxy) Stop() error {
+	p.listening = false
+
 	for name, listener := range p.listeners {
 		err := listener.Close()
 		if err != nil {
@@ -78,6 +82,9 @@ func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 	// Accept clients and proxify calls
 	for {
 		client, err := listener.Accept()
+		if !p.listening {
+			break
+		}
 		if err != nil {
 			fmt.Printf("❌  Could not accept client connection for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
 		}
