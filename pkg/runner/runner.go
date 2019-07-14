@@ -49,6 +49,11 @@ func (r *Runner) Run(application *config.Application) {
 	cmd.Dir = applicationPath
 	cmd.Stdout = stdoutStream
 	cmd.Stderr = stderrStream
+	cmd.Env = os.Environ()
+
+	for key, value := range application.Env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+	}
 
 	r.cmds[application.Name] = cmd
 

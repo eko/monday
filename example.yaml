@@ -12,6 +12,8 @@
   args:
     - run
     - cmd/main.go
+  env: # Optional, in case you want to specify some environment variables for this app
+    HTTP_PORT: 8005
 
 <: &grpc-api-local
   name: grpc-api
@@ -21,6 +23,8 @@
   args:
     - run
     - main.go
+  env: # Optional, in case you want to specify some environment variables for this app
+    GRPC_PORT: 8006
 
 <: &elasticsearch-local
   name: elasticsearch

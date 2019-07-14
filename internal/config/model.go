@@ -46,11 +46,12 @@ type Project struct {
 
 // Application represents application information
 type Application struct {
-	Name       string   `yaml:"name"`
-	Path       string   `yaml:"path"`
-	Executable string   `yaml:"executable"`
-	Watch      bool     `yaml:"watch"`
-	Args       []string `yaml:"args"`
+	Name       string            `yaml:"name"`
+	Path       string            `yaml:"path"`
+	Executable string            `yaml:"executable"`
+	Watch      bool              `yaml:"watch"`
+	Env        map[string]string `yaml:"env"`
+	Args       []string          `yaml:"args"`
 }
 
 // GetPath returns the path dependending on overrided value or not
