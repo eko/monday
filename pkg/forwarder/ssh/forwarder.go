@@ -8,26 +8,41 @@ import (
 )
 
 type Forwarder struct {
-	forwardType string
-	remote      string
-	localPort   string
-	forwardPort string
-	args        []string
-	cmd         *exec.Cmd
+	forwardType  string
+	remote       string
+	localPort    string
+	forwardPort  string
+	args         []string
+	cmd          *exec.Cmd
+	stopChannel  chan struct{}
+	readyChannel chan struct{}
 }
 
 func NewForwarder(forwardType, remote, localPort, forwardPort string, args []string) (*Forwarder, error) {
 	return &Forwarder{
-		forwardType: forwardType,
-		remote:      remote,
-		localPort:   localPort,
-		forwardPort: forwardPort,
-		args:        args,
+		forwardType:  forwardType,
+		remote:       remote,
+		localPort:    localPort,
+		forwardPort:  forwardPort,
+		args:         args,
+		stopChannel:  make(chan struct{}),
+		readyChannel: make(chan struct{}, 1),
 	}, nil
 }
 
+// GetForwardType returns the type of the forward specified in the configuration (ssh, ssh-remote, kubernetes, ...)
 func (f *Forwarder) GetForwardType() string {
 	return f.forwardType
+}
+
+// GetReadyChannel returns the Kubernetes go client channel for ready event
+func (f *Forwarder) GetReadyChannel() chan struct{} {
+	return f.readyChannel
+}
+
+// GetStopChannel returns the Kubernetes go client channel for stop event
+func (f *Forwarder) GetStopChannel() chan struct{} {
+	return f.readyChannel
 }
 
 func (f *Forwarder) Forward() error {

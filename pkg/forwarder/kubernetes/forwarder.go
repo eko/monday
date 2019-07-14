@@ -50,6 +50,8 @@ type Forwarder struct {
 	labels         map[string]string
 	portForwarders map[string]*portforward.PortForwarder
 	deployments    map[string]*DeploymentBackup
+	stopChannel    chan struct{}
+	readyChannel   chan struct{}
 }
 
 func NewForwarder(forwardType, name, context, namespace string, ports []string, labels map[string]string) (*Forwarder, error) {
@@ -74,11 +76,24 @@ func NewForwarder(forwardType, name, context, namespace string, ports []string, 
 		clientSet:      clientSet,
 		portForwarders: make(map[string]*portforward.PortForwarder, 0),
 		deployments:    make(map[string]*DeploymentBackup, 0),
+		stopChannel:    make(chan struct{}, 1),
+		readyChannel:   make(chan struct{}),
 	}, nil
 }
 
+// GetForwardType returns the type of the forward specified in the configuration (ssh, ssh-remote, kubernetes, ...)
 func (f *Forwarder) GetForwardType() string {
 	return f.forwardType
+}
+
+// GetReadyChannel returns the Kubernetes go client channel for ready event
+func (f *Forwarder) GetReadyChannel() chan struct{} {
+	return f.readyChannel
+}
+
+// GetStopChannel returns the Kubernetes go client channel for stop event
+func (f *Forwarder) GetStopChannel() chan struct{} {
+	return f.readyChannel
 }
 
 func (f *Forwarder) Forward() error {
@@ -173,12 +188,9 @@ func (f *Forwarder) forwardLocal(selector string) error {
 
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", &url)
 
-	stopChannel := make(chan struct{}, 1)
-	readyChannel := make(chan struct{})
-
 	l := NewLogstreamer(pod.Name)
 
-	fw, err := portforward.New(dialer, f.ports, stopChannel, readyChannel, l, l)
+	fw, err := portforward.New(dialer, f.ports, f.stopChannel, f.readyChannel, l, l)
 	if err != nil {
 		return err
 	}
@@ -211,12 +223,14 @@ func (f *Forwarder) forwardRemote(selector string) error {
 	deployment := deployments.Items[0]
 	container := deployment.Spec.Template.Spec.Containers[0]
 
-	fmt.Printf("📡  Setting up proxy on application '%s', please wait some seconds for pod to be ready...\n", deployment.Name)
+	if _, ok := f.deployments[f.name]; !ok {
+		fmt.Printf("📡  Setting up proxy on application '%s', please wait some seconds for pod to be ready...\n", deployment.Name)
 
-	f.deployments[f.name] = &DeploymentBackup{
-		OldImage:   container.Image,
-		OldPorts:   container.Ports,
-		Deployment: &deployment,
+		f.deployments[f.name] = &DeploymentBackup{
+			OldImage:   container.Image,
+			OldPorts:   container.Ports,
+			Deployment: &deployment,
+		}
 	}
 
 	container.Image = ProxyDockerImage

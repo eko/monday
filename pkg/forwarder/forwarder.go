@@ -18,6 +18,8 @@ type ForwarderInterface interface {
 	GetForwardType() string
 	Forward() error
 	Stop() error
+	GetReadyChannel() chan struct{}
+	GetStopChannel() chan struct{}
 }
 
 // Forwarder is the struct that manage running local applications
@@ -189,9 +191,8 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 
 		switch forwarder.GetForwardType() {
 		case config.ForwarderKubernetesRemote:
-			// Wait some seconds for the proxy to be ready before going next
-			// with the SSH remote-forwards
-			time.Sleep(time.Duration(5 * time.Second))
+			// Wait for the proxy to be ready before going next with the SSH remote-forwards
+			<-forwarder.GetReadyChannel()
 		}
 	}
 }
