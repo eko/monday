@@ -39,6 +39,11 @@ func NewProxy() *Proxy {
 func (p *Proxy) Listen() error {
 	for name, pfs := range p.ProxyForwards {
 		for _, pf := range pfs {
+			if pf.LocalPort == "" {
+				// In case no local port is specified: don't handle connections
+				continue
+			}
+
 			key := fmt.Sprintf("%s_%s", name, pf.LocalPort)
 
 			// We already have a listening port
@@ -119,7 +124,11 @@ func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 		fmt.Printf("❌  An error has occured while trying to write host file for application '%s' (ip: %s): %v\n", proxyForward.Name, proxyForward.LocalIP, err)
 	}
 
-	fmt.Printf("✅  IP '%s' successfully generated for hostname '%s'\n", proxyForward.LocalIP, proxyForward.GetHostname())
+	if proxyForward.LocalPort != "" {
+		fmt.Printf("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", proxyForward.GetHostname(), proxyForward.LocalIP, proxyForward.ProxyPort)
+	} else {
+		fmt.Printf("✅  Successfully mapped hostname '%s' with IP '%s'\n", proxyForward.GetHostname(), proxyForward.LocalIP)
+	}
 
 	if pfs, ok := p.ProxyForwards[name]; ok {
 		p.ProxyForwards[name] = append(pfs, proxyForward)
