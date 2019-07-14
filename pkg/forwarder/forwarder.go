@@ -48,9 +48,6 @@ func (f *Forwarder) ForwardAll() {
 
 	wg.Wait()
 
-	// Generate proxy IPs
-	f.proxy.GenerateIPs()
-
 	// Run proxy for port-forwarning
 	go func() {
 		err := f.proxy.Listen()

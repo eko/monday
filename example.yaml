@@ -8,6 +8,7 @@
   name: graphql
   path: github.com/eko/graphql # Will find in GOPATH (as executable is "go")
   watch: true # Default: false (do not watch directory)
+  hostname: graphql.svc.local # Optional, in case you want to map a specific hostname with a single IP address
   executable: go
   args:
     - run
@@ -19,6 +20,7 @@
   name: grpc-api
   path: github.com/eko/grpc-api # Will find in GOPATH (as executable is "go")
   watch: true # Default: false (do not watch directory)
+  hostname: grpc-api.svc.local # Optional, in case you want to map a specific hostname with a single IP address
   executable: go
   args:
     - run

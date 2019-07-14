@@ -21,6 +21,7 @@ type Proxy struct {
 	mux           sync.Mutex
 	latestPort    string
 	attributedIPs map[string]net.IP
+	ipLastByte    int
 }
 
 func NewProxy() *Proxy {
@@ -30,9 +31,11 @@ func NewProxy() *Proxy {
 		listening:     true,
 		latestPort:    ProxyPortStart,
 		attributedIPs: make(map[string]net.IP, 0),
+		ipLastByte:    1,
 	}
 }
 
+// Listen opens a TCP proxy for each ProxyForward instance
 func (p *Proxy) Listen() error {
 	for name, pfs := range p.ProxyForwards {
 		for _, pf := range pfs {
@@ -41,11 +44,6 @@ func (p *Proxy) Listen() error {
 			// We already have a listening port
 			if _, ok := p.listeners[key]; ok {
 				return nil
-			}
-
-			err := hostfile.AddHost(pf.LocalIP, pf.GetHostname())
-			if err != nil {
-				return err
 			}
 
 			fmt.Printf("🔌  Proxifying %s locally on %s (port %s) - forwarding to port %s\n", pf.GetHostname(), pf.LocalIP, pf.LocalPort, pf.ProxyPort)
@@ -108,11 +106,20 @@ func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 	}
 }
 
+// AddProxyForward creates a new ProxyForward instance and attributes an IP address and a proxy port to it
 func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
+	p.generateIP(proxyForward)
 	p.generateProxyPort(proxyForward)
+
+	err := hostfile.AddHost(proxyForward.LocalIP, proxyForward.GetHostname())
+	if err != nil {
+		fmt.Printf("❌  An error has occured while trying to write host file for application '%s' (ip: %s): %v\n", proxyForward.Name, proxyForward.LocalIP, err)
+	}
+
+	fmt.Printf("✅  IP '%s' successfully generated for hostname '%s'\n", proxyForward.LocalIP, proxyForward.GetHostname())
 
 	if pfs, ok := p.ProxyForwards[name]; ok {
 		p.ProxyForwards[name] = append(pfs, proxyForward)
@@ -121,30 +128,24 @@ func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 	}
 }
 
-func (p *Proxy) GenerateIPs() error {
-	d := 1
-
-	for name, proxyForward := range p.ProxyForwards {
-		for _, pf := range proxyForward {
-			// Create new listener on a dedicated IP address if the service
-			// does not already have an IP address attributed, elsewhere give the already
-			// attributed address
-			var localIP net.IP
-			var err error
-			if v, ok := p.attributedIPs[name]; ok {
-				localIP = v
-			} else {
-				localIP, err = generateIP(127, 1, 2, d, pf.LocalPort)
-				d = d + 1
-				if err != nil {
-					return err
-				}
-			}
-
-			p.attributedIPs[name] = localIP
-			pf.SetLocalIP(localIP.String())
+func (p *Proxy) generateIP(pf *ProxyForward) error {
+	// Create new listener on a dedicated IP address if the service
+	// does not already have an IP address attributed, elsewhere give the already
+	// attributed address
+	var localIP net.IP
+	var err error
+	if v, ok := p.attributedIPs[pf.Name]; ok {
+		localIP = v
+	} else {
+		localIP, err = generateIP(127, 1, 2, p.ipLastByte, pf.LocalPort)
+		p.ipLastByte = p.ipLastByte + 1
+		if err != nil {
+			return err
 		}
 	}
+
+	p.attributedIPs[pf.Name] = localIP
+	pf.SetLocalIP(localIP.String())
 
 	return nil
 }

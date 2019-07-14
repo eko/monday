@@ -6,18 +6,21 @@ import (
 	"os/exec"
 
 	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/pkg/proxy"
 )
 
 // Runner is the struct that manage running local applications
 type Runner struct {
+	proxy        *proxy.Proxy
 	projectName  string
 	applications []*config.Application
 	cmds         map[string]*exec.Cmd
 }
 
 // NewRunner instancites a Runner struct from configuration data
-func NewRunner(project *config.Project) *Runner {
+func NewRunner(proxy *proxy.Proxy, project *config.Project) *Runner {
 	return &Runner{
+		proxy:        proxy,
 		projectName:  project.Name,
 		applications: project.Applications,
 		cmds:         make(map[string]*exec.Cmd, 0),
@@ -28,6 +31,11 @@ func NewRunner(project *config.Project) *Runner {
 func (r *Runner) RunAll() {
 	for _, application := range r.applications {
 		go r.Run(application)
+
+		if application.Hostname != "" {
+			proxyForward := proxy.NewProxyForward(application.Name, application.Hostname, "", "")
+			r.proxy.AddProxyForward(application.Name, proxyForward)
+		}
 	}
 }
 
@@ -81,11 +89,8 @@ func (r *Runner) Restart(application *config.Application) {
 
 // Stop stops all the currently active local applications
 func (r *Runner) Stop() error {
-	for name, cmd := range r.cmds {
-		err := cmd.Process.Kill()
-		if err != nil {
-			fmt.Printf("❌  An error has occured while stopping local application '%s': %v\n", name, err)
-		}
+	for _, cmd := range r.cmds {
+		cmd.Process.Kill()
 	}
 
 	return nil

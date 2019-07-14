@@ -63,11 +63,11 @@ func executeApp(conf *config.Config) {
 		panic(err)
 	}
 
-	// Initializes runner
-	runnerComponent = runner.NewRunner(project)
-
 	// Initializes proxy
 	proxyComponent = proxy.NewProxy()
+
+	// Initializes runner
+	runnerComponent = runner.NewRunner(proxyComponent, project)
 
 	// Initializes forwarder
 	forwarderComponent = forwarder.NewForwarder(proxyComponent, project)

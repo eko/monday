@@ -49,6 +49,7 @@ type Application struct {
 	Name       string            `yaml:"name"`
 	Path       string            `yaml:"path"`
 	Executable string            `yaml:"executable"`
+	Hostname   string            `yaml:"hostname"`
 	Watch      bool              `yaml:"watch"`
 	Env        map[string]string `yaml:"env"`
 	Args       []string          `yaml:"args"`
