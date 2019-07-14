@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/eko/monday/internal/config"
@@ -10,19 +11,29 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
+var (
+	excludeDirectories = []string{".git", "node_modules", "vendor"}
+)
+
 // Watcher monitors health of the currently forwarded ports and launched applications.
 type Watcher struct {
 	runner       *runner.Runner
 	forwarder    *forwarder.Forwarder
+	conf         *config.Watcher
 	project      *config.Project
 	fileWatchers map[string]*watcher.Watcher
 }
 
 // NewWatcher initializes a watcher instance monitoring services using both runner and forwarder
-func NewWatcher(runner *runner.Runner, forwarder *forwarder.Forwarder, project *config.Project) *Watcher {
+func NewWatcher(runner *runner.Runner, forwarder *forwarder.Forwarder, conf *config.Watcher, project *config.Project) *Watcher {
+	if conf != nil && len(conf.Exclude) > 0 {
+		excludeDirectories = append(excludeDirectories, conf.Exclude...)
+	}
+
 	return &Watcher{
 		runner:       runner,
 		forwarder:    forwarder,
+		conf:         conf,
 		project:      project,
 		fileWatchers: make(map[string]*watcher.Watcher, 0),
 	}
@@ -31,8 +42,8 @@ func NewWatcher(runner *runner.Runner, forwarder *forwarder.Forwarder, project *
 // Watch runs both local applications and forwarded ones and ensure they keep running.
 // It also relaunch them in case of file changes.
 func (w *Watcher) Watch() {
-	w.forwarder.ForwardAll()
 	w.runner.RunAll()
+	w.forwarder.ForwardAll()
 
 	for _, application := range w.project.Applications {
 		if !application.Watch {
@@ -55,10 +66,19 @@ func (w *Watcher) Stop() error {
 func (w *Watcher) watchApplication(application *config.Application) error {
 	fileWatcher := watcher.New()
 	fileWatcher.SetMaxEvents(1)
+	fileWatcher.IgnoreHiddenFiles(true)
 	fileWatcher.FilterOps(watcher.Write, watcher.Create, watcher.Remove)
 
 	if err := fileWatcher.AddRecursive(application.GetPath()); err != nil {
 		fmt.Printf("❌  Unable to watch directory of application '%s': %v\n", application.Name, err)
+	}
+
+	for _, directory := range excludeDirectories {
+		if _, err := os.Stat(directory); os.IsNotExist(err) {
+			directory = fmt.Sprintf("%s/%s", application.GetPath(), directory)
+		}
+
+		fileWatcher.Ignore(directory)
 	}
 
 	go func() {

@@ -1,6 +1,12 @@
 # Settings
 
-#gopath: /Users/vincent/golang # Optional, default to user's $GOPATH env var
+gopath: /dev/golang # Optional, default to user's $GOPATH env var
+
+watcher: # Optional
+  exclude: # Optional, in case you want to exclude some (sub-)directories from file watching
+    - .git
+    - node_modules
+    - /event/an/absolute/path
 
 # Local applications
 

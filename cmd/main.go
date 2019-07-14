@@ -73,7 +73,7 @@ func executeApp(conf *config.Config) {
 	forwarderComponent = forwarder.NewForwarder(proxyComponent, project)
 
 	// Initializes watcher
-	watcherComponent = watcher.NewWatcher(runnerComponent, forwarderComponent, project)
+	watcherComponent = watcher.NewWatcher(runnerComponent, forwarderComponent, conf.Watcher, project)
 	watcherComponent.Watch()
 }
 

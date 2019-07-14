@@ -35,6 +35,7 @@ var (
 type Config struct {
 	GoPath   string     `yaml:"gopath"`
 	Projects []*Project `yaml:"projects"`
+	Watcher  *Watcher   `yaml:"watcher"`
 }
 
 // Project represents a project name, that could be a group of multiple projects
@@ -94,4 +95,9 @@ type ForwardValues struct {
 	Ports     []string          `yaml:"ports"`
 	Remote    string            `yaml:"remote"`
 	Args      []string          `yaml:"args"`
+}
+
+// Watcher represents the configuration values for the file watcher component
+type Watcher struct {
+	Exclude []string `yaml:"exclude"`
 }
