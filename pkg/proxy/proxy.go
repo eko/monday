@@ -15,13 +15,14 @@ const (
 )
 
 type Proxy struct {
-	ProxyForwards map[string][]*ProxyForward
-	listeners     map[string]net.Listener
-	listening     bool
-	mux           sync.Mutex
-	latestPort    string
-	attributedIPs map[string]net.IP
-	ipLastByte    int
+	ProxyForwards      map[string][]*ProxyForward
+	listeners          map[string]net.Listener
+	listening          bool
+	addProxyForwardMux sync.Mutex
+	listenerMux        sync.Mutex
+	latestPort         string
+	attributedIPs      map[string]net.IP
+	ipLastByte         int
 }
 
 func NewProxy() *Proxy {
@@ -80,7 +81,9 @@ func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 		fmt.Printf("❌  Could not create proxy listener for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
 	}
 
+	p.listenerMux.Lock()
 	p.listeners[key] = listener
+	p.listenerMux.Unlock()
 
 	// Accept clients and proxify calls
 	for {
@@ -113,8 +116,8 @@ func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 
 // AddProxyForward creates a new ProxyForward instance and attributes an IP address and a proxy port to it
 func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
-	p.mux.Lock()
-	defer p.mux.Unlock()
+	p.addProxyForwardMux.Lock()
+	defer p.addProxyForwardMux.Unlock()
 
 	p.generateIP(proxyForward)
 	p.generateProxyPort(proxyForward)
