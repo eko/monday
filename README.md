@@ -30,7 +30,7 @@ Your new microservice development environment friend. This CLI tool allows you t
 You can download and setup Monday binary by running the following command on your terminal:
 
 ```bash
-$ curl http://composieux.fr/getmonday.sh | sh
+$ curl https://composieux.fr/getmonday.sh | sh
 ```
 
 ### Download binary
