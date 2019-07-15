@@ -76,10 +76,9 @@ Run the following command and edit the `~/monday.yaml` configuration file just c
 
 ⚠️ *Important note*: Because Monday tries to be your best dev tool and manage things for you, you have to give it some chances to help you in editing host file and manipulating network interface for IP/port mapping.
 
-That's why I suggest to add your current user to the `/etc/hosts` file access list and run Monday using the following alias:
+That's why I suggest to run Monday using the following alias:
 
 ```bash
-sudo chmod +a "$USER allow read,write" /etc/hosts
 alias monday='sudo -E monday'
 ```
 
