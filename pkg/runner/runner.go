@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
+	"sync"
 
 	"github.com/eko/monday/internal/config"
 	"github.com/eko/monday/pkg/proxy"
@@ -39,6 +41,20 @@ func (r *Runner) RunAll() {
 	}
 }
 
+// SetupAll runs setup commands for all applications in case their directory does not already exists
+func (r *Runner) SetupAll() {
+	var wg sync.WaitGroup
+
+	for _, application := range r.applications {
+		wg.Add(1)
+		r.setup(application, &wg)
+	}
+
+	wg.Wait()
+
+	fmt.Print("✅  Setup complete!\n\n")
+}
+
 // Run launches the application
 func (r *Runner) Run(application *config.Application) {
 	if err := r.checkApplicationExecutableEnvironment(application); err != nil {
@@ -59,6 +75,7 @@ func (r *Runner) Run(application *config.Application) {
 	cmd.Stderr = stderrStream
 	cmd.Env = os.Environ()
 
+	// Add environment variables
 	for key, value := range application.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
@@ -101,8 +118,41 @@ func (r *Runner) checkApplicationExecutableEnvironment(application *config.Appli
 
 	// Check application path exists
 	if _, err := os.Stat(applicationPath); os.IsNotExist(err) {
-		return fmt.Errorf("Unable to find application in your $GOPATH under: %s", applicationPath)
+		return fmt.Errorf("Unable to find application path: %s", applicationPath)
 	}
+
+	return nil
+}
+
+// Setup runs setup commands for a specified application
+func (r *Runner) setup(application *config.Application, wg *sync.WaitGroup) error {
+	defer wg.Done()
+
+	if err := r.checkApplicationExecutableEnvironment(application); err == nil {
+		return nil
+	}
+
+	fmt.Printf("⚙️  Please wait while setup of application '%s'...\n", application.Name)
+
+	stdoutStream := NewLogstreamer(StdOut, application.Name)
+	stderrStream := NewLogstreamer(StdErr, application.Name)
+
+	var setup = strings.Join(application.Setup, "; ")
+
+	setup = strings.Replace(setup, "~", "$HOME", -1)
+	setup = os.ExpandEnv(setup)
+
+	commands := strings.Join(application.Setup, "\n")
+	fmt.Printf("👉  Running commands:\n%s\n\n", commands)
+
+	cmd := exec.Command("/bin/sh", "-c", setup)
+	cmd.Stdout = stdoutStream
+	cmd.Stderr = stderrStream
+	cmd.Env = os.Environ()
+
+	setup = os.ExpandEnv(setup)
+
+	cmd.Run()
 
 	return nil
 }

@@ -42,7 +42,9 @@ func NewWatcher(runner *runner.Runner, forwarder *forwarder.Forwarder, conf *con
 // Watch runs both local applications and forwarded ones and ensure they keep running.
 // It also relaunch them in case of file changes.
 func (w *Watcher) Watch() {
+	w.runner.SetupAll()
 	w.runner.RunAll()
+
 	w.forwarder.ForwardAll()
 
 	for _, application := range w.project.Applications {

@@ -11,6 +11,8 @@ Your new microservice development environment friend. This CLI tool allows you t
 
 ## What Monday can do for you?
 
+✅ Define a unified way to setup applications for all your developers
+
 ✅ Run your local applications
 
 ✅ Hot reload your applications automatically when a change is made locally

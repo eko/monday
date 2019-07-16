@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 const (
@@ -54,19 +55,26 @@ type Application struct {
 	Watch      bool              `yaml:"watch"`
 	Env        map[string]string `yaml:"env"`
 	Args       []string          `yaml:"args"`
+	Setup      []string          `yaml:"setup"`
 }
 
 // GetPath returns the path dependending on overrided value or not
 func (a *Application) GetPath() string {
 	path := a.Path
 
+	if strings.Contains(a.Path, "~") {
+		path = strings.Replace(a.Path, "~", "$HOME", -1)
+	}
+
 	switch a.Executable {
 	case ExecutableGo:
 		// First try to use the given directory, else, add the Go's $GOPATH
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			path = fmt.Sprintf("%s/src/%s", os.Getenv("GOPATH"), a.Path)
+			path = fmt.Sprintf("$GOPATH/src/%s", a.Path)
 		}
 	}
+
+	path = os.ExpandEnv(path)
 
 	return path
 }
