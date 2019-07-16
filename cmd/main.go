@@ -82,6 +82,7 @@ func executeCommands() {
 
 	rootCmd.AddCommand(editCmd)
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "version",
 		Short: "Display the current version of the binary",
