@@ -19,7 +19,7 @@ Your new microservice development environment friend. This CLI tool allows you t
 
 ✅ Port-forward an application locally using a remote one on Kubernetes (targeting a pod via label) or over SSH
 
-✅ Forward traffic of a remote application over Kubernetes or SSH locally (see forward types ssh-remote & kubernetes-remote)
+✅ Forward traffic of a remote application over Kubernetes or SSH locally (see types ssh-remote & kubernetes-remote)
 
 ✅ Auto reconnect when a port-forward connection is lost
 
