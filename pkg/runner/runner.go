@@ -11,6 +11,10 @@ import (
 	"github.com/eko/monday/pkg/proxy"
 )
 
+var (
+	hasSetup = false
+)
+
 // Runner is the struct that manage running local applications
 type Runner struct {
 	proxy        *proxy.Proxy
@@ -52,7 +56,9 @@ func (r *Runner) SetupAll() {
 
 	wg.Wait()
 
-	fmt.Print("✅  Setup complete!\n\n")
+	if hasSetup {
+		fmt.Print("\n✅  Setup complete!\n\n")
+	}
 }
 
 // Run launches the application
@@ -131,6 +137,12 @@ func (r *Runner) setup(application *config.Application, wg *sync.WaitGroup) erro
 	if err := r.checkApplicationExecutableEnvironment(application); err == nil {
 		return nil
 	}
+
+	if len(application.Setup) == 0 {
+		return nil
+	}
+
+	hasSetup = true
 
 	fmt.Printf("⚙️  Please wait while setup of application '%s'...\n", application.Name)
 
