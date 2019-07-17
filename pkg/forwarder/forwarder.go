@@ -26,15 +26,14 @@ type ForwarderInterface interface {
 type Forwarder struct {
 	proxy      *proxy.Proxy
 	forwards   []*config.Forward
-	forwarders map[string][]ForwarderInterface
+	forwarders sync.Map
 }
 
 // NewForwarder instancites a Forwarder struct from configuration data
 func NewForwarder(proxy *proxy.Proxy, project *config.Project) *Forwarder {
 	return &Forwarder{
-		proxy:      proxy,
-		forwards:   project.Forwards,
-		forwarders: make(map[string][]ForwarderInterface, 0),
+		proxy:    proxy,
+		forwards: project.Forwards,
 	}
 }
 
@@ -60,15 +59,25 @@ func (f *Forwarder) ForwardAll() {
 
 // Stop stops all currently active forwarders
 func (f *Forwarder) Stop() {
-	for _, serviceForwarders := range f.forwarders {
-		for _, forwarder := range serviceForwarders {
+	f.forwarders.Range(func(key, value interface{}) bool {
+		for _, forwarder := range value.([]ForwarderInterface) {
 			forwarder.Stop()
 		}
-	}
+
+		return true
+	})
 }
 
 func (f *Forwarder) addForwarder(name string, forwarder ForwarderInterface) {
-	f.forwarders[name] = append(f.forwarders[name], forwarder)
+	var forwarders = make([]ForwarderInterface, 0)
+
+	if forwarders, ok := f.forwarders.Load(name); ok {
+		forwarders = forwarders.([]ForwarderInterface)
+	}
+
+	forwarders = append(forwarders, forwarder)
+
+	f.forwarders.Store(name, forwarders)
 }
 
 func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
@@ -179,21 +188,23 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 		}
 	}
 
-	for _, forwarder := range f.forwarders[forward.Name] {
-		go func(forwarder ForwarderInterface) {
-			for {
-				err := forwarder.Forward()
-				if err != nil {
-					time.Sleep(1 * time.Second)
-					fmt.Printf("%v\n👓  Forwarder: lost port-forward connection trying to reconnect...\n", err)
+	if forwarders, ok := f.forwarders.Load(forward.Name); ok {
+		for _, forwarder := range forwarders.([]ForwarderInterface) {
+			go func(forwarder ForwarderInterface) {
+				for {
+					err := forwarder.Forward()
+					if err != nil {
+						time.Sleep(1 * time.Second)
+						fmt.Printf("%v\n👓  Forwarder: lost port-forward connection trying to reconnect...\n", err)
+					}
 				}
-			}
-		}(forwarder)
+			}(forwarder)
 
-		switch forwarder.GetForwardType() {
-		case config.ForwarderKubernetesRemote:
-			// Wait for the proxy to be ready before going next with the SSH remote-forwards
-			<-forwarder.GetReadyChannel()
+			switch forwarder.GetForwardType() {
+			case config.ForwarderKubernetesRemote:
+				// Wait for the proxy to be ready before going next with the SSH remote-forwards
+				<-forwarder.GetReadyChannel()
+			}
 		}
 	}
 }
