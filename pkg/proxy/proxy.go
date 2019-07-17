@@ -14,6 +14,12 @@ const (
 	ProxyPortStart = "9400"
 )
 
+type ProxyInterface interface {
+	Listen() error
+	Stop() error
+	AddProxyForward(name string, proxyForward *ProxyForward)
+}
+
 type Proxy struct {
 	ProxyForwards      map[string][]*ProxyForward
 	listeners          map[string]net.Listener
@@ -158,30 +164,6 @@ func (p *Proxy) generateIP(pf *ProxyForward) error {
 
 	p.attributedIPs[pf.Name] = localIP
 	pf.SetLocalIP(localIP.String())
-
-	return nil
-}
-
-func (p *Proxy) GetProxyForwardForLocalPort(name string, localPort string) *ProxyForward {
-	if pfs, ok := p.ProxyForwards[name]; ok {
-		for _, pf := range pfs {
-			if pf.LocalPort == localPort {
-				return pf
-			}
-		}
-	}
-
-	return nil
-}
-
-func (p *Proxy) GetProxyForwardForForwardPort(name string, forwardPort string) *ProxyForward {
-	if pfs, ok := p.ProxyForwards[name]; ok {
-		for _, pf := range pfs {
-			if pf.ForwardPort == forwardPort {
-				return pf
-			}
-		}
-	}
 
 	return nil
 }

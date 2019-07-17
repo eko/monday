@@ -15,6 +15,11 @@ import (
 
 // ForwarderInterface represents all kinds of forwarders (Kubernetes, others...)
 type ForwarderInterface interface {
+	ForwardAll()
+	Stop()
+}
+
+type ForwarderTypeInterface interface {
 	GetForwardType() string
 	Forward() error
 	Stop() error
@@ -24,13 +29,13 @@ type ForwarderInterface interface {
 
 // Forwarder is the struct that manage running local applications
 type Forwarder struct {
-	proxy      *proxy.Proxy
+	proxy      proxy.ProxyInterface
 	forwards   []*config.Forward
 	forwarders sync.Map
 }
 
 // NewForwarder instancites a Forwarder struct from configuration data
-func NewForwarder(proxy *proxy.Proxy, project *config.Project) *Forwarder {
+func NewForwarder(proxy proxy.ProxyInterface, project *config.Project) *Forwarder {
 	return &Forwarder{
 		proxy:    proxy,
 		forwards: project.Forwards,
@@ -60,7 +65,7 @@ func (f *Forwarder) ForwardAll() {
 // Stop stops all currently active forwarders
 func (f *Forwarder) Stop() {
 	f.forwarders.Range(func(key, value interface{}) bool {
-		for _, forwarder := range value.([]ForwarderInterface) {
+		for _, forwarder := range value.([]ForwarderTypeInterface) {
 			forwarder.Stop()
 		}
 
@@ -68,11 +73,11 @@ func (f *Forwarder) Stop() {
 	})
 }
 
-func (f *Forwarder) addForwarder(name string, forwarder ForwarderInterface) {
-	var forwarders = make([]ForwarderInterface, 0)
+func (f *Forwarder) addForwarder(name string, forwarder ForwarderTypeInterface) {
+	var forwarders = make([]ForwarderTypeInterface, 0)
 
 	if forwarders, ok := f.forwarders.Load(name); ok {
-		forwarders = forwarders.([]ForwarderInterface)
+		forwarders = forwarders.([]ForwarderTypeInterface)
 	}
 
 	forwarders = append(forwarders, forwarder)
@@ -189,8 +194,8 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	}
 
 	if forwarders, ok := f.forwarders.Load(forward.Name); ok {
-		for _, forwarder := range forwarders.([]ForwarderInterface) {
-			go func(forwarder ForwarderInterface) {
+		for _, forwarder := range forwarders.([]ForwarderTypeInterface) {
+			go func(forwarder ForwarderTypeInterface) {
 				for {
 					err := forwarder.Forward()
 					if err != nil {

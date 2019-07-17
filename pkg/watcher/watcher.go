@@ -15,17 +15,22 @@ var (
 	excludeDirectories = []string{".git", "node_modules", "vendor"}
 )
 
+type WatcherInterface interface {
+	Watch()
+	Stop() error
+}
+
 // Watcher monitors health of the currently forwarded ports and launched applications.
 type Watcher struct {
-	runner       *runner.Runner
-	forwarder    *forwarder.Forwarder
+	runner       runner.RunnerInterface
+	forwarder    forwarder.ForwarderInterface
 	conf         *config.Watcher
 	project      *config.Project
 	fileWatchers map[string]*watcher.Watcher
 }
 
 // NewWatcher initializes a watcher instance monitoring services using both runner and forwarder
-func NewWatcher(runner *runner.Runner, forwarder *forwarder.Forwarder, conf *config.Watcher, project *config.Project) *Watcher {
+func NewWatcher(runner runner.RunnerInterface, forwarder forwarder.ForwarderInterface, conf *config.Watcher, project *config.Project) *Watcher {
 	if conf != nil && len(conf.Exclude) > 0 {
 		excludeDirectories = append(excludeDirectories, conf.Exclude...)
 	}

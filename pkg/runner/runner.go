@@ -15,16 +15,24 @@ var (
 	hasSetup = false
 )
 
+type RunnerInterface interface {
+	RunAll()
+	SetupAll()
+	Run(application *config.Application)
+	Restart(application *config.Application)
+	Stop() error
+}
+
 // Runner is the struct that manage running local applications
 type Runner struct {
-	proxy        *proxy.Proxy
+	proxy        proxy.ProxyInterface
 	projectName  string
 	applications []*config.Application
 	cmds         map[string]*exec.Cmd
 }
 
 // NewRunner instancites a Runner struct from configuration data
-func NewRunner(proxy *proxy.Proxy, project *config.Project) *Runner {
+func NewRunner(proxy proxy.ProxyInterface, project *config.Project) *Runner {
 	return &Runner{
 		proxy:        proxy,
 		projectName:  project.Name,
