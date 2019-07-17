@@ -66,9 +66,9 @@ Install the needed vendors:
 $ GO111MODULE=on go mod vendor
 ```
 
-Then, build the binary (here, an example to run on Raspberry PI ARM architecture):
+Then, build the binary using the available target in Makefile:
 ```bash
-$ go build -o monday .
+$ make build
 ```
 
 ## Usage
