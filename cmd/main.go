@@ -29,22 +29,34 @@ var (
 )
 
 func main() {
-	// Run commands if commands have been asked
-	if len(os.Args) <= 1 {
-		conf, err := config.Load()
-		if err != nil {
-			fmt.Printf("❌  %v", err)
-			return
-		}
+	rootCmd := &cobra.Command{
+		Run: func(cmd *cobra.Command, args []string) {
+			conf, err := config.Load()
+			if err != nil {
+				fmt.Printf("❌  %v", err)
+				return
+			}
 
-		executeApp(conf)
-		handleExitSignal()
-	} else {
-		executeCommands()
+			choice := selectProject(conf)
+			run(conf, choice)
+
+			handleExitSignal()
+		},
+	}
+
+	rootCmd.AddCommand(editCmd)
+	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(upgradeCmd)
+	rootCmd.AddCommand(versionCmd)
+
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Printf("❌  An error has occured during 'edit' command: %v\n", err)
+		os.Exit(1)
 	}
 }
 
-func executeApp(conf *config.Config) {
+func selectProject(conf *config.Config) string {
 	prompt := promptui.Select{
 		Label: "Which project do you want to work on?",
 		Items: conf.GetProjectNames(),
@@ -58,6 +70,10 @@ func executeApp(conf *config.Config) {
 
 	fmt.Print("\n")
 
+	return choice
+}
+
+func run(conf *config.Config, choice string) {
 	project, err := conf.GetProjectByName(choice)
 	if err != nil {
 		panic(err)
@@ -75,26 +91,6 @@ func executeApp(conf *config.Config) {
 	// Initializes watcher
 	watcherComponent = watcher.NewWatcher(runnerComponent, forwarderComponent, conf.Watcher, project)
 	watcherComponent.Watch()
-}
-
-func executeCommands() {
-	rootCmd := &cobra.Command{}
-
-	rootCmd.AddCommand(editCmd)
-	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(upgradeCmd)
-	rootCmd.AddCommand(&cobra.Command{
-		Use:   "version",
-		Short: "Display the current version of the binary",
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("🖥  %s - version %s\n", name, Version)
-		},
-	})
-
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("❌  An error has occured during 'edit' command: %v\n", err)
-		os.Exit(1)
-	}
 }
 
 // Handle for an exit signal in order to quit application on a proper way (shutting down connections and servers).

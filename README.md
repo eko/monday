@@ -94,6 +94,12 @@ Once your configuration file is ready, you can simply run Monday:
 $ monday
 ```
 
+Or, you can run a specific project directly by running:
+
+```bash
+$ monday run <project name>
+```
+
 When you want to edit your configuration again, simply run this command to open it in your favorite editor:
 
 ```bash
