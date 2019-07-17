@@ -19,7 +19,7 @@ const (
 )
 
 type GithubAPIResponse struct {
-	Name string `json:"name"`
+	TagName string `json:"tag_name"`
 }
 
 var upgradeCmd = &cobra.Command{
@@ -38,12 +38,12 @@ var upgradeCmd = &cobra.Command{
 		githubResponse := &GithubAPIResponse{}
 		json.Unmarshal(data, githubResponse)
 
-		if githubResponse.Name == Version {
-			fmt.Printf("✅  You are already on the latest version: %s\n", githubResponse.Name)
+		if githubResponse.TagName == Version {
+			fmt.Printf("✅  You are already on the latest version: %s\n", githubResponse.TagName)
 			return
 		}
 
-		fmt.Printf("🐢  A new version is available. Current is %s and %s is available\n", Version, githubResponse.Name)
+		fmt.Printf("🐢  A new version is available. Current is %s and %s is available\n", Version, githubResponse.TagName)
 
 		// Download the right binary depending on OS and architecture
 		fmt.Printf("👉  Downloading binary for your OS (%s/%s)...\n", runtime.GOOS, runtime.GOARCH)
@@ -72,7 +72,7 @@ var upgradeCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Printf("✅  Monday has been successfully upgraded. You are now on latest version: %s\n", githubResponse.Name)
+		fmt.Printf("✅  Monday has been successfully upgraded. You are now on latest version: %s\n", githubResponse.TagName)
 		return
 	},
 }
