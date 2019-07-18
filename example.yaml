@@ -144,4 +144,4 @@ projects:
 
  - name: forward-composieux-website
    forward:
-    - *composieux-fr
+    - *composieux-fr-local

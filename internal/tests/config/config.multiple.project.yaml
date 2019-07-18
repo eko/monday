@@ -1,0 +1,33 @@
+# Settings
+
+gopath: /dev/golang
+
+watcher: # Optional
+  exclude:
+    - .git
+    - node_modules
+    - /event/an/absolute/path/in/multiple/files
+
+# Projects
+
+projects:
+ - name: full
+   local:
+    - *graphql-local
+    - *grpc-api-local
+    - *elasticsearch-local
+
+ - name: graphql
+   local:
+    - *graphql-local
+   forward:
+    - *grpc-api-forward
+
+ - name: forward-only
+   forward:
+    - *graphql-forward
+    - *grpc-api-forward
+
+ - name: forward-composieux-website
+   forward:
+    - *composieux-fr-local

@@ -1,0 +1,41 @@
+# Local applications
+
+<: &graphql-local
+  name: graphql
+  path: github.com/eko/graphql
+  watch: true
+  hostname: graphql.svc.local
+  executable: go
+  args:
+    - run
+    - cmd/main.go
+  env:
+    HTTP_PORT: 8005
+  setup:
+    - go get github.com/eko/graphql
+    - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
+
+<: &grpc-api-local
+  name: grpc-api
+  path: github.com/eko/grpc-api
+  watch: true
+  hostname: grpc-api.svc.local
+  executable: go
+  args:
+    - run
+    - main.go
+  env:
+    GRPC_PORT: 8006
+  setup:
+    - go get github.com/eko/grpc-api
+    - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
+
+<: &elasticsearch-local
+  name: elasticsearch
+  path: /Users/vincent/dev/docker
+  watch: true
+  executable: docker
+  args:
+    - start
+    - -i
+    - elastic

@@ -1,0 +1,60 @@
+# Kubernetes forwards
+
+<: &kubernetes-context preprod
+
+<: &graphql-forward
+  name: graphql
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: graphql
+    hostname: graphql.svc.local
+    ports:
+     - 8080:8000
+
+<: &grpc-api-kubernetes-remote
+  name: grpc-api
+  type: kubernetes-remote
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: grpc-api
+    ports:
+     - 8080:8080
+     - 8001:8001
+
+<: &grpc-api-forward
+  name: grpc-api
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: grpc-api
+    hostname: grpc-api.svc.local
+    ports:
+     - 8080:8080
+
+<: &composieux-fr-local
+  name: composieux-fr-local
+  type: ssh
+  values:
+    remote: vincent@composieux.fr
+    args:
+      - "-i/Users/name/.ssh/private_key"
+    hostname: composieux.fr.svc.local
+    ports:
+     - 8080:80
+
+<: &composieux-fr-remote
+  name: composieux-fr-remote
+  type: ssh-remote
+  values:
+    remote: vincent@composieux.fr
+    args:
+      - "-i/Users/name/.ssh/private_key"
+    ports:
+     - 8080:80
