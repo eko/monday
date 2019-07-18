@@ -1,11 +1,13 @@
 package forwarder
 
 import (
+	"os"
 	"testing"
 
 	"github.com/eko/monday/internal/config"
 	"github.com/eko/monday/internal/tests/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestNewForwarder(t *testing.T) {
@@ -38,8 +40,46 @@ func TestNewForwarder(t *testing.T) {
 	assert.Equal(t, project.Forwards, forwarder.forwards)
 }
 
-func newForwarder(project *config.Project) *Forwarder {
-	proxy := &mocks.ProxyInterface{}
+func TestForwardAll(t *testing.T) {
+	// Given
+	os.Stdout = nil
 
-	return NewForwarder(proxy, project)
+	proxy := &mocks.ProxyInterface{}
+	proxy.
+		On("AddProxyForward", mock.AnythingOfType("string"), mock.AnythingOfType("*proxy.ProxyForward")).
+		Times(2)
+	proxy.On("Listen").Once().Return(nil)
+
+	project := &config.Project{
+		Name: "My project name",
+		Forwards: []*config.Forward{
+			&config.Forward{
+				Name: "test-kubernetes-forward",
+				Type: "kubernetes",
+				Values: config.ForwardValues{
+					Namespace: "test",
+					Ports:     []string{"8080:8080"},
+					Labels: map[string]string{
+						"app": "my-test-app",
+					},
+				},
+			},
+			&config.Forward{
+				Name: "test-ssh-forward",
+				Type: "ssh",
+				Values: config.ForwardValues{
+					Remote: "root@acme.tld",
+					Ports:  []string{"8080:8080"},
+				},
+			},
+		},
+	}
+
+	forwarder := NewForwarder(proxy, project)
+
+	// When
+	forwarder.ForwardAll()
+
+	// Then
+	assert.Len(t, forwarder.forwards, 2)
 }

@@ -1,6 +1,6 @@
 # Kubernetes forwards
 
-<: &kubernetes-context preprod
+<: &kubernetes-context context-test
 
 <: &graphql-forward
   name: graphql

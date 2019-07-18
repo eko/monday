@@ -33,6 +33,10 @@ const (
 	ProxyPortName = "ssh-proxy"
 )
 
+var (
+	defaultKubeConfigPath = fmt.Sprintf("%s/%s", os.Getenv("HOME"), "/.kube/config")
+)
+
 type DeploymentBackup struct {
 	OldImage   string
 	OldPorts   []apiv1.ContainerPort
@@ -286,10 +290,8 @@ func (f *Forwarder) getSelector() string {
 func initializeClientConfig(context string) (*restclient.Config, error) {
 	overrides := &clientcmd.ConfigOverrides{CurrentContext: context}
 
-	defaultConfigPath := fmt.Sprintf("%s/%s", os.Getenv("HOME"), "/.kube/config")
-
 	clientConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: defaultConfigPath},
+		&clientcmd.ClientConfigLoadingRules{ExplicitPath: defaultKubeConfigPath},
 		overrides,
 	).ClientConfig()
 	if err != nil {

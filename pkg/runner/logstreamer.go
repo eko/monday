@@ -48,7 +48,7 @@ func (l *Logstreamer) Write(p []byte) (n int, err error) {
 		return
 	}
 
-	err = l.OutputLines()
+	err = l.output()
 	return
 }
 
@@ -67,7 +67,7 @@ func (l *Logstreamer) Flush() error {
 	return nil
 }
 
-func (l *Logstreamer) OutputLines() (err error) {
+func (l *Logstreamer) output() (err error) {
 	for {
 		line, err := l.buf.ReadString('\n')
 		if err == io.EOF {
