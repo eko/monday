@@ -47,7 +47,8 @@ type Forwarder struct {
 	forwardType    string
 	name           string
 	clientConfig   *restclient.Config
-	clientSet      *kubernetes.Clientset
+	clientSet      kubernetes.Interface
+	restClient     restclient.Interface
 	context        string
 	namespace      string
 	ports          []string
@@ -78,6 +79,7 @@ func NewForwarder(forwardType, name, context, namespace string, ports []string, 
 		ports:          ports,
 		clientConfig:   clientConfig,
 		clientSet:      clientSet,
+		restClient:     clientSet.RESTClient(),
 		portForwarders: make(map[string]*portforward.PortForwarder, 0),
 		deployments:    make(map[string]*DeploymentBackup, 0),
 		stopChannel:    make(chan struct{}, 1),
@@ -175,8 +177,7 @@ func (f *Forwarder) forwardLocal(selector string) error {
 
 	pod := pods.Items[0]
 
-	client := f.clientSet.RESTClient()
-	request := client.Post().Resource("pods").Namespace(f.namespace).Name(pod.Name).SubResource("portforward")
+	request := f.restClient.Post().Resource("pods").Namespace(f.namespace).Name(pod.Name).SubResource("portforward")
 
 	url := url.URL{
 		Scheme:   request.URL().Scheme,

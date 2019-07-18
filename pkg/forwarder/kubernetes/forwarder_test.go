@@ -2,12 +2,29 @@ package kubernetes
 
 import (
 	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/eko/monday/internal/config"
+	clientmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/client"
+	restmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/rest"
 	"github.com/stretchr/testify/assert"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/util/flowcontrol"
 )
+
+type RESTClient http.Client
+
+func (r RESTClient) Do(request *http.Request) (*http.Response, error) {
+	return &http.Response{}, nil
+}
 
 func TestNewForwarder(t *testing.T) {
 	// Given
@@ -109,6 +126,75 @@ func TestGetStopChannel(t *testing.T) {
 	// Then
 	assert.IsType(t, make(chan struct{}), channel)
 	assert.Nil(t, err)
+}
+
+func TestForward(t *testing.T) {
+	// Given
+	initKubeConfig(t)
+	defer os.Remove(defaultKubeConfigPath)
+
+	forwarder, err := NewForwarder(config.ForwarderKubernetes, "test-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
+		"app": "my-test-app",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Mock Kubernetes Go client calls for retrieving deployment
+	deploymentInterface := &clientmocks.DeploymentInterface{}
+	deploymentInterface.On("List", metav1.ListOptions{LabelSelector: "app=my-test-app"}).
+		Return(&appsv1.DeploymentList{
+			Items: []appsv1.Deployment{},
+		})
+
+	appsV1Interface := &clientmocks.AppsV1Interface{}
+	appsV1Interface.On("Deployments", "backend").
+		Return(deploymentInterface)
+
+	clientSetMock := &clientmocks.Interface{}
+	clientSetMock.On("AppsV1").
+		Return(appsV1Interface)
+
+	// Mock Kubernetes Go client calls for retrieving pods
+	podInterface := &clientmocks.PodInterface{}
+	podInterface.On("List", metav1.ListOptions{LabelSelector: "app=my-test-app"}).
+		Return(&corev1.PodList{
+			Items: []corev1.Pod{
+				corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-test-app-bd4sk",
+					},
+				},
+			},
+		}, nil)
+
+	coreV1Interface := &clientmocks.CoreV1Interface{}
+	coreV1Interface.On("Pods", "backend").Return(podInterface)
+
+	clientSetMock.On("CoreV1").Return(coreV1Interface)
+
+	// Mock Kubernetes Rest client
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(http.StatusOK)
+		res.Write([]byte("ok, port forward is asked"))
+	}))
+
+	url, _ := url.Parse(testServer.URL)
+	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(2.0, 1)
+	restClient := RESTClient{}
+	request := restclient.NewRequest(restClient, "POST", url, "/1.0", restclient.ContentConfig{}, restclient.Serializers{}, &restclient.NoBackoff{}, rateLimiter, time.Duration(10*time.Second))
+
+	restClientMock := &restmocks.Interface{}
+	restClientMock.On("Post").Return(request)
+
+	forwarder.clientSet = clientSetMock
+	forwarder.restClient = restClientMock
+
+	// When
+	err = forwarder.Forward()
+
+	// Then
+	assert.Contains(t, err.Error(), "ok, port forward is asked")
 }
 
 // Initializes a Kubernetes configuration for test environment

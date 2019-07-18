@@ -8,7 +8,22 @@ build: ## Builds a local version of Monday from sources
 
 generate-mocks: ## Generate mocks for tests
 	@echo "> generating mocks..."
+
+	# Monday
 	mockery -name=ProxyInterface -dir=pkg/proxy/ -output internal/tests/mocks
 	mockery -name=RunnerInterface -dir=pkg/runner/ -output internal/tests/mocks
 	mockery -name=ForwarderInterface -dir=pkg/forwarder/ -output internal/tests/mocks
 	mockery -name=WatcherInterface -dir=pkg/watcher/ -output internal/tests/mocks
+
+	# Kubernetes AppsV1
+	mockery -name=Interface -dir=vendor/k8s.io/client-go/kubernetes/ -output internal/tests/mocks/kubernetes/client
+	mockery -name=AppsV1Interface -dir=vendor/k8s.io/client-go/kubernetes/typed/apps/v1/ -output internal/tests/mocks/kubernetes/client
+	mockery -name=DeploymentsGetter -dir=vendor/k8s.io/client-go/kubernetes/typed/apps/v1/ -output internal/tests/mocks/kubernetes/client
+	mockery -name=DeploymentInterface -dir=vendor/k8s.io/client-go/kubernetes/typed/apps/v1/ -output internal/tests/mocks/kubernetes/client
+
+	# Kubernetes CoreV1
+	mockery -name=CoreV1Interface -dir=vendor/k8s.io/client-go/kubernetes/typed/core/v1/ -output internal/tests/mocks/kubernetes/client
+	mockery -name=PodInterface -dir=vendor/k8s.io/client-go/kubernetes/typed/core/v1/ -output internal/tests/mocks/kubernetes/client
+
+	# Kubernetes REST Client
+	mockery -name=Interface -dir=vendor/k8s.io/client-go/rest/ -output internal/tests/mocks/kubernetes/rest

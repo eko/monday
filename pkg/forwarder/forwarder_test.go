@@ -1,7 +1,7 @@
 package forwarder
 
 import (
-	"os"
+	"fmt"
 	"testing"
 
 	"github.com/eko/monday/internal/config"
@@ -42,8 +42,6 @@ func TestNewForwarder(t *testing.T) {
 
 func TestForwardAll(t *testing.T) {
 	// Given
-	os.Stdout = nil
-
 	proxy := &mocks.ProxyInterface{}
 	proxy.
 		On("AddProxyForward", mock.AnythingOfType("string"), mock.AnythingOfType("*proxy.ProxyForward")).
@@ -53,17 +51,6 @@ func TestForwardAll(t *testing.T) {
 	project := &config.Project{
 		Name: "My project name",
 		Forwards: []*config.Forward{
-			&config.Forward{
-				Name: "test-kubernetes-forward",
-				Type: "kubernetes",
-				Values: config.ForwardValues{
-					Namespace: "test",
-					Ports:     []string{"8080:8080"},
-					Labels: map[string]string{
-						"app": "my-test-app",
-					},
-				},
-			},
 			&config.Forward{
 				Name: "test-ssh-forward",
 				Type: "ssh",
@@ -81,5 +68,13 @@ func TestForwardAll(t *testing.T) {
 	forwarder.ForwardAll()
 
 	// Then
-	assert.Len(t, forwarder.forwards, 2)
+	assert.Len(t, forwarder.forwards, 1)
+
+	for _, forward := range project.Forwards {
+		if v, ok := forwarder.forwarders.Load(forward.Name); ok {
+			assert.Len(t, v.([]ForwarderTypeInterface), 1)
+		} else {
+			t.Fatal(fmt.Sprintf("No forwarder found for forward named '%s'", forward.Name))
+		}
+	}
 }
