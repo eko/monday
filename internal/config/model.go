@@ -11,6 +11,7 @@ const (
 
 	ForwarderKubernetes       = "kubernetes"
 	ForwarderKubernetesRemote = "kubernetes-remote"
+	ForwarderProxy            = "proxy"
 	ForwarderSSH              = "ssh"
 	ForwarderSSHRemote        = "ssh-remote"
 )
@@ -20,6 +21,7 @@ var (
 	AvailableForwarders = map[string]bool{
 		ForwarderKubernetes:       true,
 		ForwarderKubernetesRemote: true,
+		ForwarderProxy:            true,
 		ForwarderSSH:              true,
 		ForwarderSSHRemote:        true,
 	}
@@ -28,6 +30,7 @@ var (
 	ProxifiedForwarders = map[string]bool{
 		ForwarderKubernetes:       true,
 		ForwarderKubernetesRemote: true,
+		ForwarderProxy:            true,
 		ForwarderSSH:              true,
 	}
 )
@@ -98,13 +101,14 @@ func (f *Forward) IsProxified() bool {
 
 // ForwardValues represents the available values for each forward type
 type ForwardValues struct {
-	Context   string            `yaml:"context"`
-	Namespace string            `yaml:"namespace"`
-	Labels    map[string]string `yaml:"labels"`
-	Hostname  string            `yaml:"hostname"`
-	Ports     []string          `yaml:"ports"`
-	Remote    string            `yaml:"remote"`
-	Args      []string          `yaml:"args"`
+	Context       string            `yaml:"context"`
+	Namespace     string            `yaml:"namespace"`
+	Labels        map[string]string `yaml:"labels"`
+	Hostname      string            `yaml:"hostname"`
+	ProxyHostname string            `yaml:"proxy_hostname"`
+	Ports         []string          `yaml:"ports"`
+	Remote        string            `yaml:"remote"`
+	Args          []string          `yaml:"args"`
 }
 
 // Watcher represents the configuration values for the file watcher component

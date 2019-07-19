@@ -58,7 +58,7 @@ func (p *Proxy) Listen() error {
 				return nil
 			}
 
-			fmt.Printf("🔌  Proxifying %s locally on %s (port %s) - forwarding to port %s\n", pf.GetHostname(), pf.LocalIP, pf.LocalPort, pf.ProxyPort)
+			fmt.Printf("🔌  Proxifying %s locally (%s:%s) <-> forwarding to %s:%s\n", pf.GetHostname(), pf.LocalIP, pf.LocalPort, pf.GetProxyHostname(), pf.ProxyPort)
 
 			go p.handleConnections(pf, key)
 		}
@@ -101,7 +101,7 @@ func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 			fmt.Printf("❌  Could not accept client connection for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
 		}
 
-		target, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%s", pf.ProxyPort))
+		target, err := net.Dial("tcp", fmt.Sprintf("%s:%s", pf.GetProxyHostname(), pf.ProxyPort))
 		if err != nil {
 			fmt.Printf("❌  Error when dialing with forwarder for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
 		}
@@ -126,7 +126,10 @@ func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 	defer p.addProxyForwardMux.Unlock()
 
 	p.generateIP(proxyForward)
-	p.generateProxyPort(proxyForward)
+
+	if proxyForward.ProxyPort == "" {
+		p.generateProxyPort(proxyForward)
+	}
 
 	err := hostfile.AddHost(proxyForward.LocalIP, proxyForward.GetHostname())
 	if err != nil {

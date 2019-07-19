@@ -100,6 +100,8 @@ watcher: # Optional
     ports:
      - 8080:8080
 
+# SSH Forwards
+
 # Example of SSH local forward: forward a specific remote port locally
 # Here, I'm forwarding on port 8080 locally my production website (port 80)
 <: &composieux-fr-local
@@ -125,6 +127,19 @@ watcher: # Optional
       - "-i/Users/name/.ssh/private_key"
     ports:
      - 8080:80
+
+# Proxy forwards
+
+# Example of Proxy forward type: this will allow you to call locally elasticsearch.svc.local:9200
+# and your call will be proxified to vpc-xxx-rO6gjlqbkwzmzde.eu-west-3.es.amazonaws.com:443
+<: &elasticsearch-proxy
+  name: elasticsearch-proxy
+  type: proxy
+  values:
+    hostname: elasticsearch.svc.local
+    proxy_hostname: vpc-xxx-rO6gjlqbkwzmzde.eu-west-3.es.amazonaws.com
+    ports:
+     - 9200:443
 
 # Projects
 

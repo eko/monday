@@ -111,7 +111,7 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 			switch forward.Type {
 			case config.ForwarderKubernetesRemote:
 				remoteProxyPort := strconv.Itoa(kubernetes.RemoteSSHProxyPort)
-				proxyForward = proxy.NewProxyForward(forward.Name, values.Hostname, remoteProxyPort, remoteProxyPort)
+				proxyForward = proxy.NewProxyForward(forward.Name, values.Hostname, values.ProxyHostname, remoteProxyPort, remoteProxyPort)
 				proxyForwards = append(proxyForwards, proxyForward)
 				f.proxy.AddProxyForward(forward.Name, proxyForward)
 
@@ -119,13 +119,16 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 
 				break PortsLoop
 
+			case config.ForwarderProxy:
+				proxyForward = proxy.NewProxyForward(forward.Name, values.Hostname, values.ProxyHostname, localPort, forwardPort)
 			default:
-				proxyForward = proxy.NewProxyForward(forward.Name, values.Hostname, localPort, forwardPort)
-				proxyForwards = append(proxyForwards, proxyForward)
-				f.proxy.AddProxyForward(forward.Name, proxyForward)
-
-				proxifiedPorts = append(proxifiedPorts, proxyForward.GetProxifiedPorts())
+				proxyForward = proxy.NewProxyForward(forward.Name, values.Hostname, values.ProxyHostname, localPort, forwardPort)
 			}
+
+			proxyForwards = append(proxyForwards, proxyForward)
+			f.proxy.AddProxyForward(forward.Name, proxyForward)
+			proxifiedPorts = append(proxifiedPorts, proxyForward.GetProxifiedPorts())
+
 		}
 	}
 

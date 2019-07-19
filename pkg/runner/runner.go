@@ -49,7 +49,7 @@ func (r *Runner) RunAll() {
 		go r.Run(application)
 
 		if application.Hostname != "" {
-			proxyForward := proxy.NewProxyForward(application.Name, application.Hostname, "", "")
+			proxyForward := proxy.NewProxyForward(application.Name, application.Hostname, "", "", "")
 			r.proxy.AddProxyForward(application.Name, proxyForward)
 		}
 	}
