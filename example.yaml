@@ -49,6 +49,10 @@ watcher: # Optional
     - start
     - -i
     - elastic
+  stop_executable: docker # Optional, but useful for stopping containers for instance
+  stop_args: # Optional
+    - stop
+    - elastic
 
 # Kubernetes forwards
 

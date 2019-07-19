@@ -118,10 +118,21 @@ func (r *Runner) Restart(application *config.Application) {
 
 // Stop stops all the currently active local applications
 func (r *Runner) Stop() error {
-	for _, cmd := range r.cmds {
-		pgid, err := syscall.Getpgid(cmd.Process.Pid)
-		if err == nil {
-			syscall.Kill(-pgid, 15)
+	for _, application := range r.applications {
+		// Kill process
+		if cmd, ok := r.cmds[application.Name]; ok {
+			pgid, err := syscall.Getpgid(cmd.Process.Pid)
+			if err == nil {
+				syscall.Kill(-pgid, 15)
+			}
+		}
+
+		// In case we have stop command, run it
+		if application.StopExecutable != "" {
+			err := exec.Command(application.StopExecutable, application.StopArgs...).Start()
+			if err != nil {
+				fmt.Printf("❌  Cannot run stop command for application '%s': %v\n", application.Name, err)
+			}
 		}
 	}
 
