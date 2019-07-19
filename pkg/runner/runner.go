@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/eko/monday/internal/config"
 	"github.com/eko/monday/pkg/proxy"
@@ -84,6 +85,7 @@ func (r *Runner) Run(application *config.Application) {
 	stderrStream := NewLogstreamer(StdErr, application.Name)
 
 	cmd := exec.Command(application.Executable, application.Args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Dir = applicationPath
 	cmd.Stdout = stdoutStream
 	cmd.Stderr = stderrStream
@@ -96,13 +98,8 @@ func (r *Runner) Run(application *config.Application) {
 
 	r.cmds[application.Name] = cmd
 
-	if err := cmd.Start(); err != nil {
+	if err := cmd.Run(); err != nil {
 		fmt.Printf("❌  Cannot run the following application: %s: %v\n", applicationPath, err)
-		return
-	}
-
-	if err := cmd.Wait(); err != nil {
-		fmt.Printf("❌  Application '%s' returned an error: %v\n", applicationPath, err)
 		return
 	}
 }
@@ -110,8 +107,9 @@ func (r *Runner) Run(application *config.Application) {
 // Restart kills the current application launch (if it exists) and launch a new one
 func (r *Runner) Restart(application *config.Application) {
 	if cmd, ok := r.cmds[application.Name]; ok {
-		if err := cmd.Process.Kill(); err != nil {
-			fmt.Printf("❌  Unable to kill application: %v\n", err)
+		pgid, err := syscall.Getpgid(cmd.Process.Pid)
+		if err == nil {
+			syscall.Kill(-pgid, 15)
 		}
 	}
 
@@ -121,7 +119,10 @@ func (r *Runner) Restart(application *config.Application) {
 // Stop stops all the currently active local applications
 func (r *Runner) Stop() error {
 	for _, cmd := range r.cmds {
-		cmd.Process.Kill()
+		pgid, err := syscall.Getpgid(cmd.Process.Pid)
+		if err == nil {
+			syscall.Kill(-pgid, 15)
+		}
 	}
 
 	return nil
