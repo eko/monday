@@ -19,7 +19,7 @@ Your new microservice development environment friend. This CLI tool allows you t
 
 ✅ Port-forward an application locally using a remote one on Kubernetes (targeting a pod via label) or over SSH
 
-✅ Forward traffic of a remote application over Kubernetes or SSH locally (see types ssh-remote & kubernetes-remote)
+✅ Forward traffic of a remote application over Kubernetes, SSH or TCP locally (see example forward types)
 
 ✅ Auto reconnect when a port-forward connection is lost
 
@@ -72,6 +72,8 @@ $ make build
 ```
 
 ## Usage
+
+[![Monday Asciinema](https://asciinema.org/a/LyhH2Gdz4JBo5bThPisZPTLpe.svg)](https://asciinema.org/a/LyhH2Gdz4JBo5bThPisZPTLpe)
 
 First, you have to initialize monday and edit your configuration file (you have a [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml)).
 Run the following command and edit the `~/monday.yaml` configuration file just created for you:
