@@ -1,6 +1,8 @@
 package ssh
 
 import (
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/eko/monday/internal/config"
@@ -72,4 +74,45 @@ func TestGetStopChannel(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.IsType(t, make(chan struct{}), channel)
+}
+
+func TestForwardLocal(t *testing.T) {
+	// Given
+	execCommand = mockExecCommand
+
+	forwarder, err := NewForwarder(config.ForwarderSSH, "root@acme.tld", "8080", "8081", []string{})
+
+	// When
+	err = forwarder.Forward()
+
+	// Then
+	assert.Nil(t, err)
+
+	assert.IsType(t, new(exec.Cmd), forwarder.cmd)
+
+	runCommand := strings.Replace(strings.Join(forwarder.cmd.Args, " "), "echo <ssh>", "ssh", -1)
+	assert.Equal(t, "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -N -L 8080:127.0.0.1:8081 root@acme.tld", runCommand)
+}
+
+func TestForwardRemote(t *testing.T) {
+	// Given
+	execCommand = mockExecCommand
+
+	forwarder, err := NewForwarder(config.ForwarderSSHRemote, "root@acme.tld", "8080", "8081", []string{})
+
+	// When
+	err = forwarder.Forward()
+
+	// Then
+	assert.Nil(t, err)
+
+	assert.IsType(t, new(exec.Cmd), forwarder.cmd)
+
+	runCommand := strings.Replace(strings.Join(forwarder.cmd.Args, " "), "echo <ssh>", "ssh", -1)
+	assert.Equal(t, "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -N -R 8080:127.0.0.1:8081 root@acme.tld", runCommand)
+}
+
+func mockExecCommand(command string, args ...string) *exec.Cmd {
+	args = append([]string{"<ssh>"}, args...)
+	return exec.Command("echo", args...)
 }

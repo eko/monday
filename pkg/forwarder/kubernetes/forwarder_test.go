@@ -13,6 +13,7 @@ import (
 	clientmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/client"
 	restmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/rest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -128,7 +129,7 @@ func TestGetStopChannel(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestForward(t *testing.T) {
+func TestForwardTypeLocal(t *testing.T) {
 	// Given
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
@@ -195,6 +196,114 @@ func TestForward(t *testing.T) {
 
 	// Then
 	assert.Contains(t, err.Error(), "ok, port forward is asked")
+}
+
+func TestForwardTypeRemote(t *testing.T) {
+	// Given
+	initKubeConfig(t)
+	defer os.Remove(defaultKubeConfigPath)
+
+	forwarder, err := NewForwarder(config.ForwarderKubernetesRemote, "test-remote-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
+		"app": "my-remote-app",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Define deployment & container mock
+	containerMock := corev1.Container{
+		Image: "acme.tld/my-remote-app",
+		Ports: []corev1.ContainerPort{
+			corev1.ContainerPort{
+				Name:          "http",
+				HostPort:      8080,
+				ContainerPort: 8080,
+			},
+		},
+	}
+
+	deploymentMock := appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-remote-app-deployment",
+		},
+		Spec: appsv1.DeploymentSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{containerMock},
+				},
+			},
+		},
+	}
+
+	// Mock Kubernetes Go client calls for retrieving deployment
+	deploymentInterface := &clientmocks.DeploymentInterface{}
+	deploymentInterface.On("List", metav1.ListOptions{LabelSelector: "app=my-remote-app"}).
+		Return(&appsv1.DeploymentList{
+			Items: []appsv1.Deployment{
+				deploymentMock,
+			},
+		}, nil)
+
+	deploymentInterface.On("Update", mock.AnythingOfType("*v1.Deployment")).Return(nil, nil)
+
+	appsV1Interface := &clientmocks.AppsV1Interface{}
+	appsV1Interface.On("Deployments", "backend").
+		Return(deploymentInterface)
+
+	// Local forward then...
+	// Mock Kubernetes Go client calls for retrieving pods
+	podInterface := &clientmocks.PodInterface{}
+	podInterface.On("List", metav1.ListOptions{LabelSelector: "app=my-remote-app"}).
+		Return(&corev1.PodList{
+			Items: []corev1.Pod{
+				corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-test-app-bd4sk",
+					},
+				},
+			},
+		}, nil)
+
+	coreV1Interface := &clientmocks.CoreV1Interface{}
+	coreV1Interface.On("Pods", "backend").Return(podInterface)
+
+	// Mock Kubernetes Rest client
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(http.StatusOK)
+		res.Write([]byte("ok, port forward is asked"))
+	}))
+
+	url, _ := url.Parse(testServer.URL)
+	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(2.0, 1)
+	restClient := RESTClient{}
+	request := restclient.NewRequest(restClient, "POST", url, "/1.0", restclient.ContentConfig{}, restclient.Serializers{}, &restclient.NoBackoff{}, rateLimiter, time.Duration(10*time.Second))
+
+	// ClientSet and ClientRest
+	clientSetMock := &clientmocks.Interface{}
+	clientSetMock.On("AppsV1").
+		Return(appsV1Interface)
+	clientSetMock.On("CoreV1").
+		Return(coreV1Interface)
+
+	restClientMock := &restmocks.Interface{}
+	restClientMock.On("Post").Return(request)
+
+	// Replace mocked properties
+	forwarder.clientSet = clientSetMock
+	forwarder.restClient = restClientMock
+
+	// When
+	err = forwarder.Forward()
+
+	// Then
+	assert.Nil(t, err)
+
+	if deploy, ok := forwarder.deployments["test-remote-forward"]; ok {
+		assert.Equal(t, deploy.OldImage, "acme.tld/my-remote-app")
+		assert.Equal(t, deploy.Deployment.Spec.Template.Spec.Containers[0].Image, "ekofr/monday-proxy")
+	} else {
+		t.Fatal("Cannot retrieve backuped deployment image when doing remote-forward")
+	}
 }
 
 // Initializes a Kubernetes configuration for test environment

@@ -18,6 +18,10 @@ type Forwarder struct {
 	readyChannel chan struct{}
 }
 
+var (
+	execCommand = exec.Command
+)
+
 func NewForwarder(forwardType, remote, localPort, forwardPort string, args []string) (*Forwarder, error) {
 	return &Forwarder{
 		forwardType:  forwardType,
@@ -71,7 +75,7 @@ func (f *Forwarder) Forward() error {
 		host,
 	}, f.args...)
 
-	f.cmd = exec.Command("ssh", arguments...)
+	f.cmd = execCommand("ssh", arguments...)
 
 	if err := f.cmd.Start(); err != nil {
 		return fmt.Errorf("Cannot run the SSH command for port-forwarding '%s' on host '%s': %v", mapping, host, err)

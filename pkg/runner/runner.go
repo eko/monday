@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	hasSetup = false
+	execCommand = exec.Command
+	hasSetup    = false
 )
 
 type RunnerInterface interface {
