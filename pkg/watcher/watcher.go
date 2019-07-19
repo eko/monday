@@ -76,6 +76,8 @@ func (w *Watcher) watchApplication(application *config.Application) error {
 	fileWatcher.IgnoreHiddenFiles(true)
 	fileWatcher.FilterOps(watcher.Write, watcher.Create, watcher.Remove)
 
+	w.fileWatchers[application.Name] = fileWatcher
+
 	if err := fileWatcher.AddRecursive(application.GetPath()); err != nil {
 		fmt.Printf("❌  Unable to watch directory of application '%s': %v\n", application.Name, err)
 	}
