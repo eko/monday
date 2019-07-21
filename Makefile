@@ -10,10 +10,11 @@ generate-mocks: ## Generate mocks for tests
 	@echo "> generating mocks..."
 
 	# Monday
-	mockery -name=ProxyInterface -dir=pkg/proxy/ -output internal/tests/mocks
-	mockery -name=RunnerInterface -dir=pkg/runner/ -output internal/tests/mocks
-	mockery -name=ForwarderInterface -dir=pkg/forwarder/ -output internal/tests/mocks
-	mockery -name=WatcherInterface -dir=pkg/watcher/ -output internal/tests/mocks
+	mockery -name=HostfileInterface -dir=pkg/hostfile/ -output internal/tests/mocks/hostfile
+	mockery -name=ProxyInterface -dir=pkg/proxy/ -output internal/tests/mocks/proxy
+	mockery -name=RunnerInterface -dir=pkg/runner/ -output internal/tests/mocks/runner
+	mockery -name=ForwarderInterface -dir=pkg/forwarder/ -output internal/tests/mocks/forwarder
+	mockery -name=WatcherInterface -dir=pkg/watcher/ -output internal/tests/mocks/watcher
 
 	# Kubernetes AppsV1
 	mockery -name=Interface -dir=vendor/k8s.io/client-go/kubernetes/ -output internal/tests/mocks/kubernetes/client

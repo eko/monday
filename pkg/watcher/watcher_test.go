@@ -6,15 +6,16 @@ import (
 	"time"
 
 	"github.com/eko/monday/internal/config"
-	"github.com/eko/monday/internal/tests/mocks"
+	forwardermocks "github.com/eko/monday/internal/tests/mocks/forwarder"
+	runnermocks "github.com/eko/monday/internal/tests/mocks/runner"
 	watcherlib "github.com/radovskyb/watcher"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewWatcher(t *testing.T) {
 	// Given
-	runner := &mocks.RunnerInterface{}
-	forwarder := &mocks.ForwarderInterface{}
+	runner := &runnermocks.RunnerInterface{}
+	forwarder := &forwardermocks.ForwarderInterface{}
 
 	project := getProjectMock()
 
@@ -43,11 +44,11 @@ func TestNewWatcher(t *testing.T) {
 
 func TestWatch(t *testing.T) {
 	// Given
-	runner := &mocks.RunnerInterface{}
+	runner := &runnermocks.RunnerInterface{}
 	runner.On("SetupAll").Once()
 	runner.On("RunAll").Once()
 
-	forwarder := &mocks.ForwarderInterface{}
+	forwarder := &forwardermocks.ForwarderInterface{}
 	forwarder.On("ForwardAll").Once()
 
 	project := getProjectMock()
@@ -60,11 +61,11 @@ func TestWatch(t *testing.T) {
 
 func TestWatchWhenFileChange(t *testing.T) {
 	// Given
-	runner := &mocks.RunnerInterface{}
+	runner := &runnermocks.RunnerInterface{}
 	runner.On("SetupAll").Once()
 	runner.On("RunAll").Once()
 
-	forwarder := &mocks.ForwarderInterface{}
+	forwarder := &forwardermocks.ForwarderInterface{}
 	forwarder.On("ForwardAll").Once()
 
 	project := getProjectMock()
@@ -100,11 +101,11 @@ func TestWatchWhenFileChange(t *testing.T) {
 
 func TestStop(t *testing.T) {
 	// Given
-	runner := &mocks.RunnerInterface{}
+	runner := &runnermocks.RunnerInterface{}
 	runner.On("SetupAll").Once()
 	runner.On("RunAll").Once()
 
-	forwarder := &mocks.ForwarderInterface{}
+	forwarder := &forwardermocks.ForwarderInterface{}
 	forwarder.On("ForwardAll").Once()
 
 	project := getProjectMock()

@@ -12,6 +12,7 @@ type ProxyForward struct {
 	ProxyPort     string
 }
 
+// NewProxyForward returns a new proxy port-forward instance
 func NewProxyForward(name, hostname, proxyHostname, localPort, forwardPort string) *ProxyForward {
 	proxyForward := &ProxyForward{
 		Name:          name,
@@ -30,18 +31,23 @@ func NewProxyForward(name, hostname, proxyHostname, localPort, forwardPort strin
 	return proxyForward
 }
 
+// SetLocalIP sets local attributed IP to this forward
 func (p *ProxyForward) SetLocalIP(ip string) {
 	p.LocalIP = ip
 }
 
+// SetProxyPort sets proxy attributed port to this forward
 func (p *ProxyForward) SetProxyPort(port string) {
 	p.ProxyPort = port
 }
 
+// GetProxifiedPorts returns the couple of proxified ports (proxy attributed port:forward port)
 func (p *ProxyForward) GetProxifiedPorts() string {
 	return fmt.Sprintf("%s:%s", p.ProxyPort, p.ForwardPort)
 }
 
+// GetHostname returns the hostname (if defined) of this proxy forward, elsewhere uses the
+// service name
 func (p *ProxyForward) GetHostname() string {
 	if p.Hostname != "" {
 		return p.Hostname

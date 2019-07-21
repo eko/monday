@@ -8,6 +8,7 @@ import (
 
 	"github.com/eko/monday/internal/config"
 	"github.com/eko/monday/pkg/forwarder"
+	"github.com/eko/monday/pkg/hostfile"
 	"github.com/eko/monday/pkg/proxy"
 	"github.com/eko/monday/pkg/runner"
 	"github.com/eko/monday/pkg/watcher"
@@ -79,8 +80,14 @@ func run(conf *config.Config, choice string) {
 		panic(err)
 	}
 
+	// Initializes hosts file manager
+	hostfile, err := hostfile.NewClient()
+	if err != nil {
+		panic(err)
+	}
+
 	// Initializes proxy
-	proxyComponent = proxy.NewProxy()
+	proxyComponent = proxy.NewProxy(hostfile)
 
 	// Initializes runner
 	runnerComponent = runner.NewRunner(proxyComponent, project)

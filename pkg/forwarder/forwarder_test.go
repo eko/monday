@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/eko/monday/internal/config"
-	"github.com/eko/monday/internal/tests/mocks"
+	mocks "github.com/eko/monday/internal/tests/mocks/proxy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

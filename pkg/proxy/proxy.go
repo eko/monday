@@ -11,6 +11,8 @@ import (
 )
 
 const (
+	// ProxyPortStart is the first port that will be allocated by the proxy component.
+	// Others will be incremented by 1 each time
 	ProxyPortStart = "9400"
 )
 
@@ -20,8 +22,10 @@ type ProxyInterface interface {
 	AddProxyForward(name string, proxyForward *ProxyForward)
 }
 
+// Proxy represents the proxy component instance
 type Proxy struct {
 	ProxyForwards      map[string][]*ProxyForward
+	hostfile           hostfile.HostfileInterface
 	listeners          map[string]net.Listener
 	listening          bool
 	addProxyForwardMux sync.Mutex
@@ -31,9 +35,11 @@ type Proxy struct {
 	ipLastByte         int
 }
 
-func NewProxy() *Proxy {
+// NewProxy initializes a new proxy component instance
+func NewProxy(hostfile hostfile.HostfileInterface) *Proxy {
 	return &Proxy{
 		ProxyForwards: make(map[string][]*ProxyForward, 0),
+		hostfile:      hostfile,
 		listeners:     make(map[string]net.Listener),
 		listening:     true,
 		latestPort:    ProxyPortStart,
@@ -125,13 +131,16 @@ func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 	p.addProxyForwardMux.Lock()
 	defer p.addProxyForwardMux.Unlock()
 
-	p.generateIP(proxyForward)
+	err := p.generateIP(proxyForward)
+	if err != nil {
+		fmt.Printf("❌  An error has occured while generating IP address for '%s': %v\n", proxyForward.Name, err)
+	}
 
 	if proxyForward.ProxyPort == "" {
 		p.generateProxyPort(proxyForward)
 	}
 
-	err := hostfile.AddHost(proxyForward.LocalIP, proxyForward.GetHostname())
+	err = p.hostfile.AddHost(proxyForward.LocalIP, proxyForward.GetHostname())
 	if err != nil {
 		fmt.Printf("❌  An error has occured while trying to write host file for application '%s' (ip: %s): %v\n", proxyForward.Name, proxyForward.LocalIP, err)
 	}
