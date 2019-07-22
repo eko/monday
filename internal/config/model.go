@@ -37,9 +37,10 @@ var (
 
 // Config represents the root configuration item
 type Config struct {
-	GoPath   string     `yaml:"gopath"`
-	Projects []*Project `yaml:"projects"`
-	Watcher  *Watcher   `yaml:"watcher"`
+	GoPath     string     `yaml:"gopath"`
+	KubeConfig string     `yaml:"kubeconfig"`
+	Projects   []*Project `yaml:"projects"`
+	Watcher    *Watcher   `yaml:"watcher"`
 }
 
 // Project represents a project name, that could be a group of multiple projects

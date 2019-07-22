@@ -62,6 +62,11 @@ func Load() (*Config, error) {
 		os.Setenv("GOPATH", conf.GoPath)
 	}
 
+	// Set Kubeconfig filepath if defined in configuration
+	if conf.KubeConfig != "" {
+		os.Setenv("MONDAY_KUBE_CONFIG", conf.KubeConfig)
+	}
+
 	return &conf, nil
 }
 

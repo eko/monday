@@ -1,5 +1,6 @@
 # Settings
 
+kubeconfig: /dev/custom/.kube/config # Optional, default to user's .kube/config file path
 gopath: /dev/golang # Optional, default to user's $GOPATH env var
 
 watcher: # Optional

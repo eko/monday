@@ -60,7 +60,9 @@ type Forwarder struct {
 }
 
 func NewForwarder(forwardType, name, context, namespace string, ports []string, labels map[string]string) (*Forwarder, error) {
-	clientConfig, err := initializeClientConfig(context)
+	kubeConfigPath := getKubeConfigPath()
+
+	clientConfig, err := initializeClientConfig(context, kubeConfigPath)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +104,7 @@ func (f *Forwarder) GetStopChannel() chan struct{} {
 	return f.readyChannel
 }
 
+// Forward method executes the local or remote port-forward depending on the given type
 func (f *Forwarder) Forward() error {
 	selector := f.getSelector()
 
@@ -288,11 +291,11 @@ func (f *Forwarder) getSelector() string {
 	return selector
 }
 
-func initializeClientConfig(context string) (*restclient.Config, error) {
+func initializeClientConfig(context string, kubeConfigPath string) (*restclient.Config, error) {
 	overrides := &clientcmd.ConfigOverrides{CurrentContext: context}
 
 	clientConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: defaultKubeConfigPath},
+		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeConfigPath},
 		overrides,
 	).ClientConfig()
 	if err != nil {
@@ -314,4 +317,12 @@ func initializeClientSet(clientConfig *restclient.Config) (*kubernetes.Clientset
 func buildPath(request *restclient.Request) string {
 	parts := strings.Split(request.URL().Path, "/namespaces")
 	return parts[0] + "/api/v1/namespaces" + parts[1]
+}
+
+func getKubeConfigPath() string {
+	if value := os.Getenv("MONDAY_KUBE_CONFIG"); value != "" {
+		return value
+	}
+
+	return defaultKubeConfigPath
 }

@@ -25,8 +25,9 @@ func TestLoadSingleFile(t *testing.T) {
 		".git",
 		"node_modules",
 	})
-}
+	assert.Equal(t, conf.KubeConfig, "/home/test/.customkube/config")
 
+}
 func TestLoadMultipleFiles(t *testing.T) {
 	// Given
 	dir, _ := os.Getwd()

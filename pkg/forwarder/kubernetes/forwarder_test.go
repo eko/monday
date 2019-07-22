@@ -57,6 +57,26 @@ func TestNewForwarder(t *testing.T) {
 	assert.Len(t, forwarder.deployments, 0)
 }
 
+func TestGetKubeConfigPathWhenDefault(t *testing.T) {
+	// When
+	configPath := getKubeConfigPath()
+
+	// Then
+	assert.Equal(t, configPath, defaultKubeConfigPath)
+}
+
+func TestGetKubeConfigPathWhenCustom(t *testing.T) {
+	// Given
+	os.Setenv("MONDAY_KUBE_CONFIG", "/tmp/custom/.kube/test.config")
+	defer os.Setenv("MONDAY_KUBE_CONFIG", "")
+
+	// When
+	configPath := getKubeConfigPath()
+
+	// Then
+	assert.Equal(t, configPath, "/tmp/custom/.kube/test.config")
+}
+
 func TestGetForwardType(t *testing.T) {
 	// Given
 	initKubeConfig(t)
