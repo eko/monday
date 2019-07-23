@@ -49,7 +49,9 @@ func generateIP(a byte, b byte, c byte, d int, port string) (net.IP, error) {
 		if err == nil {
 			return net.IPv4(a, b, c, byte(i)), nil
 		}
-		conn.Close()
+		if conn != nil {
+			conn.Close()
+		}
 	}
 
 	return net.IP{}, fmt.Errorf("Unable to find an available IP/Port (ip: %d.%d.%d.%d:%s)", a, b, c, d, port)
