@@ -17,6 +17,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
+        _ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 const (
