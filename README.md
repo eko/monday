@@ -112,7 +112,7 @@ $ monday edit
 
 Configuration of Monday lives in one or multiple YAML files, depending on how you want to organize your files.
 
-By default, `monday init` will initiates a `~/monday.yaml` file.
+By default, `monday init` will initiates a `~/monday.yaml` file. You can customize the configuration directory by setting the `MONDAY_CONFIG_PATH` environment variable.
 
 Please note that you can also split this configuration in multiple files by respecting the following pattern: `~/monday.<something>.yaml`, for instance:
 * `~/monday.localapps.yaml`

@@ -20,13 +20,20 @@ const (
 )
 
 var (
-	homeDirectory = os.Getenv("HOME")
-	Filepath      = fmt.Sprintf("%s/%s", homeDirectory, Filename)
+	defaultConfigPath = os.Getenv("HOME")
+
+	// Filepath is the path of the YAML configuration files when you
+	// just have a single config file
+	Filepath string
 
 	// MultipleFilepath is the path of the YAML configuration files when
 	// you define multiple config files
-	MultipleFilepath = fmt.Sprintf("%s/%s", homeDirectory, MultipleFilenamePattern)
+	MultipleFilepath string
 )
+
+func init() {
+	setConfigFilePaths()
+}
 
 // Load method loads the configuration from the YAML configuration file
 func Load() (*Config, error) {
@@ -112,7 +119,7 @@ func createConfigFromMultiple(matches []string) error {
 // CheckConfigFileExists ensures that config file is present before going further
 func CheckConfigFileExists() error {
 	if _, err := os.Stat(Filepath); os.IsNotExist(err) {
-		return errors.New("Configuration file not found in your home directory. If you run for the first time, please use 'init' command")
+		return errors.New("Configuration file not found. If you run for the first time, please use 'init' command")
 	}
 
 	return nil
@@ -138,4 +145,17 @@ func (c *Config) GetProjectByName(name string) (*Project, error) {
 	}
 
 	return nil, fmt.Errorf("Unable to find project name '%s' in the configuration", name)
+}
+
+func getConfigPath() string {
+	if value := os.Getenv("MONDAY_CONFIG_PATH"); value != "" {
+		return value
+	}
+
+	return defaultConfigPath
+}
+
+func setConfigFilePaths() {
+	Filepath = fmt.Sprintf("%s/%s", getConfigPath(), Filename)
+	MultipleFilepath = fmt.Sprintf("%s/%s", getConfigPath(), MultipleFilenamePattern)
 }

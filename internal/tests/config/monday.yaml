@@ -1,0 +1,54 @@
+# Settings
+
+gopath: /dev/golang
+
+watcher: # Optional
+  exclude:
+    - .git
+    - node_modules
+
+# Kubernetes forwards
+
+<: &kubernetes-context context-test
+
+<: &grpc-api-forward
+  name: grpc-api
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: grpc-api
+    hostname: grpc-api.svc.local
+    ports:
+     - 8080:8080
+
+# Local applications
+
+<: &graphql-local
+  name: graphql
+  path: github.com/eko/graphql
+  watch: true
+  hostname: graphql.svc.local
+  executable: go
+  args:
+    - run
+    - cmd/main.go
+  env:
+    HTTP_PORT: 8005
+  setup:
+    - go get github.com/eko/graphql
+    - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
+
+# Projects
+
+projects:
+ - name: graphql-only
+   local:
+    - *graphql-local
+
+ - name: graphql
+   local:
+    - *graphql-local
+   forward:
+    - *grpc-api-forward

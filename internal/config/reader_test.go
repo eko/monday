@@ -10,8 +10,8 @@ import (
 func TestLoadSingleFile(t *testing.T) {
 	// Given
 	dir, _ := os.Getwd()
-	Filepath = dir + "/../tests/config/config.yaml"
-	MultipleFilepath = dir + "/../tests/config/config.unknown.*.yaml"
+	Filepath = dir + "/../tests/config/monday.yaml"
+	MultipleFilepath = dir + "/../tests/config/monday.unknown.*.yaml"
 
 	// When
 	conf, err := Load()
@@ -20,19 +20,18 @@ func TestLoadSingleFile(t *testing.T) {
 	assert.IsType(t, new(Config), conf)
 	assert.Nil(t, err)
 
-	assert.Len(t, conf.Projects, 4)
+	assert.Len(t, conf.Projects, 2)
 	assert.Equal(t, conf.Watcher.Exclude, []string{
 		".git",
 		"node_modules",
 	})
-	assert.Equal(t, conf.KubeConfig, "/home/test/.customkube/config")
-
 }
+
 func TestLoadMultipleFiles(t *testing.T) {
 	// Given
 	dir, _ := os.Getwd()
 	Filepath = dir + "/../tests/config/unknown.yaml"
-	MultipleFilepath = dir + "/../tests/config/config.multiple.*.yaml"
+	MultipleFilepath = dir + "/../tests/config/monday.multiple.*.yaml"
 
 	// Remove single config created file after test
 	defer os.Remove(Filepath)
@@ -52,11 +51,34 @@ func TestLoadMultipleFiles(t *testing.T) {
 	})
 }
 
+func TestLoadWhenCustomDirectory(t *testing.T) {
+	// Given
+	dir, _ := os.Getwd()
+	os.Setenv("MONDAY_CONFIG_PATH", dir+"/../tests/config")
+
+	setConfigFilePaths() // Normally run during package init()
+
+	Filepath = dir + "/../tests/config/unknown.yaml" // don't read the single file
+
+	// When
+	conf, err := Load()
+
+	// Then
+	assert.IsType(t, new(Config), conf)
+	assert.Nil(t, err)
+
+	assert.Len(t, conf.Projects, 2)
+	assert.Equal(t, conf.Watcher.Exclude, []string{
+		".git",
+		"node_modules",
+	})
+}
+
 func TestGetProjectNames(t *testing.T) {
 	// Given
 	dir, _ := os.Getwd()
-	Filepath = dir + "/../tests/config/config.yaml"
-	MultipleFilepath = dir + "/../tests/config/config.unknown.*.yaml"
+	Filepath = dir + "/../tests/config/unknown.yaml"
+	MultipleFilepath = dir + "/../tests/config/monday.*.yaml"
 
 	conf, err := Load()
 
@@ -76,8 +98,8 @@ func TestGetProjectNames(t *testing.T) {
 func TestGetProjectByName(t *testing.T) {
 	// Given
 	dir, _ := os.Getwd()
-	Filepath = dir + "/../tests/config/config.yaml"
-	MultipleFilepath = dir + "/../tests/config/config.unknown.*.yaml"
+	Filepath = dir + "/../tests/config/unknown.yaml"
+	MultipleFilepath = dir + "/../tests/config/monday.*.yaml"
 
 	conf, err := Load()
 
@@ -126,8 +148,8 @@ func TestGetProjectByName(t *testing.T) {
 func TestGetProjectByNameWhenProjectNotFound(t *testing.T) {
 	// Given
 	dir, _ := os.Getwd()
-	Filepath = dir + "/../tests/config/config.yaml"
-	MultipleFilepath = dir + "/../tests/config/config.unknown.*.yaml"
+	Filepath = dir + "/../tests/config/monday.yaml"
+	MultipleFilepath = dir + "/../tests/config/monday.unknown.*.yaml"
 
 	conf, err := Load()
 
