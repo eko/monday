@@ -45,6 +45,7 @@ func main() {
 		},
 	}
 
+	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(editCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(runCmd)

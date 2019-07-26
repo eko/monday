@@ -6,6 +6,9 @@ help:
 build: ## Builds a local version of Monday from sources
 	go build -ldflags "-X main.Version=sources-$(shell git rev-parse --short=5 HEAD)" -o monday ./cmd && mv monday /usr/local/bin
 
+build-binary: ## Builds a single binary of Monday from sources
+	/usr/local/bin/go build -ldflags "-X main.Version=sources-$(shell git rev-parse --short=5 HEAD)" -o monday ./cmd
+
 generate-mocks: ## Generate mocks for tests
 	@echo "> generating mocks..."
 
