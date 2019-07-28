@@ -35,6 +35,14 @@ You can download and setup Monday binary by running the following command on you
 $ curl https://composieux.fr/getmonday.sh | sh
 ```
 
+### Homebrew (macOS)
+
+```bash
+$ brew install eko/homebrew-tap/monday
+```
+
+This will install the latest available release
+
 ### Download binary
 
 You can download the latest version of the binary built for your architecture here:
