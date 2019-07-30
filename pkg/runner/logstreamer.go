@@ -2,10 +2,11 @@ package runner
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"regexp"
+
+	"github.com/eko/monday/internal/ui"
 )
 
 const (
@@ -21,9 +22,11 @@ type Logstreamer struct {
 	colorOkay  string
 	colorFail  string
 	colorReset string
+
+	view ui.ViewInterface
 }
 
-func NewLogstreamer(stdType string, name string) *Logstreamer {
+func NewLogstreamer(stdType string, name string, view ui.ViewInterface) *Logstreamer {
 	streamer := &Logstreamer{
 		buf:        bytes.NewBuffer([]byte("")),
 		stdType:    stdType,
@@ -31,6 +34,7 @@ func NewLogstreamer(stdType string, name string) *Logstreamer {
 		colorOkay:  "",
 		colorFail:  "",
 		colorReset: "",
+		view:       view,
 	}
 
 	hasColors := regexp.MustCompile(`^(xterm|screen)`)
@@ -95,7 +99,7 @@ func (l *Logstreamer) out(str string) (err error) {
 		str = l.stdType + str
 	}
 
-	fmt.Print(str)
+	l.view.Write(str)
 
 	return nil
 }

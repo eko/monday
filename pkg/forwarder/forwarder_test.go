@@ -6,6 +6,7 @@ import (
 
 	"github.com/eko/monday/internal/config"
 	mocks "github.com/eko/monday/internal/tests/mocks/proxy"
+	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -30,8 +31,11 @@ func TestNewForwarder(t *testing.T) {
 		},
 	}
 
+	view := &uimocks.ViewInterface{}
+	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+
 	// When
-	forwarder := NewForwarder(proxy, project)
+	forwarder := NewForwarder(view, proxy, project)
 
 	// Then
 	assert.IsType(t, new(Forwarder), forwarder)
@@ -62,7 +66,10 @@ func TestForwardAll(t *testing.T) {
 		},
 	}
 
-	forwarder := NewForwarder(proxy, project)
+	view := &uimocks.ViewInterface{}
+	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+
+	forwarder := NewForwarder(view, proxy, project)
 
 	// When
 	forwarder.ForwardAll()

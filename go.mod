@@ -5,7 +5,10 @@ go 1.12
 require (
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
+	github.com/jroimartin/gocui v0.4.0
 	github.com/manifoldco/promptui v0.3.2
+	github.com/mattn/go-runewidth v0.0.4 // indirect
+	github.com/nsf/termbox-go v0.0.0-20190624072549-eeb6cd0a1762 // indirect
 	github.com/radovskyb/watcher v1.0.6
 	github.com/spf13/cobra v0.0.3
 	github.com/stretchr/testify v1.3.0

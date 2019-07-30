@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/internal/ui"
 	"github.com/eko/monday/pkg/forwarder"
 	"github.com/eko/monday/pkg/hostfile"
 	"github.com/eko/monday/pkg/proxy"
@@ -14,6 +15,8 @@ import (
 	"github.com/eko/monday/pkg/watcher"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+
+	"github.com/jroimartin/gocui"
 )
 
 const (
@@ -76,6 +79,16 @@ func selectProject(conf *config.Config) string {
 }
 
 func run(conf *config.Config, choice string) {
+	layout := ui.NewLayout()
+	layout.Init()
+	defer layout.GetGui().Close()
+
+	if err := layout.GetGui().SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+		panic(err)
+	}
+
+	layout.GetStatusView().Writef(" ⇢  %s | Commands: ←/→: select view | ↑/↓: scroll up/down | a: toggle autoscroll | f: toggle fullscreen", choice)
+
 	project, err := conf.GetProjectByName(choice)
 	if err != nil {
 		panic(err)
@@ -87,18 +100,17 @@ func run(conf *config.Config, choice string) {
 		panic(err)
 	}
 
-	// Initializes proxy
-	proxyComponent = proxy.NewProxy(hostfile)
+	proxyComponent = proxy.NewProxy(layout.GetProxyView(), hostfile)
+	runnerComponent = runner.NewRunner(layout.GetLogsView(), proxyComponent, project)
+	forwarderComponent = forwarder.NewForwarder(layout.GetForwardsView(), proxyComponent, project)
 
-	// Initializes runner
-	runnerComponent = runner.NewRunner(proxyComponent, project)
-
-	// Initializes forwarder
-	forwarderComponent = forwarder.NewForwarder(proxyComponent, project)
-
-	// Initializes watcher
 	watcherComponent = watcher.NewWatcher(runnerComponent, forwarderComponent, conf.Watcher, project)
 	watcherComponent.Watch()
+
+	if err := layout.GetGui().MainLoop(); err != nil && err != gocui.ErrQuit {
+		fmt.Println(err)
+		stopAll()
+	}
 }
 
 // Handle for an exit signal in order to quit application on a proper way (shutting down connections and servers).
@@ -108,10 +120,22 @@ func handleExitSignal() {
 
 	<-stop
 
+	stopAll()
+}
+
+func stopAll() {
 	fmt.Println("\n👋  Bye, closing your local applications and remote connections now")
 
 	forwarderComponent.Stop()
 	proxyComponent.Stop()
 	runnerComponent.Stop()
 	watcherComponent.Stop()
+
+	os.Exit(0)
+}
+
+func quit(g *gocui.Gui, v *gocui.View) error {
+	g.Close()
+	stopAll()
+	return gocui.ErrQuit
 }

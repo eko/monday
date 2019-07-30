@@ -3,11 +3,14 @@ package runner
 import (
 	"testing"
 
+	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewLogstreamer(t *testing.T) {
 	// Given
+	view := &uimocks.ViewInterface{}
+
 	testCases := []struct {
 		stdType string
 		name    string
@@ -18,7 +21,7 @@ func TestNewLogstreamer(t *testing.T) {
 
 	for _, testCase := range testCases {
 		// When
-		streamer := NewLogstreamer(testCase.stdType, testCase.name)
+		streamer := NewLogstreamer(testCase.stdType, testCase.name, view)
 
 		// Then
 		assert.IsType(t, new(Logstreamer), streamer)

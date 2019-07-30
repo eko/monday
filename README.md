@@ -80,8 +80,7 @@ $ make build
 ```
 
 ## Usage
-
-[![Monday Asciinema](https://asciinema.org/a/LyhH2Gdz4JBo5bThPisZPTLpe.svg)](https://asciinema.org/a/LyhH2Gdz4JBo5bThPisZPTLpe)
+[![Monday Asciinema](https://asciinema.org/a/aB9ZkCmJS6m1b4uv8Dio1i59U.svg)](https://asciinema.org/a/aB9ZkCmJS6m1b4uv8Dio1i59U)
 
 First, you have to initialize monday and edit your configuration file (you have a [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml)).
 Run the following command and edit the `~/monday.yaml` configuration file just created for you:

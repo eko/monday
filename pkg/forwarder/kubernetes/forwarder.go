@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/internal/ui"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,6 +46,7 @@ type DeploymentBackup struct {
 }
 
 type Forwarder struct {
+	view           ui.ViewInterface
 	forwardType    string
 	name           string
 	clientConfig   *restclient.Config
@@ -60,7 +62,7 @@ type Forwarder struct {
 	readyChannel   chan struct{}
 }
 
-func NewForwarder(forwardType, name, context, namespace string, ports []string, labels map[string]string) (*Forwarder, error) {
+func NewForwarder(view ui.ViewInterface, forwardType, name, context, namespace string, ports []string, labels map[string]string) (*Forwarder, error) {
 	kubeConfigPath := getKubeConfigPath()
 
 	clientConfig, err := initializeClientConfig(context, kubeConfigPath)
@@ -74,6 +76,7 @@ func NewForwarder(forwardType, name, context, namespace string, ports []string, 
 	}
 
 	return &Forwarder{
+		view:           view,
 		forwardType:    forwardType,
 		name:           name,
 		context:        context,
@@ -160,7 +163,7 @@ func (f *Forwarder) Stop() error {
 
 		_, err = deploymentsClient.Update(&deployment)
 		if err != nil {
-			fmt.Printf("❌  An error has occured while stopping/resetting a deployment: %v\n", err)
+			f.view.Writef("❌  An error has occured while stopping/resetting a deployment: %v\n", err)
 		}
 	}
 
@@ -197,7 +200,7 @@ func (f *Forwarder) forwardLocal(selector string) error {
 
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", &url)
 
-	l := NewLogstreamer(pod.Name)
+	l := NewLogstreamer(f.view, pod.Name)
 
 	fw, err := portforward.New(dialer, f.ports, f.stopChannel, f.readyChannel, l, l)
 	if err != nil {
@@ -233,7 +236,7 @@ func (f *Forwarder) forwardRemote(selector string) error {
 	container := deployment.Spec.Template.Spec.Containers[0]
 
 	if _, ok := f.deployments[f.name]; !ok {
-		fmt.Printf("📡  Setting up proxy on application '%s', please wait some seconds for pod to be ready...\n", deployment.Name)
+		f.view.Writef("📡  Setting up proxy on application '%s', please wait some seconds for pod to be ready...\n", deployment.Name)
 
 		f.deployments[f.name] = &DeploymentBackup{
 			OldImage:   container.Image,
@@ -267,7 +270,7 @@ func (f *Forwarder) forwardRemote(selector string) error {
 
 	_, err = deploymentsClient.Update(&deployment)
 	if err != nil {
-		fmt.Println(err)
+		f.view.Write(err.Error())
 	}
 
 	time.Sleep(time.Duration(5 * time.Second))

@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/eko/monday/internal/ui"
+
 	"github.com/eko/monday/internal/config"
 )
 
 type Forwarder struct {
+	view         ui.ViewInterface
 	forwardType  string
 	remote       string
 	localPort    string
@@ -22,8 +25,9 @@ var (
 	execCommand = exec.Command
 )
 
-func NewForwarder(forwardType, remote, localPort, forwardPort string, args []string) (*Forwarder, error) {
+func NewForwarder(view ui.ViewInterface, forwardType, remote, localPort, forwardPort string, args []string) (*Forwarder, error) {
 	return &Forwarder{
+		view:         view,
 		forwardType:  forwardType,
 		remote:       remote,
 		localPort:    localPort,
