@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/eko/monday/internal/ui"
 	"github.com/eko/monday/pkg/hostfile"
 )
 
@@ -33,10 +34,11 @@ type Proxy struct {
 	latestPort         string
 	attributedIPs      map[string]net.IP
 	ipLastByte         int
+	view               ui.ViewInterface
 }
 
 // NewProxy initializes a new proxy component instance
-func NewProxy(hostfile hostfile.HostfileInterface) *Proxy {
+func NewProxy(view ui.ViewInterface, hostfile hostfile.HostfileInterface) *Proxy {
 	return &Proxy{
 		ProxyForwards: make(map[string][]*ProxyForward, 0),
 		hostfile:      hostfile,
@@ -45,6 +47,7 @@ func NewProxy(hostfile hostfile.HostfileInterface) *Proxy {
 		latestPort:    ProxyPortStart,
 		attributedIPs: make(map[string]net.IP, 0),
 		ipLastByte:    1,
+		view:          view,
 	}
 }
 
@@ -64,7 +67,7 @@ func (p *Proxy) Listen() error {
 				return nil
 			}
 
-			fmt.Printf("🔌  Proxifying %s locally (%s:%s) <-> forwarding to %s:%s\n", pf.GetHostname(), pf.LocalIP, pf.LocalPort, pf.GetProxyHostname(), pf.ProxyPort)
+			p.view.Writef("🔌  Proxifying %s locally (%s:%s) <-> forwarding to %s:%s\n", pf.GetHostname(), pf.LocalIP, pf.LocalPort, pf.GetProxyHostname(), pf.ProxyPort)
 
 			go p.handleConnections(pf, key)
 		}
@@ -80,7 +83,7 @@ func (p *Proxy) Stop() error {
 	for name, listener := range p.listeners {
 		err := listener.Close()
 		if err != nil {
-			fmt.Printf("❌  An error has occured while stopping proxy listener '%s': %v\n", name, err)
+			p.view.Writef("❌  An error has occured while stopping proxy listener '%s': %v\n", name, err)
 		}
 	}
 
@@ -90,7 +93,7 @@ func (p *Proxy) Stop() error {
 func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", pf.LocalIP, pf.LocalPort))
 	if err != nil {
-		fmt.Printf("❌  Could not create proxy listener for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
+		p.view.Writef("❌  Could not create proxy listener for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
 	}
 
 	p.listenerMux.Lock()
@@ -104,12 +107,12 @@ func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 			break
 		}
 		if err != nil {
-			fmt.Printf("❌  Could not accept client connection for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
+			p.view.Writef("❌  Could not accept client connection for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
 		}
 
 		target, err := net.Dial("tcp", fmt.Sprintf("%s:%s", pf.GetProxyHostname(), pf.ProxyPort))
 		if err != nil {
-			fmt.Printf("❌  Error when dialing with forwarder for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
+			p.view.Writef("❌  Error when dialing with forwarder for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
 		}
 
 		go func() {
@@ -133,7 +136,7 @@ func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 
 	err := p.generateIP(proxyForward)
 	if err != nil {
-		fmt.Printf("❌  An error has occured while generating IP address for '%s': %v\n", proxyForward.Name, err)
+		p.view.Writef("❌  An error has occured while generating IP address for '%s': %v\n", proxyForward.Name, err)
 	}
 
 	if proxyForward.ProxyPort == "" {
@@ -142,13 +145,13 @@ func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 
 	err = p.hostfile.AddHost(proxyForward.LocalIP, proxyForward.GetHostname())
 	if err != nil {
-		fmt.Printf("❌  An error has occured while trying to write host file for application '%s' (ip: %s): %v\n", proxyForward.Name, proxyForward.LocalIP, err)
+		p.view.Writef("❌  An error has occured while trying to write host file for application '%s' (ip: %s): %v\n", proxyForward.Name, proxyForward.LocalIP, err)
 	}
 
 	if proxyForward.LocalPort != "" {
-		fmt.Printf("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", proxyForward.GetHostname(), proxyForward.LocalIP, proxyForward.ProxyPort)
+		p.view.Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", proxyForward.GetHostname(), proxyForward.LocalIP, proxyForward.ProxyPort)
 	} else {
-		fmt.Printf("✅  Successfully mapped hostname '%s' with IP '%s'\n", proxyForward.GetHostname(), proxyForward.LocalIP)
+		p.view.Writef("✅  Successfully mapped hostname '%s' with IP '%s'\n", proxyForward.GetHostname(), proxyForward.LocalIP)
 	}
 
 	if pfs, ok := p.ProxyForwards[name]; ok {

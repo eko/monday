@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/internal/ui"
 	"github.com/eko/monday/pkg/forwarder/kubernetes"
 	"github.com/eko/monday/pkg/forwarder/ssh"
 	"github.com/eko/monday/pkg/proxy"
@@ -29,14 +30,16 @@ type ForwarderTypeInterface interface {
 
 // Forwarder is the struct that manage running local applications
 type Forwarder struct {
+	view       ui.ViewInterface
 	proxy      proxy.ProxyInterface
 	forwards   []*config.Forward
 	forwarders sync.Map
 }
 
 // NewForwarder instancites a Forwarder struct from configuration data
-func NewForwarder(proxy proxy.ProxyInterface, project *config.Project) *Forwarder {
+func NewForwarder(view ui.ViewInterface, proxy proxy.ProxyInterface, project *config.Project) *Forwarder {
 	return &Forwarder{
+		view:     view,
 		proxy:    proxy,
 		forwards: project.Forwards,
 	}
@@ -56,7 +59,7 @@ func (f *Forwarder) ForwardAll() {
 	go func() {
 		err := f.proxy.Listen()
 		if err != nil {
-			fmt.Printf("❌  %s\n", err.Error())
+			f.view.Writef("❌  %s\n", err.Error())
 			return
 		}
 	}()
@@ -76,8 +79,8 @@ func (f *Forwarder) Stop() {
 func (f *Forwarder) addForwarder(name string, forwarder ForwarderTypeInterface) {
 	var forwarders = make([]ForwarderTypeInterface, 0)
 
-	if forwarders, ok := f.forwarders.Load(name); ok {
-		forwarders = forwarders.([]ForwarderTypeInterface)
+	if fwds, ok := f.forwarders.Load(name); ok {
+		forwarders = fwds.([]ForwarderTypeInterface)
 	}
 
 	forwarders = append(forwarders, forwarder)
@@ -89,11 +92,11 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	if err := f.checkForwardEnvironment(forward); err != nil {
-		fmt.Printf("❌  %s\n", err.Error())
+		f.view.Writef("❌  %s\n", err.Error())
 		return
 	}
 
-	fmt.Printf("📡  Forwarding '%s' over %s...\n", forward.Name, forward.Type)
+	f.view.Writef("📡  Forwarding '%s' over %s...\n", forward.Name, forward.Type)
 
 	values := forward.Values
 
@@ -135,9 +138,9 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	switch forward.Type {
 	// Kubernetes local port-forward: give proxy port as local port and forwarded port, use proxy
 	case config.ForwarderKubernetes:
-		forwarder, err := kubernetes.NewForwarder(forward.Type, forward.Name, values.Context, values.Namespace, proxifiedPorts, values.Labels)
+		forwarder, err := kubernetes.NewForwarder(f.view, forward.Type, forward.Name, values.Context, values.Namespace, proxifiedPorts, values.Labels)
 		if err != nil {
-			fmt.Printf("❌  %s\n", err.Error())
+			f.view.Writef("❌  %s\n", err.Error())
 			return
 		}
 
@@ -146,9 +149,9 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	// Kubernetes remote forward: open both a SSH remote-forward connection and a Kubernetes port-forward, use proxy
 	case config.ForwarderKubernetesRemote:
 		// First, set pod's proxy
-		forwarder, err := kubernetes.NewForwarder(forward.Type, forward.Name, values.Context, values.Namespace, proxifiedPorts, values.Labels)
+		forwarder, err := kubernetes.NewForwarder(f.view, forward.Type, forward.Name, values.Context, values.Namespace, proxifiedPorts, values.Labels)
 		if err != nil {
-			fmt.Printf("❌  %s\n", err.Error())
+			f.view.Writef("❌  %s\n", err.Error())
 			return
 		}
 
@@ -161,9 +164,9 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 				values.Remote = "root@127.0.0.1"
 				args := append(values.Args, fmt.Sprintf("-p %s", proxyForward.ProxyPort))
 
-				forwarder, err := ssh.NewForwarder(config.ForwarderSSHRemote, values.Remote, localPort, forwardPort, args)
+				forwarder, err := ssh.NewForwarder(f.view, config.ForwarderSSHRemote, values.Remote, localPort, forwardPort, args)
 				if err != nil {
-					fmt.Printf("❌  %s\n", err.Error())
+					f.view.Writef("❌  %s\n", err.Error())
 					return
 				}
 
@@ -174,9 +177,9 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	// SSH local forward: give proxy port as local port and forwarded port, use proxy
 	case config.ForwarderSSH:
 		for _, proxyForward := range proxyForwards {
-			forwarder, err := ssh.NewForwarder(forward.Type, values.Remote, proxyForward.ProxyPort, proxyForward.ForwardPort, values.Args)
+			forwarder, err := ssh.NewForwarder(f.view, forward.Type, values.Remote, proxyForward.ProxyPort, proxyForward.ForwardPort, values.Args)
 			if err != nil {
-				fmt.Printf("❌  %s\n", err.Error())
+				f.view.Writef("❌  %s\n", err.Error())
 				return
 			}
 
@@ -186,9 +189,9 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	// SSH remote forward: give local port and forwarded port, do not proxy
 	case config.ForwarderSSHRemote:
 		for _, proxyForward := range proxyForwards {
-			forwarder, err := ssh.NewForwarder(forward.Type, values.Remote, proxyForward.LocalPort, proxyForward.ForwardPort, values.Args)
+			forwarder, err := ssh.NewForwarder(f.view, forward.Type, values.Remote, proxyForward.LocalPort, proxyForward.ForwardPort, values.Args)
 			if err != nil {
-				fmt.Printf("❌  %s\n", err.Error())
+				f.view.Writef("❌  %s\n", err.Error())
 				return
 			}
 
@@ -203,7 +206,7 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 					err := forwarder.Forward()
 					if err != nil {
 						time.Sleep(1 * time.Second)
-						fmt.Printf("%v\n👓  Forwarder: lost port-forward connection trying to reconnect...\n", err)
+						f.view.Writef("%v\n👓  Forwarder: lost port-forward connection trying to reconnect...\n", err)
 					}
 				}
 			}(forwarder)

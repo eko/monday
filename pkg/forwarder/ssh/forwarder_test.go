@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/eko/monday/internal/config"
+	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,10 +17,10 @@ func TestNewForwarder(t *testing.T) {
 	forwardPort := "8081"
 	args := []string{"-i /tmp/my/private.key"}
 
-	// forwardType, remote, localPort, forwardPort string, args []string
+	view := &uimocks.ViewInterface{}
 
 	// When
-	forwarder, err := NewForwarder(config.ForwarderSSH, remote, localPort, forwardPort, args)
+	forwarder, err := NewForwarder(view, config.ForwarderSSH, remote, localPort, forwardPort, args)
 
 	// Then
 	assert.IsType(t, new(Forwarder), forwarder)
@@ -36,7 +37,9 @@ func TestNewForwarder(t *testing.T) {
 
 func TestGetForwardType(t *testing.T) {
 	// Given
-	forwarder, err := NewForwarder(config.ForwarderSSHRemote, "root@acme.tld", "8080", "8081", []string{})
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderSSHRemote, "root@acme.tld", "8080", "8081", []string{})
 
 	// When
 	forwardType := forwarder.GetForwardType()
@@ -50,7 +53,9 @@ func TestGetForwardType(t *testing.T) {
 
 func TestGetReadyChannel(t *testing.T) {
 	// Given
-	forwarder, err := NewForwarder(config.ForwarderSSHRemote, "root@acme.tld", "8080", "8081", []string{})
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderSSHRemote, "root@acme.tld", "8080", "8081", []string{})
 
 	// When
 	channel := forwarder.GetReadyChannel()
@@ -64,7 +69,9 @@ func TestGetReadyChannel(t *testing.T) {
 
 func TestGetStopChannel(t *testing.T) {
 	// Given
-	forwarder, err := NewForwarder(config.ForwarderSSHRemote, "root@acme.tld", "8080", "8081", []string{})
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderSSHRemote, "root@acme.tld", "8080", "8081", []string{})
 
 	// When
 	channel := forwarder.GetStopChannel()
@@ -80,7 +87,9 @@ func TestForwardLocal(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
-	forwarder, err := NewForwarder(config.ForwarderSSH, "root@acme.tld", "8080", "8081", []string{})
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderSSH, "root@acme.tld", "8080", "8081", []string{})
 
 	// When
 	err = forwarder.Forward()
@@ -98,7 +107,9 @@ func TestForwardRemote(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
-	forwarder, err := NewForwarder(config.ForwarderSSHRemote, "root@acme.tld", "8080", "8081", []string{})
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderSSHRemote, "root@acme.tld", "8080", "8081", []string{})
 
 	// When
 	err = forwarder.Forward()

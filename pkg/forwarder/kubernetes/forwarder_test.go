@@ -12,6 +12,7 @@ import (
 	"github.com/eko/monday/internal/config"
 	clientmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/client"
 	restmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/rest"
+	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	appsv1 "k8s.io/api/apps/v1"
@@ -40,8 +41,10 @@ func TestNewForwarder(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
+	view := &uimocks.ViewInterface{}
+
 	// When
-	forwarder, err := NewForwarder(config.ForwarderKubernetes, name, context, namespace, ports, labels)
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, name, context, namespace, ports, labels)
 
 	// Then
 	assert.IsType(t, new(Forwarder), forwarder)
@@ -82,7 +85,9 @@ func TestGetForwardType(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	forwarder, err := NewForwarder(config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
 	})
 
@@ -101,7 +106,9 @@ func TestGetSelector(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	forwarder, err := NewForwarder(config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
 	})
 
@@ -120,7 +127,9 @@ func TestGetReadyChannel(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	forwarder, err := NewForwarder(config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
 	})
 
@@ -137,7 +146,9 @@ func TestGetStopChannel(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	forwarder, err := NewForwarder(config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
 	})
 
@@ -154,7 +165,9 @@ func TestForwardTypeLocal(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	forwarder, err := NewForwarder(config.ForwarderKubernetes, "test-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
+	view := &uimocks.ViewInterface{}
+
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, "test-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
 	})
 	if err != nil {
@@ -223,7 +236,11 @@ func TestForwardTypeRemote(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	forwarder, err := NewForwarder(config.ForwarderKubernetesRemote, "test-remote-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
+	view := &uimocks.ViewInterface{}
+	view.On("Write", mock.Anything)
+	view.On("Writef", mock.Anything, mock.Anything)
+
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-remote-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
 		"app": "my-remote-app",
 	})
 	if err != nil {

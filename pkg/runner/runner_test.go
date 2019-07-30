@@ -8,17 +8,20 @@ import (
 
 	"github.com/eko/monday/internal/config"
 	mocks "github.com/eko/monday/internal/tests/mocks/proxy"
+	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestNewRunner(t *testing.T) {
 	// Given
+	view := &uimocks.ViewInterface{}
 	proxy := &mocks.ProxyInterface{}
 
 	project := getMockedProjectWithApplication()
 
 	// When
-	runner := NewRunner(proxy, project)
+	runner := NewRunner(view, proxy, project)
 
 	// Then
 	assert.IsType(t, new(Runner), runner)
@@ -32,11 +35,15 @@ func TestRunAll(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
+	view := &uimocks.ViewInterface{}
+	view.On("Write", mock.Anything)
+	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+
 	proxy := &mocks.ProxyInterface{}
 
 	project := getMockedProjectWithApplication()
 
-	runner := NewRunner(proxy, project)
+	runner := NewRunner(view, proxy, project)
 
 	// When
 	runner.RunAll()
@@ -64,11 +71,15 @@ func TestStop(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
+	view := &uimocks.ViewInterface{}
+	view.On("Write", mock.Anything)
+	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+
 	proxy := &mocks.ProxyInterface{}
 
 	project := getMockedProjectWithApplication()
 
-	runner := NewRunner(proxy, project)
+	runner := NewRunner(view, proxy, project)
 	runner.RunAll()
 
 	// Wait for goroutine to launch application and be available
@@ -98,6 +109,10 @@ func TestSetupAll(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
+	view := &uimocks.ViewInterface{}
+	view.On("Write", mock.Anything)
+	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+
 	proxy := &mocks.ProxyInterface{}
 
 	project := &config.Project{
@@ -114,7 +129,7 @@ func TestSetupAll(t *testing.T) {
 		},
 	}
 
-	runner := NewRunner(proxy, project)
+	runner := NewRunner(view, proxy, project)
 
 	// When
 	runner.SetupAll()

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	mocks "github.com/eko/monday/internal/tests/mocks/hostfile"
+	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -13,8 +14,10 @@ func TestNewProxy(t *testing.T) {
 
 	hostfileMock := &mocks.HostfileInterface{}
 
+	view := &uimocks.ViewInterface{}
+
 	// When
-	proxy := NewProxy(hostfileMock)
+	proxy := NewProxy(view, hostfileMock)
 
 	// Then
 	assert.IsType(t, new(Proxy), proxy)
@@ -31,7 +34,10 @@ func TestAddProxyForward(t *testing.T) {
 	hostfileMock := &mocks.HostfileInterface{}
 	hostfileMock.On("AddHost", mock.AnythingOfType("string"), "hostname.svc.local").Return(nil)
 
-	proxy := NewProxy(hostfileMock)
+	view := &uimocks.ViewInterface{}
+	view.On("Writef", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+
+	proxy := NewProxy(view, hostfileMock)
 
 	// When
 	proxy.AddProxyForward("test", pf)
@@ -80,7 +86,10 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 		},
 	}
 
-	proxy := NewProxy(hostfileMock)
+	view := &uimocks.ViewInterface{}
+	view.On("Writef", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+
+	proxy := NewProxy(view, hostfileMock)
 
 	// When
 	for _, testCase := range testCases {
@@ -100,7 +109,10 @@ func TestListen(t *testing.T) {
 	hostfileMock := &mocks.HostfileInterface{}
 	hostfileMock.On("AddHost", mock.AnythingOfType("string"), "hostname.svc.local").Return(nil)
 
-	proxy := NewProxy(hostfileMock)
+	view := &uimocks.ViewInterface{}
+	view.On("Writef", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+
+	proxy := NewProxy(view, hostfileMock)
 	proxy.AddProxyForward("test", pf)
 
 	// When

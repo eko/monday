@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/internal/ui"
 	"github.com/eko/monday/pkg/proxy"
 )
 
@@ -31,15 +32,17 @@ type Runner struct {
 	projectName  string
 	applications []*config.Application
 	cmds         map[string]*exec.Cmd
+	view         ui.ViewInterface
 }
 
 // NewRunner instancites a Runner struct from configuration data
-func NewRunner(proxy proxy.ProxyInterface, project *config.Project) *Runner {
+func NewRunner(view ui.ViewInterface, proxy proxy.ProxyInterface, project *config.Project) *Runner {
 	return &Runner{
 		proxy:        proxy,
 		projectName:  project.Name,
 		applications: project.Applications,
 		cmds:         make(map[string]*exec.Cmd, 0),
+		view:         view,
 	}
 }
 
@@ -67,23 +70,23 @@ func (r *Runner) SetupAll() {
 	wg.Wait()
 
 	if hasSetup {
-		fmt.Print("\n✅  Setup complete!\n\n")
+		r.view.Write("\n✅  Setup complete!\n\n")
 	}
 }
 
 // Run launches the application
 func (r *Runner) Run(application *config.Application) {
 	if err := r.checkApplicationExecutableEnvironment(application); err != nil {
-		fmt.Printf("❌  %s\n", err.Error())
+		r.view.Writef("❌  %s\n", err.Error())
 		return
 	}
 
-	fmt.Printf("⚙️   Running local app '%s' (%s)...\n", application.Name, application.Path)
+	r.view.Writef("⚙️   Running local app '%s' (%s)...\n", application.Name, application.Path)
 
 	applicationPath := application.GetPath()
 
-	stdoutStream := NewLogstreamer(StdOut, application.Name)
-	stderrStream := NewLogstreamer(StdErr, application.Name)
+	stdoutStream := NewLogstreamer(StdOut, application.Name, r.view)
+	stderrStream := NewLogstreamer(StdErr, application.Name, r.view)
 
 	cmd := exec.Command(application.Executable, application.Args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -100,7 +103,7 @@ func (r *Runner) Run(application *config.Application) {
 	r.cmds[application.Name] = cmd
 
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("❌  Cannot run the following application: %s: %v\n", applicationPath, err)
+		r.view.Writef("❌  Cannot run the following application: %s: %v\n", applicationPath, err)
 		return
 	}
 }
@@ -132,7 +135,7 @@ func (r *Runner) Stop() error {
 		if application.StopExecutable != "" {
 			err := exec.Command(application.StopExecutable, application.StopArgs...).Start()
 			if err != nil {
-				fmt.Printf("❌  Cannot run stop command for application '%s': %v\n", application.Name, err)
+				r.view.Writef("❌  Cannot run stop command for application '%s': %v\n", application.Name, err)
 			}
 		}
 	}
@@ -165,10 +168,10 @@ func (r *Runner) setup(application *config.Application, wg *sync.WaitGroup) erro
 
 	hasSetup = true
 
-	fmt.Printf("⚙️  Please wait while setup of application '%s'...\n", application.Name)
+	r.view.Writef("⚙️  Please wait while setup of application '%s'...\n", application.Name)
 
-	stdoutStream := NewLogstreamer(StdOut, application.Name)
-	stderrStream := NewLogstreamer(StdErr, application.Name)
+	stdoutStream := NewLogstreamer(StdOut, application.Name, r.view)
+	stderrStream := NewLogstreamer(StdErr, application.Name, r.view)
 
 	var setup = strings.Join(application.Setup, "; ")
 
@@ -176,7 +179,7 @@ func (r *Runner) setup(application *config.Application, wg *sync.WaitGroup) erro
 	setup = os.ExpandEnv(setup)
 
 	commands := strings.Join(application.Setup, "\n")
-	fmt.Printf("👉  Running commands:\n%s\n\n", commands)
+	r.view.Writef("👉  Running commands:\n%s\n\n", commands)
 
 	cmd := exec.Command("/bin/sh", "-c", setup)
 	cmd.Stdout = stdoutStream
