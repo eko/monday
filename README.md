@@ -4,7 +4,6 @@
 [![GoDoc](https://godoc.org/github.com/eko/monday?status.png)](https://godoc.org/github.com/eko/monday)
 [![GoReportCard](https://goreportcard.com/badge/github.com/eko/monday)](https://goreportcard.com/report/github.com/eko/monday)
 
-
 Your new microservice development environment friend. This CLI tool allows you to define a configuration to work with both local applications (Go, NodeJS, Rust or others) and forward some other applications over Kubernetes in case you don't want to run them locally.
 
 ![Schema](https://github.com/eko/monday/blob/master/misc/schema.jpg?raw=true)
@@ -131,6 +130,10 @@ This will help you in having smaller and more readable configuration files.
 To lear more about the configuration, please take a look at the [Configuration Wiki page](https://github.com/eko/monday/wiki/Configuration).
 
 For an overview of what's possible with configuration file, please look at the [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml).
+
+## Community
+
+You can [join the community Slack space](https://join.slack.com/t/mondaytool/shared_invite/enQtNzE3NDAxNzIxNTQyLTBmNGU5YzAwNjRjY2IxY2MwZmM5Njg5N2EwY2NjYzEwZWExNWYyYTlmMzg5ZTBjNDRiOTUwYzM3ZDBhZTllOGM) to discuss about your issues, new features or anything else regarding Monday.
 
 ## Run tests
 
