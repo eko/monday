@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/forwarder"
 	"github.com/eko/monday/pkg/runner"
 	"github.com/radovskyb/watcher"

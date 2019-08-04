@@ -8,7 +8,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/internal/ui"
 	"github.com/eko/monday/pkg/proxy"
 )

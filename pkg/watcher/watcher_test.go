@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/pkg/config"
 	forwardermocks "github.com/eko/monday/internal/tests/mocks/forwarder"
 	runnermocks "github.com/eko/monday/internal/tests/mocks/runner"
 	watcherlib "github.com/radovskyb/watcher"

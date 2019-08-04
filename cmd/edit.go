@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/pkg/config"
 	"github.com/spf13/cobra"
 )
 

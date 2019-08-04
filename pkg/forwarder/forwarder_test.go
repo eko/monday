@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/pkg/config"
 	mocks "github.com/eko/monday/internal/tests/mocks/proxy"
 	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"

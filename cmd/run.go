@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/pkg/config"
 	"github.com/spf13/cobra"
 )
 

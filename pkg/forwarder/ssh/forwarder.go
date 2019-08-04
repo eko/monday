@@ -6,7 +6,7 @@ import (
 
 	"github.com/eko/monday/internal/ui"
 
-	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/pkg/config"
 )
 
 type Forwarder struct {

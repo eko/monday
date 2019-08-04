@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/eko/monday/internal/config"
+	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/internal/ui"
 	"github.com/eko/monday/pkg/forwarder/kubernetes"
 	"github.com/eko/monday/pkg/forwarder/ssh"
