@@ -94,6 +94,7 @@ func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", pf.LocalIP, pf.LocalPort))
 	if err != nil {
 		p.view.Writef("❌  Could not create proxy listener for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
+		return
 	}
 
 	p.listenerMux.Lock()
