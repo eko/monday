@@ -3,7 +3,7 @@ package kubernetes
 import (
 	"strings"
 
-	"github.com/eko/monday/internal/ui"
+	"github.com/eko/monday/pkg/ui"
 )
 
 type Logstreamer struct {

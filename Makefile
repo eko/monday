@@ -13,7 +13,7 @@ generate-mocks: ## Generate mocks for tests
 	@echo "> generating mocks..."
 
 	# Monday
-	mockery -name=ViewInterface -dir=internal/ui/ -output internal/tests/mocks/ui
+	mockery -name=ViewInterface -dir=pkg/ui/ -output internal/tests/mocks/ui
 	mockery -name=HostfileInterface -dir=pkg/hostfile/ -output internal/tests/mocks/hostfile
 	mockery -name=ProxyInterface -dir=pkg/proxy/ -output internal/tests/mocks/proxy
 	mockery -name=RunnerInterface -dir=pkg/runner/ -output internal/tests/mocks/runner

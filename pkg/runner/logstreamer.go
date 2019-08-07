@@ -6,7 +6,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/eko/monday/internal/ui"
+	"github.com/eko/monday/pkg/ui"
 )
 
 const (

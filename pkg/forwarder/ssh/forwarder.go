@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/eko/monday/internal/ui"
+	"github.com/eko/monday/pkg/ui"
 
 	"github.com/eko/monday/pkg/config"
 )

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/eko/monday/pkg/config"
-	"github.com/eko/monday/internal/ui"
+	"github.com/eko/monday/pkg/ui"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
