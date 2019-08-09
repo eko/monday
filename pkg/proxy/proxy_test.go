@@ -3,8 +3,8 @@ package proxy
 import (
 	"testing"
 
-	mocks "github.com/eko/monday/internal/tests/mocks/hostfile"
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
+	mocks "github.com/policygenius/monday/internal/tests/mocks/hostfile"
+	uimocks "github.com/policygenius/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

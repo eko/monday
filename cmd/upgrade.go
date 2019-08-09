@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	latestReleaseURL = "https://api.github.com/repos/eko/monday/releases/latest"
-	binaryURLPattern = "https://github.com/eko/monday/releases/latest/download/monday-%s-%s"
+	latestReleaseURL = "https://api.github.com/repos/policygenius/monday/releases/latest"
+	binaryURLPattern = "https://github.com/policygenius/monday/releases/latest/download/monday-%s-%s"
 	binaryFilepath   = "/usr/local/bin/monday"
 )
 

@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eko/monday/pkg/config"
-	clientmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/client"
-	restmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/rest"
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
+	"github.com/policygenius/monday/pkg/config"
+	clientmocks "github.com/policygenius/monday/internal/tests/mocks/kubernetes/client"
+	restmocks "github.com/policygenius/monday/internal/tests/mocks/kubernetes/rest"
+	uimocks "github.com/policygenius/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	appsv1 "k8s.io/api/apps/v1"
@@ -337,7 +337,7 @@ func TestForwardTypeRemote(t *testing.T) {
 
 	if deploy, ok := forwarder.deployments["test-remote-forward"]; ok {
 		assert.Equal(t, deploy.OldImage, "acme.tld/my-remote-app")
-		assert.Equal(t, deploy.Deployment.Spec.Template.Spec.Containers[0].Image, "ekofr/monday-proxy")
+		assert.Equal(t, deploy.Deployment.Spec.Template.Spec.Containers[0].Image, "policygeniusfr/monday-proxy")
 	} else {
 		t.Fatal("Cannot retrieve backuped deployment image when doing remote-forward")
 	}

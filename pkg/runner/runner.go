@@ -8,9 +8,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/eko/monday/pkg/config"
-	"github.com/eko/monday/pkg/proxy"
-	"github.com/eko/monday/pkg/ui"
+	"github.com/policygenius/monday/pkg/config"
+	"github.com/policygenius/monday/pkg/proxy"
+	"github.com/policygenius/monday/pkg/ui"
 )
 
 var (

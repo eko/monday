@@ -3,7 +3,7 @@ package runner
 import (
 	"testing"
 
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
+	uimocks "github.com/policygenius/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
 )
 

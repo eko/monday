@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eko/monday/pkg/config"
-	"github.com/eko/monday/pkg/ui"
+	"github.com/policygenius/monday/pkg/config"
+	"github.com/policygenius/monday/pkg/ui"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,13 +22,13 @@ import (
 )
 
 const (
-	// RemoteSSHProxyPort is the SSH proxy port used by the 'ekofr/monday-proxy' docker image
+	// RemoteSSHProxyPort is the SSH proxy port used by the 'policygeniusfr/monday-proxy' docker image
 	// to make a remote-forward on the Kubernetes pod to be able to next forward trafic locally
 	RemoteSSHProxyPort = 5022
 
 	// ProxyDockerImage is the path to the public Docker image acting as a proxy in the
 	// Kubernetes cluster
-	ProxyDockerImage = "ekofr/monday-proxy"
+	ProxyDockerImage = "policygeniusfr/monday-proxy"
 
 	// ProxyPortName is the name given to the SSH port used when deploying the proxy image into the
 	// cluster

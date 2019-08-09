@@ -1,4 +1,4 @@
-module github.com/eko/monday
+module github.com/policygenius/monday
 
 go 1.12
 

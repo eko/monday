@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/eko/monday/pkg/config"
-	"github.com/eko/monday/pkg/forwarder"
-	"github.com/eko/monday/pkg/runner"
+	"github.com/policygenius/monday/pkg/config"
+	"github.com/policygenius/monday/pkg/forwarder"
+	"github.com/policygenius/monday/pkg/runner"
 	"github.com/radovskyb/watcher"
 )
 

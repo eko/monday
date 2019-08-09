@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/eko/monday/pkg/config"
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
+	"github.com/policygenius/monday/pkg/config"
+	uimocks "github.com/policygenius/monday/internal/tests/mocks/ui"
 	"github.com/stretchr/testify/assert"
 )
 

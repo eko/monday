@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/eko/monday/pkg/hostfile"
-	"github.com/eko/monday/pkg/ui"
+	"github.com/policygenius/monday/pkg/hostfile"
+	"github.com/policygenius/monday/pkg/ui"
 )
 
 const (

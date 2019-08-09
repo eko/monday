@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eko/monday/pkg/config"
-	forwardermocks "github.com/eko/monday/internal/tests/mocks/forwarder"
-	runnermocks "github.com/eko/monday/internal/tests/mocks/runner"
+	"github.com/policygenius/monday/pkg/config"
+	forwardermocks "github.com/policygenius/monday/internal/tests/mocks/forwarder"
+	runnermocks "github.com/policygenius/monday/internal/tests/mocks/runner"
 	watcherlib "github.com/radovskyb/watcher"
 	"github.com/stretchr/testify/assert"
 )

@@ -7,11 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/eko/monday/pkg/config"
-	"github.com/eko/monday/pkg/forwarder/kubernetes"
-	"github.com/eko/monday/pkg/forwarder/ssh"
-	"github.com/eko/monday/pkg/proxy"
-	"github.com/eko/monday/pkg/ui"
+	"github.com/policygenius/monday/pkg/config"
+	"github.com/policygenius/monday/pkg/forwarder/kubernetes"
+	"github.com/policygenius/monday/pkg/forwarder/ssh"
+	"github.com/policygenius/monday/pkg/proxy"
+	"github.com/policygenius/monday/pkg/ui"
 )
 
 // ForwarderInterface represents all kinds of forwarders (Kubernetes, others...)

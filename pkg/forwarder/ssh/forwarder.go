@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/eko/monday/pkg/ui"
+	"github.com/policygenius/monday/pkg/ui"
 
-	"github.com/eko/monday/pkg/config"
+	"github.com/policygenius/monday/pkg/config"
 )
 
 type Forwarder struct {
