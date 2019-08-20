@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/eko/monday/pkg/config"
@@ -30,9 +31,13 @@ var (
 	forwarderComponent *forwarder.Forwarder
 	runnerComponent    *runner.Runner
 	watcherComponent   *watcher.Watcher
+
+	openerCommand string
 )
 
 func main() {
+	initRuntimeEnvironment()
+
 	rootCmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
 			conf, err := config.Load()
@@ -58,6 +63,16 @@ func main() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Printf("❌  An error has occured during 'edit' command: %v\n", err)
 		os.Exit(1)
+	}
+}
+
+func initRuntimeEnvironment() {
+	switch runtime.GOOS {
+	case "darwin":
+		openerCommand = "open"
+
+	default:
+		openerCommand = "gedit"
 	}
 }
 

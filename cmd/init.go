@@ -23,10 +23,10 @@ in the source code repository.`,
 				return
 			}
 
-			command := exec.Command("open", config.Filepath)
+			command := exec.Command(openerCommand, config.Filepath)
 
 			if err := command.Start(); err != nil {
-				fmt.Printf("❌  Cannot run the 'open' command to edit config file: %v\n", err)
+				fmt.Printf("❌  Cannot run the '%s' command to edit config file: %v\n", openerCommand, err)
 				return
 			}
 		} else {

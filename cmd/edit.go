@@ -28,10 +28,10 @@ in the source code repository.`,
 			files = []string{config.Filepath}
 		}
 
-		command := exec.Command("open", files...)
+		command := exec.Command(openerCommand, files...)
 
 		if err := command.Start(); err != nil {
-			fmt.Printf("❌  Cannot run the 'open' command to edit config file: %v\n", err)
+			fmt.Printf("❌  Cannot run the '%s' command to edit config file: %v\n", openerCommand, err)
 			return
 		}
 	},
