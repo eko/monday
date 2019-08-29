@@ -9,6 +9,7 @@ import (
 
 // Layout is the structure of the gui layout
 type Layout struct {
+	uiEnabled      bool
 	gui            *gocui.Gui
 	highlighted    *View
 	statusView     *View
@@ -20,19 +21,35 @@ type Layout struct {
 }
 
 // NewLayout returns a new layout instance
-func NewLayout() *Layout {
-	gui, err := gocui.NewGui(gocui.OutputNormal)
-	if err != nil {
-		panic(err)
+func NewLayout(uiEnabled bool) *Layout {
+	layout := &Layout{
+		uiEnabled: uiEnabled,
 	}
 
-	return &Layout{
-		gui: gui,
+	if uiEnabled {
+		gui, err := gocui.NewGui(gocui.OutputNormal)
+		if err != nil {
+			panic(err)
+		}
+
+		layout.gui = gui
 	}
+
+	return layout
 }
 
 // Init initializes the gui layout
 func (l *Layout) Init() {
+	if !l.uiEnabled {
+		l.statusView = NewEmptyView("status")
+		l.fullscreenView = NewEmptyView("fullscreen")
+		l.logsView = NewEmptyView("logs")
+		l.forwardsView = NewEmptyView("forwards")
+		l.proxyView = NewEmptyView("proxy")
+
+		return
+	}
+
 	maxX, maxY := l.gui.Size()
 
 	statusView, err := l.setStatusView("status", 0, 0, maxX-1, 2)

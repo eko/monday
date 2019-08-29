@@ -10,7 +10,7 @@ import (
 
 func TestNewLayout(t *testing.T) {
 	// When
-	layout := NewLayout()
+	layout := NewLayout(true)
 	layout.gui.Close()
 
 	// Then
@@ -20,7 +20,7 @@ func TestNewLayout(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	// Given
-	layout := NewLayout()
+	layout := NewLayout(true)
 	layout.gui.Close()
 
 	// When
@@ -34,9 +34,32 @@ func TestInit(t *testing.T) {
 	assert.IsType(t, new(View), layout.proxyView)
 }
 
+func TestTestInitWhenUINotEnabled(t *testing.T) {
+	// When
+	layout := NewLayout(false)
+	layout.Init()
+
+	// Then
+	assert.IsType(t, new(Layout), layout)
+
+	assert.Nil(t, layout.gui)
+
+	assert.IsType(t, new(View), layout.statusView)
+	assert.IsType(t, new(View), layout.fullscreenView)
+	assert.IsType(t, new(View), layout.logsView)
+	assert.IsType(t, new(View), layout.forwardsView)
+	assert.IsType(t, new(View), layout.proxyView)
+
+	assert.Nil(t, layout.statusView.GetView())
+	assert.Nil(t, layout.fullscreenView.GetView())
+	assert.Nil(t, layout.logsView.GetView())
+	assert.Nil(t, layout.forwardsView.GetView())
+	assert.Nil(t, layout.proxyView.GetView())
+}
+
 func TestGetGui(t *testing.T) {
 	// Given
-	layout := NewLayout()
+	layout := NewLayout(true)
 	layout.gui.Close()
 
 	layout.Init()
@@ -50,7 +73,7 @@ func TestGetGui(t *testing.T) {
 
 func TestGetLogsView(t *testing.T) {
 	// Given
-	layout := NewLayout()
+	layout := NewLayout(true)
 	layout.gui.Close()
 
 	layout.Init()
@@ -67,7 +90,7 @@ func TestGetLogsView(t *testing.T) {
 
 func TestGetForwardsView(t *testing.T) {
 	// Given
-	layout := NewLayout()
+	layout := NewLayout(true)
 	layout.gui.Close()
 
 	layout.Init()
@@ -84,7 +107,7 @@ func TestGetForwardsView(t *testing.T) {
 
 func TestGetProxyView(t *testing.T) {
 	// Given
-	layout := NewLayout()
+	layout := NewLayout(true)
 	layout.gui.Close()
 
 	layout.Init()
@@ -101,7 +124,7 @@ func TestGetProxyView(t *testing.T) {
 
 func TestGetStatusView(t *testing.T) {
 	// Given
-	layout := NewLayout()
+	layout := NewLayout(true)
 	layout.gui.Close()
 
 	layout.Init()

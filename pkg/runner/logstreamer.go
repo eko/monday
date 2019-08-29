@@ -53,6 +53,9 @@ func (l *Logstreamer) Write(p []byte) (n int, err error) {
 	}
 
 	err = l.output()
+	if err != nil {
+		panic(err)
+	}
 	return
 }
 

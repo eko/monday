@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"syscall"
 
 	"github.com/eko/monday/pkg/config"
@@ -33,6 +34,8 @@ var (
 	watcherComponent   *watcher.Watcher
 
 	openerCommand string
+
+	uiEnabled = len(os.Getenv("MONDAY_ENABLE_UI")) > 0
 )
 
 func main() {
@@ -40,6 +43,10 @@ func main() {
 
 	rootCmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
+			if !uiEnabled {
+				uiEnabled, _ = strconv.ParseBool(cmd.Flag("ui").Value.String())
+			}
+
 			conf, err := config.Load()
 			if err != nil {
 				fmt.Printf("❌  %v", err)
@@ -52,6 +59,10 @@ func main() {
 			handleExitSignal()
 		},
 	}
+
+	// UI-enable flag (for both root and run commands)
+	runCmd.Flags().Bool("ui", false, "Enable the terminal UI")
+	rootCmd.Flags().Bool("ui", false, "Enable the terminal UI")
 
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(editCmd)
@@ -94,16 +105,10 @@ func selectProject(conf *config.Config) string {
 }
 
 func run(conf *config.Config, choice string) {
-	layout := ui.NewLayout()
+	layout := ui.NewLayout(uiEnabled)
 	layout.Init()
-	defer layout.GetGui().Close()
 
-	if err := layout.GetGui().SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-		panic(err)
-	}
-
-	layout.GetStatusView().Writef(" ⇢  %s | Commands: ←/→: select view | ↑/↓: scroll up/down | a: toggle autoscroll | f: toggle fullscreen", choice)
-
+	// Retrieve selected project configuration by its name
 	project, err := conf.GetProjectByName(choice)
 	if err != nil {
 		panic(err)
@@ -122,9 +127,19 @@ func run(conf *config.Config, choice string) {
 	watcherComponent = watcher.NewWatcher(runnerComponent, forwarderComponent, conf.Watcher, project)
 	watcherComponent.Watch()
 
-	if err := layout.GetGui().MainLoop(); err != nil && err != gocui.ErrQuit {
-		fmt.Println(err)
-		stopAll()
+	if uiEnabled {
+		defer layout.GetGui().Close()
+
+		if err := layout.GetGui().SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+			panic(err)
+		}
+
+		layout.GetStatusView().Writef(" ⇢  %s | Commands: ←/→: select view | ↑/↓: scroll up/down | a: toggle autoscroll | f: toggle fullscreen", choice)
+
+		if err := layout.GetGui().MainLoop(); err != nil && err != gocui.ErrQuit {
+			fmt.Println(err)
+			stopAll()
+		}
 	}
 }
 

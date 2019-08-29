@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/eko/monday/pkg/config"
 	"github.com/spf13/cobra"
@@ -13,6 +14,10 @@ var runCmd = &cobra.Command{
 	Long: `In case you already have the project name you want to launch, you can launch it directly by using the run command
 and passing it as an argument`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if !uiEnabled {
+			uiEnabled, _ = strconv.ParseBool(cmd.Flag("ui").Value.String())
+		}
+
 		conf, err := config.Load()
 		if err != nil {
 			fmt.Printf("❌  %v", err)

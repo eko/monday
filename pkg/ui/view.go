@@ -28,6 +28,13 @@ func NewView(name, title string, view *gocui.View) *View {
 	}
 }
 
+// NewEmptyView returns a new instance of an empty view
+func NewEmptyView(name string) *View {
+	return &View{
+		name: name,
+	}
+}
+
 // GetName returns the name of the view
 func (v *View) GetName() string {
 	return v.name
@@ -45,10 +52,20 @@ func (v *View) GetView() *gocui.View {
 
 // Write allows to write a string to the view
 func (v *View) Write(str string) {
+	if v.view == nil {
+		fmt.Print(str)
+		return
+	}
+
 	v.view.Write([]byte(str))
 }
 
 // Writef allows to write a string to the view with some given arguments
 func (v *View) Writef(str string, args ...interface{}) {
+	if v.view == nil {
+		fmt.Print(fmt.Sprintf(str, args...))
+		return
+	}
+
 	v.view.Write([]byte(fmt.Sprintf(str, args...)))
 }

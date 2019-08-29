@@ -101,13 +101,15 @@ $ monday init
 Once your configuration file is ready, you can simply run Monday:
 
 ```bash
-$ monday
+$ monday [--ui]
 ```
+
+Note the `--ui` option that will allow you to enable the user interface (you can also define a `MONDAY_ENABLE_UI` environment variable to enable it).
 
 Or, you can run a specific project directly by running:
 
 ```bash
-$ monday run <project name>
+$ monday run [--ui] <project name>
 ```
 
 When you want to edit your configuration again, simply run this command to open it in your favorite editor:
