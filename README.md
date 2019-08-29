@@ -118,6 +118,18 @@ When you want to edit your configuration again, simply run this command to open 
 $ monday edit
 ```
 
+
+## Environment variables
+
+The following environment variables can be used to tweak your Monday configuration:
+
+
+| Environment variable         | Description                                                                               |
+|:----------------------------:|-------------------------------------------------------------------------------------------|
+| MONDAY_CONFIG_PATH           | Specify the configuration path where your YAML files can be found                         |
+| MONDAY_KUBE_CONFIG           | Specify the location of your Kubernetes config file  (if not in your home directory)      |
+| MONDAY_ENABLE_UI             | Specify that you want to use the terminal UI instead of simply logging to stdout          |
+
 ## Configuration
 
 Configuration of Monday lives in one or multiple YAML files, depending on how you want to organize your files.
