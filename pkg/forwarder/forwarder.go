@@ -138,7 +138,11 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	switch forward.Type {
 	// Kubernetes local port-forward: give proxy port as local port and forwarded port, use proxy
 	case config.ForwarderKubernetes:
-		forwarder, err := kubernetes.NewForwarder(f.view, forward.Type, forward.Name, values.Context, values.Namespace, proxifiedPorts, values.Labels)
+		forwardPorts := values.Ports
+		if forward.IsProxified() {
+			forwardPorts = proxifiedPorts
+		}
+		forwarder, err := kubernetes.NewForwarder(f.view, forward.Type, forward.Name, values.Context, values.Namespace, forwardPorts, values.Labels)
 		if err != nil {
 			f.view.Writef("❌  %s\n", err.Error())
 			return

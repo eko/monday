@@ -94,7 +94,7 @@ type Forward struct {
 // IsProxified indicates if the current forward rule will use the proxy
 func (f *Forward) IsProxified() bool {
 	if value, ok := ProxifiedForwarders[f.Type]; ok && value {
-		return true
+		return !f.Values.DisableProxy
 	}
 
 	return false
@@ -107,6 +107,7 @@ type ForwardValues struct {
 	Labels        map[string]string `yaml:"labels"`
 	Hostname      string            `yaml:"hostname"`
 	ProxyHostname string            `yaml:"proxy_hostname"`
+	DisableProxy  bool              `yaml:"disable_proxy"`
 	Ports         []string          `yaml:"ports"`
 	Remote        string            `yaml:"remote"`
 	Args          []string          `yaml:"args"`
