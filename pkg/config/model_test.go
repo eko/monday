@@ -36,7 +36,7 @@ func TestApplicationGetPathWhenGoPath(t *testing.T) {
 	assert.Equal(t, "/tmp/gopath/src/fake.github.com/user/repository", path)
 }
 
-func TestForwardIsProxified(t *testing.T) {
+func TestForwardTypeIsProxified(t *testing.T) {
 	// Given
 	testCases := []struct {
 		forwardType string
@@ -52,6 +52,31 @@ func TestForwardIsProxified(t *testing.T) {
 	for _, testCase := range testCases {
 		forward := Forward{
 			Type: testCase.forwardType,
+		}
+
+		assert.Equal(t, testCase.expected, forward.IsProxified())
+	}
+}
+
+func TestForwardConfigIsProxified(t *testing.T) {
+	// Given
+	testCases := []struct {
+		forwardType  string
+		disableProxy bool
+		expected     bool
+	}{
+		{forwardType: ForwarderKubernetes, disableProxy: false, expected: true},
+		{forwardType: ForwarderKubernetes, disableProxy: true, expected: false},
+	}
+
+	// When - Then
+	for _, testCase := range testCases {
+		values := ForwardValues{
+			DisableProxy: testCase.disableProxy,
+		}
+		forward := Forward{
+			Type:   testCase.forwardType,
+			Values: values,
 		}
 
 		assert.Equal(t, testCase.expected, forward.IsProxified())
