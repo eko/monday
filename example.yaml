@@ -68,6 +68,7 @@ watcher: # Optional
   values:
     context: *kubernetes-context
     namespace: backend
+    disable_proxy: true # In case you don't want to proxy ports, use this option
     labels:
       app: graphql
     hostname: graphql.svc.local # Optional
