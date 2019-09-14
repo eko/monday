@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/eko/monday/internal/runtime"
 	"github.com/eko/monday/pkg/config"
 	"github.com/spf13/cobra"
 )
@@ -28,10 +29,10 @@ in the source code repository.`,
 			files = []string{config.Filepath}
 		}
 
-		command := exec.Command(openerCommand, files...)
+		command := exec.Command(runtime.EditorCommand, files...)
 
 		if err := command.Start(); err != nil {
-			fmt.Printf("❌  Cannot run the '%s' command to edit config file: %v\n", openerCommand, err)
+			fmt.Printf("❌  Cannot run the '%s' command to edit config file: %v\n", runtime.EditorCommand, err)
 			return
 		}
 	},
