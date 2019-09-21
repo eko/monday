@@ -61,28 +61,18 @@ type Application struct {
 	Hostname       string            `yaml:"hostname"`
 	Watch          bool              `yaml:"watch"`
 	Env            map[string]string `yaml:"env"`
+	EnvFile        string            `yaml:"env_file"`
 	Setup          []string          `yaml:"setup"`
+}
+
+// GetEnvFile returns the filename guessed with current application environment
+func (a *Application) GetEnvFile() string {
+	return getValueByExecutionContext(a.EnvFile, a.Executable)
 }
 
 // GetPath returns the path dependending on overrided value or not
 func (a *Application) GetPath() string {
-	path := a.Path
-
-	if strings.Contains(a.Path, "~") {
-		path = strings.Replace(a.Path, "~", "$HOME", -1)
-	}
-
-	switch a.Executable {
-	case ExecutableGo:
-		// First try to use the given directory, else, add the Go's $GOPATH
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			path = fmt.Sprintf("$GOPATH/src/%s", a.Path)
-		}
-	}
-
-	path = os.ExpandEnv(path)
-
-	return path
+	return getValueByExecutionContext(a.Path, a.Executable)
 }
 
 type Forward struct {
@@ -116,4 +106,22 @@ type ForwardValues struct {
 // Watcher represents the configuration values for the file watcher component
 type Watcher struct {
 	Exclude []string `yaml:"exclude"`
+}
+
+func getValueByExecutionContext(path, executable string) string {
+	if strings.Contains(path, "~") {
+		path = strings.Replace(path, "~", "$HOME", -1)
+	}
+
+	switch executable {
+	case ExecutableGo:
+		// First try to use the given directory, else, add the Go's $GOPATH
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			path = fmt.Sprintf("$GOPATH/src/%s", path)
+		}
+	}
+
+	path = os.ExpandEnv(path)
+
+	return path
 }
