@@ -95,10 +95,8 @@ func (r *Runner) Run(application *config.Application) {
 	cmd.Stderr = stderrStream
 	cmd.Env = os.Environ()
 
-	// Add environment variables
-	for key, value := range application.Env {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
-	}
+	r.addEnvVariables(cmd, application.Env)
+	r.addEnvVariablesFromFile(cmd, application.GetEnvFile())
 
 	r.cmds[application.Name] = cmd
 

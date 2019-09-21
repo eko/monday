@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eko/monday/pkg/config"
 	mocks "github.com/eko/monday/internal/tests/mocks/proxy"
 	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
+	"github.com/eko/monday/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

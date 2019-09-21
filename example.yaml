@@ -22,6 +22,7 @@ watcher: # Optional
     - cmd/main.go
   env: # Optional, in case you want to specify some environment variables for this app
     HTTP_PORT: 8005
+  env_file: "github.com/eko/graphql/.env" # Optional, in case you want to specify some environment variables from a file
   setup: # Optional, in case you want to setup the project first if directory does not exists
     - go get github.com/eko/graphql
     - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
@@ -37,6 +38,7 @@ watcher: # Optional
     - main.go
   env: # Optional, in case you want to specify some environment variables for this app
     GRPC_PORT: 8006
+  env_file: "github.com/eko/grpc-api/.env" # Optional, in case you want to specify some environment variables from a file
   setup: # Optional, in case you want to setup the project first if directory does not exists
     - go get github.com/eko/grpc-api
     - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
