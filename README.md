@@ -57,7 +57,7 @@ You can download the latest version of the binary built for your architecture he
     [Linux](https://github.com/eko/monday/releases/latest/download/monday-linux-amd64)
 ]
 * Architecture **arm** [
-    [Linux](https://github.com/eko/it/releases/latest/download/monday-linux-arm)
+    [Linux](https://github.com/eko/monday/releases/latest/download/monday-linux-arm)
 ]
 
 ### From sources
