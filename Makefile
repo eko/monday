@@ -7,7 +7,7 @@ build: ## Builds a local version of Monday from sources
 	go build -ldflags "-X main.Version=sources-$(shell git rev-parse --short=5 HEAD)" -o monday ./cmd && mv monday /usr/local/bin
 
 build-binary: ## Builds a single binary of Monday from sources
-	/usr/local/bin/go build -ldflags "-X main.Version=sources-$(shell git rev-parse --short=5 HEAD)" -o monday ./cmd
+	go build -ldflags "-X main.Version=sources-$(shell git rev-parse --short=5 HEAD)" -o monday ./cmd
 
 docker-build: ## Builds a docker image of Monday from sources
 	docker build -t monday --build-arg Version=$(shell git rev-parse --short=5 HEAD) .
