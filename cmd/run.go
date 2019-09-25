@@ -20,7 +20,7 @@ and passing it as an argument`,
 
 		conf, err := config.Load()
 		if err != nil {
-			fmt.Printf("❌  %v", err)
+			fmt.Printf("❌  %v\n", err)
 			return
 		}
 
