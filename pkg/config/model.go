@@ -92,15 +92,16 @@ func (f *Forward) IsProxified() bool {
 
 // ForwardValues represents the available values for each forward type
 type ForwardValues struct {
-	Context       string            `yaml:"context"`
-	Namespace     string            `yaml:"namespace"`
-	Labels        map[string]string `yaml:"labels"`
-	Hostname      string            `yaml:"hostname"`
-	ProxyHostname string            `yaml:"proxy_hostname"`
-	DisableProxy  bool              `yaml:"disable_proxy"`
-	Ports         []string          `yaml:"ports"`
-	Remote        string            `yaml:"remote"`
-	Args          []string          `yaml:"args"`
+	Context         string            `yaml:"context"`
+	Namespace       string            `yaml:"namespace"`
+	Labels          map[string]string `yaml:"labels"`
+	ForwardHostname string            `yaml:"forward_hostname"`
+	Hostname        string            `yaml:"hostname"`
+	ProxyHostname   string            `yaml:"proxy_hostname"`
+	DisableProxy    bool              `yaml:"disable_proxy"`
+	Ports           []string          `yaml:"ports"`
+	Remote          string            `yaml:"remote"`
+	Args            []string          `yaml:"args"`
 }
 
 // Watcher represents the configuration values for the file watcher component

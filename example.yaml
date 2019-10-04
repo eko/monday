@@ -108,6 +108,8 @@ watcher: # Optional
 
 # Example of SSH local forward: forward a specific remote port locally
 # Here, I'm forwarding on port 8080 locally my production website (port 80)
+# I am also pointing the SSH forward to the bastion.svc.local hostname so the SSH
+# command will be: ssh -L 80:bastion.svc.local:8080 vincent@composieux.fr
 <: &composieux-fr-local
   name: composieux-fr-local
   type: ssh
@@ -115,6 +117,7 @@ watcher: # Optional
     remote: vincent@composieux.fr # SSH <user>@<hostname>
     args:
       - "-i/Users/name/.ssh/private_key"
+    forward_hostname: bastion.svc.local # Optional, SSH forward hostname. Defaults to 127.0.0.1
     hostname: composieux.fr.svc.local # Optional
     ports:
      - 8080:80

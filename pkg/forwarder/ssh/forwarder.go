@@ -10,31 +10,33 @@ import (
 )
 
 type Forwarder struct {
-	view         ui.ViewInterface
-	forwardType  string
-	remote       string
-	localPort    string
-	forwardPort  string
-	args         []string
-	cmd          *exec.Cmd
-	stopChannel  chan struct{}
-	readyChannel chan struct{}
+	view            ui.ViewInterface
+	forwardType     string
+	remote          string
+	forwardHostname string
+	localPort       string
+	forwardPort     string
+	args            []string
+	cmd             *exec.Cmd
+	stopChannel     chan struct{}
+	readyChannel    chan struct{}
 }
 
 var (
 	execCommand = exec.Command
 )
 
-func NewForwarder(view ui.ViewInterface, forwardType, remote, localPort, forwardPort string, args []string) (*Forwarder, error) {
+func NewForwarder(view ui.ViewInterface, forwardType string, values config.ForwardValues, localPort, forwardPort string) (*Forwarder, error) {
 	return &Forwarder{
-		view:         view,
-		forwardType:  forwardType,
-		remote:       remote,
-		localPort:    localPort,
-		forwardPort:  forwardPort,
-		args:         args,
-		stopChannel:  make(chan struct{}),
-		readyChannel: make(chan struct{}, 1),
+		view:            view,
+		forwardType:     forwardType,
+		remote:          values.Remote,
+		forwardHostname: values.ForwardHostname,
+		localPort:       localPort,
+		forwardPort:     forwardPort,
+		args:            values.Args,
+		stopChannel:     make(chan struct{}),
+		readyChannel:    make(chan struct{}, 1),
 	}, nil
 }
 
@@ -67,7 +69,12 @@ func (f *Forwarder) Forward() error {
 		forwardOption = "-R"
 	}
 
-	mapping := fmt.Sprintf("%s:127.0.0.1:%s", f.localPort, f.forwardPort)
+	var forwardHostname = "127.0.0.1" // Default SSH forward hostname if none specified in config
+	if f.forwardHostname != "" {
+		forwardHostname = f.forwardHostname
+	}
+
+	mapping := fmt.Sprintf("%s:%s:%s", f.localPort, forwardHostname, f.forwardPort)
 	host := f.remote
 
 	arguments := append([]string{

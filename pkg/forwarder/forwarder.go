@@ -166,9 +166,9 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 			for _, proxyForward := range proxyForwards {
 				localPort, forwardPort := splitLocalAndForwardPorts(ports)
 				values.Remote = "root@127.0.0.1"
-				args := append(values.Args, fmt.Sprintf("-p %s", proxyForward.ProxyPort))
+				values.Args = append(values.Args, fmt.Sprintf("-p %s", proxyForward.ProxyPort))
 
-				forwarder, err := ssh.NewForwarder(f.view, config.ForwarderSSHRemote, values.Remote, localPort, forwardPort, args)
+				forwarder, err := ssh.NewForwarder(f.view, config.ForwarderSSHRemote, values, localPort, forwardPort)
 				if err != nil {
 					f.view.Writef("❌  %s\n", err.Error())
 					return
@@ -181,7 +181,7 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	// SSH local forward: give proxy port as local port and forwarded port, use proxy
 	case config.ForwarderSSH:
 		for _, proxyForward := range proxyForwards {
-			forwarder, err := ssh.NewForwarder(f.view, forward.Type, values.Remote, proxyForward.ProxyPort, proxyForward.ForwardPort, values.Args)
+			forwarder, err := ssh.NewForwarder(f.view, forward.Type, values, proxyForward.ProxyPort, proxyForward.ForwardPort)
 			if err != nil {
 				f.view.Writef("❌  %s\n", err.Error())
 				return
@@ -193,7 +193,7 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	// SSH remote forward: give local port and forwarded port, do not proxy
 	case config.ForwarderSSHRemote:
 		for _, proxyForward := range proxyForwards {
-			forwarder, err := ssh.NewForwarder(f.view, forward.Type, values.Remote, proxyForward.LocalPort, proxyForward.ForwardPort, values.Args)
+			forwarder, err := ssh.NewForwarder(f.view, forward.Type, values, proxyForward.LocalPort, proxyForward.ForwardPort)
 			if err != nil {
 				f.view.Writef("❌  %s\n", err.Error())
 				return
