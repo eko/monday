@@ -67,6 +67,10 @@ type Application struct {
 
 // GetEnvFile returns the filename guessed with current application environment
 func (a *Application) GetEnvFile() string {
+	if a.EnvFile == "" {
+		return ""
+	}
+
 	return getValueByExecutionContext(a.EnvFile, a.Executable)
 }
 
@@ -114,15 +118,15 @@ func getValueByExecutionContext(path, executable string) string {
 		path = strings.Replace(path, "~", "$HOME", -1)
 	}
 
+	path = os.ExpandEnv(path)
+
 	switch executable {
 	case ExecutableGo:
 		// First try to use the given directory, else, add the Go's $GOPATH
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			path = fmt.Sprintf("$GOPATH/src/%s", path)
+			path = os.ExpandEnv(fmt.Sprintf("$GOPATH/src/%s", path))
 		}
 	}
-
-	path = os.ExpandEnv(path)
 
 	return path
 }
