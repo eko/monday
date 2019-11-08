@@ -146,6 +146,8 @@ github.com/stretchr/testify v0.0.0-20151208002404-e3a8ff8ce365/go.mod h1:a8OnRci
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
+github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
+github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/txn2/txeh v1.2.0 h1:X9Pu4/FLK3BvpaiLw1diZT9iHfRtA1AtPjRj61R/5aI=
 github.com/txn2/txeh v1.2.0/go.mod h1:ZjxVrLPqwKzFone9TXvhynlP06p7JfYQ8DyDsnNyovI=
 github.com/txn2/txeh v1.2.2 h1:8y+kEMJz/6Ri1n7Twb0r1BLCCjETu2LPixeN2AjG/eo=
