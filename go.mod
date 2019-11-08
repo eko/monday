@@ -15,7 +15,7 @@ require (
 	github.com/mattn/go-isatty v0.0.9 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/nsf/termbox-go v0.0.0-20190624072549-eeb6cd0a1762 // indirect
-	github.com/radovskyb/watcher v1.0.6
+	github.com/radovskyb/watcher v1.0.7
 	github.com/spf13/cobra v0.0.3
 	github.com/stretchr/testify v1.3.0
 	github.com/txn2/txeh v1.2.0
