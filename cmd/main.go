@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"syscall"
 
 	"github.com/eko/monday/internal/runtime"
 	"github.com/eko/monday/pkg/config"
@@ -113,7 +112,7 @@ func run(conf *config.Config, choice string) {
 	forwarderComponent = forwarder.NewForwarder(layout.GetForwardsView(), proxyComponent, project)
 
 	watcherComponent = watcher.NewWatcher(runnerComponent, forwarderComponent, conf.Watcher, project)
-	watcherComponent.Watch()
+	go watcherComponent.Watch()
 
 	if uiEnabled {
 		defer layout.GetGui().Close()
@@ -134,7 +133,7 @@ func run(conf *config.Config, choice string) {
 // Handle for an exit signal in order to quit application on a proper way (shutting down connections and servers).
 func handleExitSignal() {
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(stop, os.Interrupt, os.Kill)
 
 	<-stop
 
@@ -144,10 +143,10 @@ func handleExitSignal() {
 func stopAll() {
 	fmt.Println("\n👋  Bye, closing your local applications and remote connections now")
 
+	watcherComponent.Stop()
 	forwarderComponent.Stop()
 	proxyComponent.Stop()
 	runnerComponent.Stop()
-	watcherComponent.Stop()
 
 	os.Exit(0)
 }

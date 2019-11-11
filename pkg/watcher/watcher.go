@@ -48,9 +48,9 @@ func NewWatcher(runner runner.RunnerInterface, forwarder forwarder.ForwarderInte
 // It also relaunch them in case of file changes.
 func (w *Watcher) Watch() {
 	w.runner.SetupAll()
-	w.runner.RunAll()
 
-	w.forwarder.ForwardAll()
+	go w.runner.RunAll()
+	go w.forwarder.ForwardAll()
 
 	for _, application := range w.project.Applications {
 		if !application.Watch {
@@ -100,10 +100,10 @@ func (w *Watcher) watchApplication(application *config.Application) error {
 		for {
 			select {
 			case event := <-fileWatcher.Event:
-				fmt.Printf("👓  Watcher has detected a file change: %v", event)
+				fmt.Printf("👓  Watcher has detected a file change: %v\n", event)
 				w.runner.Restart(application)
 			case err := <-fileWatcher.Error:
-				fmt.Printf("❌  An error has occured while file watching: %v", err)
+				fmt.Printf("❌  An error has occured while file watching: %v\n", err)
 			}
 		}
 	}()

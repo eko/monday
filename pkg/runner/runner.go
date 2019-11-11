@@ -111,7 +111,8 @@ func (r *Runner) Restart(application *config.Application) {
 	if cmd, ok := r.cmds[application.Name]; ok {
 		pgid, err := syscall.Getpgid(cmd.Process.Pid)
 		if err == nil {
-			syscall.Kill(-pgid, 15)
+			syscall.Kill(-pgid, syscall.SIGKILL)
+			cmd.Wait()
 		}
 	}
 
@@ -125,7 +126,8 @@ func (r *Runner) Stop() error {
 		if cmd, ok := r.cmds[application.Name]; ok {
 			pgid, err := syscall.Getpgid(cmd.Process.Pid)
 			if err == nil {
-				syscall.Kill(-pgid, 15)
+				syscall.Kill(-pgid, syscall.SIGKILL)
+				cmd.Wait()
 			}
 		}
 
