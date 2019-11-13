@@ -23,8 +23,7 @@ script:
 deploy:
   provider: releases
   skip_cleanup: true
-  api_key:
-    secure: $GITHUB_TOKEN
+  api_key: $GITHUB_TOKEN
   file:
     - monday-darwin-386
     - monday-darwin-amd64
