@@ -109,24 +109,21 @@ func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 		}
 		if err != nil {
 			p.view.Writef("❌  Could not accept client connection for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
+			return
 		}
+
+		defer client.Close()
 
 		target, err := net.Dial("tcp", fmt.Sprintf("%s:%s", pf.GetProxyHostname(), pf.ProxyPort))
 		if err != nil {
-			p.view.Writef("❌  Error when dialing with forwarder for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
+			p.view.Writef("❌  Error when dialing with target for '%s:%s' (%s): %v\n", pf.GetProxyHostname(), pf.LocalPort, pf.ProxyPort, err)
+			return
 		}
 
-		go func() {
-			defer client.Close()
-			defer target.Close()
-			io.Copy(client, target)
-		}()
+		defer target.Close()
 
-		go func() {
-			defer client.Close()
-			defer target.Close()
-			io.Copy(target, client)
-		}()
+		go io.Copy(client, target)
+		go io.Copy(target, client)
 	}
 }
 
