@@ -109,6 +109,8 @@ github.com/manifoldco/promptui v0.3.2 h1:rir7oByTERac6jhpHUPErHuopoRDvO3jxS+Fdad
 github.com/manifoldco/promptui v0.3.2/go.mod h1:8JU+igZ+eeiiRku4T5BjtKh2ms8sziGpSYl1gN8Bazw=
 github.com/manifoldco/promptui v0.6.0 h1:GuXmIdl5lhlamnWf3NbsKWYlaWyHABeStbD1LLsQMuA=
 github.com/manifoldco/promptui v0.6.0/go.mod h1:o9/C5VV8IPXxjxpl9au84MtQGIi5dwn7eldAgEdePPs=
+github.com/manifoldco/promptui v0.7.0 h1:3l11YT8tm9MnwGFQ4kETwkzpAwY2Jt9lCrumCUW4+z4=
+github.com/manifoldco/promptui v0.7.0/go.mod h1:n4zTdgP0vr0S3w7/O/g98U+e0gwLScEXGwov2nIKuGQ=
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
 github.com/mattn/go-colorable v0.1.2 h1:/bC9yWikZXAL9uJdulbSfyVNIR3n3trXl+v8+1sx8mU=
 github.com/mattn/go-colorable v0.1.2/go.mod h1:U0ppj6V5qS13XJ6of8GYAs25YV2eR4EVcfRqFIhoBtE=
