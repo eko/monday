@@ -28,14 +28,6 @@ The Monday GUI (available for macOS and Linux) application is now also available
 
 ## Installation
 
-### One-liner
-
-You can download and setup Monday binary by running the following command on your terminal:
-
-```bash
-$ curl https://composieux.fr/getmonday.sh | sh
-```
-
 ### Homebrew (macOS)
 
 ```bash
