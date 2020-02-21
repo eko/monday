@@ -12,7 +12,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/nsf/termbox-go v0.0.0-20190624072549-eeb6cd0a1762 // indirect
 	github.com/radovskyb/watcher v1.0.7
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v0.0.6
 	github.com/stretchr/testify v1.4.0
 	github.com/txn2/txeh v1.3.0
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2 // indirect
