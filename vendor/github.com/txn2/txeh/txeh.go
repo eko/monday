@@ -45,6 +45,7 @@ type HostFileLine struct {
 	Hostnames       []string
 	Raw             string
 	Trimed          string
+	Comment         string
 }
 
 // NewHostsDefault returns a hosts object with
@@ -92,6 +93,9 @@ func (h *Hosts) Save() error {
 func (h *Hosts) SaveAs(fileName string) error {
 	hfData := []byte(h.RenderHostsFile())
 
+	h.Lock()
+	defer h.Unlock()
+
 	err := ioutil.WriteFile(fileName, hfData, 0644)
 	if err != nil {
 		return err
@@ -102,14 +106,15 @@ func (h *Hosts) SaveAs(fileName string) error {
 
 // Reload hosts file
 func (h *Hosts) Reload() error {
+	h.Lock()
+	defer h.Unlock()
+
 	hfl, err := ParseHosts(h.ReadFilePath)
 	if err != nil {
 		return err
 	}
 
-	h.Lock()
 	h.hostFileLines = hfl
-	h.Unlock()
 
 	return nil
 }
@@ -278,6 +283,9 @@ func (h *Hosts) RenderHostsFile() string {
 
 // GetHostFileLines
 func (h *Hosts) GetHostFileLines() *HostFileLines {
+	h.Lock()
+	defer h.Unlock()
+
 	return &h.hostFileLines
 }
 
@@ -314,6 +322,12 @@ func ParseHosts(path string) ([]HostFileLine, error) {
 			curLine.LineType = EMPTY
 			continue
 		}
+
+		curLineSplit := strings.SplitN(curLine.Trimed, "#", 2)
+		if len(curLineSplit) > 1 {
+			curLine.Comment = curLineSplit[1]
+		}
+		curLine.Trimed = curLineSplit[0]
 
 		curLine.Parts = strings.Fields(curLine.Trimed)
 
@@ -354,5 +368,8 @@ func lineFormatter(hfl HostFileLine) string {
 		return hfl.Raw
 	}
 
+	if len(hfl.Comment) > 0 {
+		return fmt.Sprintf("%-16s %s #%s", hfl.Address, strings.Join(hfl.Hostnames, " "), hfl.Comment)
+	}
 	return fmt.Sprintf("%-16s %s", hfl.Address, strings.Join(hfl.Hostnames, " "))
 }

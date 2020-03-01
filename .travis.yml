@@ -5,12 +5,13 @@ matrix:
       env: LATEST=true
     - go: 1.11.x
     - go: 1.12.x
+    - go: 1.13.x
     - go: tip
   allow_failures:
     - go: tip
 
 before_install:
-  - go get github.com/mitchellh/gox
+  - GO111MODULE=off go get github.com/mitchellh/gox
 
 install:
   - export GO111MODULE=on

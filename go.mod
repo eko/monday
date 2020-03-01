@@ -1,6 +1,6 @@
 module github.com/eko/monday
 
-go 1.12
+go 1.14
 
 require (
 	github.com/imdario/mergo v0.3.7 // indirect
@@ -15,9 +15,7 @@ require (
 	github.com/spf13/cobra v0.0.6
 	github.com/stretchr/testify v1.5.1
 	github.com/txn2/txeh v1.3.0
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
-	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.0.0-20190923155552-eac758366a00
 	k8s.io/apimachinery v0.0.0-20190923155427-ec87dd743e08

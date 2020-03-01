@@ -30,7 +30,7 @@ type Select struct {
 
 	// Items are the items to display inside the list. It expect a slice of any kind of values, including strings.
 	//
-	// If using a slice a strings, promptui will use those strings directly into its base templates or the
+	// If using a slice of strings, promptui will use those strings directly into its base templates or the
 	// provided templates. If using any other type in the slice, it will attempt to transform it into a string
 	// before giving it to its templates. Custom templates will override this behavior if using the dot notation
 	// inside the templates.
@@ -41,9 +41,18 @@ type Select struct {
 	// Size is the number of items that should appear on the select before scrolling is necessary. Defaults to 5.
 	Size int
 
+	// CursorPos is the initial position of the cursor.
+	CursorPos int
+
 	// IsVimMode sets whether to use vim mode when using readline in the command prompt. Look at
 	// https://godoc.org/github.com/chzyer/readline#Config for more information on readline.
 	IsVimMode bool
+
+	// HideHelp sets whether to hide help information.
+	HideHelp bool
+
+	// HideSelected sets whether to hide the text displayed after an item is successfully selected.
+	HideSelected bool
 
 	// Templates can be used to customize the select output. If nil is passed, the
 	// default templates are used. See the SelectTemplates docs for more info.
@@ -60,13 +69,17 @@ type Select struct {
 	// it is implemented.
 	Searcher list.Searcher
 
-	// StartInSearchMode sets whether or not the select mdoe should start in search mode or selection mode.
+	// StartInSearchMode sets whether or not the select mode should start in search mode or selection mode.
 	// For search mode to work, the Search property must be implemented.
 	StartInSearchMode bool
 
-	label string
-
 	list *list.List
+
+	// A function that determines how to render the cursor
+	Pointer Pointer
+
+	Stdin  io.ReadCloser
+	Stdout io.WriteCloser
 }
 
 // SelectKeys defines the available keys used by select mode to enable the user to move around the list
@@ -167,11 +180,24 @@ type SelectTemplates struct {
 	help     *template.Template
 }
 
-// Run executes the select list. Its displays the label and the list of items, asking the user to chose any
+// SearchPrompt is the prompt displayed in search mode.
+var SearchPrompt = "Search: "
+
+// Run executes the select list. It displays the label and the list of items, asking the user to chose any
 // value within to list. Run will keep the prompt alive until it has been canceled from
 // the command prompt or it has received a valid value. It will return the value and an error if any
 // occurred during the select's execution.
 func (s *Select) Run() (int, string, error) {
+	return s.RunCursorAt(s.CursorPos, 0)
+}
+
+// RunCursorAt executes the select list, initializing the cursor to the given
+// position. Invalid cursor positions will be clamped to valid values.  It
+// displays the label and the list of items, asking the user to chose any value
+// within to list. Run will keep the prompt alive until it has been canceled
+// from the command prompt or it has received a valid value. It will return
+// the value and an error if any occurred during the select's execution.
+func (s *Select) RunCursorAt(cursorPos, scroll int) (int, string, error) {
 	if s.Size == 0 {
 		s.Size = 5
 	}
@@ -190,18 +216,20 @@ func (s *Select) Run() (int, string, error) {
 	if err != nil {
 		return 0, "", err
 	}
-	return s.innerRun(0, ' ')
+	return s.innerRun(cursorPos, scroll, ' ')
 }
 
-func (s *Select) innerRun(starting int, top rune) (int, string, error) {
-	stdin := readline.NewCancelableStdin(os.Stdin)
-	c := &readline.Config{}
+func (s *Select) innerRun(cursorPos, scroll int, top rune) (int, string, error) {
+	c := &readline.Config{
+		Stdin:  s.Stdin,
+		Stdout: s.Stdout,
+	}
 	err := c.Init()
 	if err != nil {
 		return 0, "", err
 	}
 
-	c.Stdin = stdin
+	c.Stdin = readline.NewCancelableStdin(c.Stdin)
 
 	if s.IsVimMode {
 		c.VimMode = true
@@ -218,9 +246,12 @@ func (s *Select) innerRun(starting int, top rune) (int, string, error) {
 	rl.Write([]byte(hideCursor))
 	sb := screenbuf.New(rl)
 
-	var searchInput []rune
+	cur := NewCursor("", s.Pointer, false)
+
 	canSearch := s.Searcher != nil
 	searchMode := s.StartInSearchMode
+	s.list.SetCursor(cursorPos)
+	s.list.SetStart(scroll)
 
 	c.SetListener(func(line []rune, pos int, key rune) ([]rune, int, bool) {
 		switch {
@@ -237,7 +268,7 @@ func (s *Select) innerRun(starting int, top rune) (int, string, error) {
 
 			if searchMode {
 				searchMode = false
-				searchInput = nil
+				cur.Replace("")
 				s.list.CancelSearch()
 			} else {
 				searchMode = true
@@ -247,11 +278,10 @@ func (s *Select) innerRun(starting int, top rune) (int, string, error) {
 				break
 			}
 
-			if len(searchInput) > 1 {
-				searchInput = searchInput[:len(searchInput)-1]
-				s.list.Search(string(searchInput))
+			cur.Backspace()
+			if len(cur.Get()) > 0 {
+				s.list.Search(cur.Get())
 			} else {
-				searchInput = nil
 				s.list.CancelSearch()
 			}
 		case key == s.Keys.PageUp.Code || (key == 'h' && !searchMode):
@@ -260,15 +290,15 @@ func (s *Select) innerRun(starting int, top rune) (int, string, error) {
 			s.list.PageDown()
 		default:
 			if canSearch && searchMode {
-				searchInput = append(searchInput, line...)
-				s.list.Search(string(searchInput))
+				cur.Update(string(line))
+				s.list.Search(cur.Get())
 			}
 		}
 
 		if searchMode {
-			header := fmt.Sprintf("Search: %s%s", string(searchInput), cursor)
+			header := SearchPrompt + cur.Format()
 			sb.WriteString(header)
-		} else {
+		} else if !s.HideHelp {
 			help := s.renderHelp(canSearch)
 			sb.Write(help)
 		}
@@ -358,15 +388,23 @@ func (s *Select) innerRun(starting int, top rune) (int, string, error) {
 	items, idx := s.list.Items()
 	item := items[idx]
 
-	output := render(s.Templates.selected, item)
+	if s.HideSelected {
+		clearScreen(sb)
+	} else {
+		sb.Reset()
+		sb.Write(render(s.Templates.selected, item))
+		sb.Flush()
+	}
 
-	sb.Reset()
-	sb.Write(output)
-	sb.Flush()
 	rl.Write([]byte(showCursor))
 	rl.Close()
 
 	return s.list.Index(), fmt.Sprintf("%v", item), err
+}
+
+// ScrollPosition returns the current scroll position.
+func (s *Select) ScrollPosition() int {
+	return s.list.Start()
 }
 
 func (s *Select) prepareTemplates() error {
@@ -471,6 +509,12 @@ type SelectWithAdd struct {
 	// IsVimMode sets whether to use vim mode when using readline in the command prompt. Look at
 	// https://godoc.org/github.com/chzyer/readline#Config for more information on readline.
 	IsVimMode bool
+
+	// a function that defines how to render the cursor
+	Pointer Pointer
+
+	// HideHelp sets whether to hide help information.
+	HideHelp bool
 }
 
 // Run executes the select list. Its displays the label and the list of items, asking the user to chose any
@@ -493,8 +537,10 @@ func (sa *SelectWithAdd) Run() (int, string, error) {
 			Label:     sa.Label,
 			Items:     newItems,
 			IsVimMode: sa.IsVimMode,
+			HideHelp:  sa.HideHelp,
 			Size:      5,
 			list:      list,
+			Pointer:   sa.Pointer,
 		}
 		s.setKeys()
 
@@ -503,7 +549,7 @@ func (sa *SelectWithAdd) Run() (int, string, error) {
 			return 0, "", err
 		}
 
-		selected, value, err := s.innerRun(1, '+')
+		selected, value, err := s.innerRun(1, 0, '+')
 		if err != nil || selected != 0 {
 			return selected - 1, value, err
 		}
@@ -516,6 +562,7 @@ func (sa *SelectWithAdd) Run() (int, string, error) {
 		Label:     sa.AddLabel,
 		Validate:  sa.Validate,
 		IsVimMode: sa.IsVimMode,
+		Pointer:   sa.Pointer,
 	}
 	value, err := p.Run()
 	return SelectedAdd, value, err
@@ -581,4 +628,10 @@ func render(tpl *template.Template, data interface{}) []byte {
 		return []byte(fmt.Sprintf("%v", data))
 	}
 	return buf.Bytes()
+}
+
+func clearScreen(sb *screenbuf.ScreenBuf) {
+	sb.Reset()
+	sb.Clear()
+	sb.Flush()
 }

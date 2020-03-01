@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+## [0.7.0] - 2020-01-11
+
+### Added
+
+- Add support for configurable Stdin/Stdout on Prompt
+- Add support for setting initial cursor position
+- Switch to golangci-lint for linting
+
+### Removed
+
+- Removed support for Go 1.11
+
+### Fixed
+
+- Reduce tool-based deps, hopefully fixing any install issues
+
+## [0.6.0] - 2019-11-29
+
+### Added
+
+- Support configurable stdin
+
+### Fixed
+
+- Correct the dep on go-i18n
+
+## [0.5.0] - 2019-11-29
+
+### Added
+
+- Now building and testing on go 1.11, go 1.12, and go 1.13
+
+### Removed
+
+- Removed support for Go versions that don't include modules.
+
+## [0.4.0] - 2019-02-19
+
+### Added
+
+- The text displayed when an item was successfully selected can be hidden
+
+## [0.3.2] - 2018-11-26
+
+### Added
+
+- Support Go modules
+
+### Fixed
+
+- Fix typos in PromptTemplates documentation
+
 ## [0.3.1] - 2018-07-26
 
 ### Added
