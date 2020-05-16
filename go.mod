@@ -16,7 +16,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/txn2/txeh v1.3.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.0.0-20190923155552-eac758366a00
 	k8s.io/apimachinery v0.0.0-20190923155427-ec87dd743e08
 	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
