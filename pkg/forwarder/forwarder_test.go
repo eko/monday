@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/eko/monday/pkg/config"
 	mocks "github.com/eko/monday/internal/tests/mocks/proxy"
 	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
+	"github.com/eko/monday/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -58,6 +58,43 @@ func TestForwardAll(t *testing.T) {
 			&config.Forward{
 				Name: "test-ssh-forward",
 				Type: "ssh",
+				Values: config.ForwardValues{
+					Remote: "root@acme.tld",
+					Ports:  []string{"8080:8080"},
+				},
+			},
+		},
+	}
+
+	view := &uimocks.ViewInterface{}
+	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+
+	forwarder := NewForwarder(view, proxy, project)
+
+	// When
+	forwarder.ForwardAll()
+
+	// Then
+	assert.Len(t, forwarder.forwards, 1)
+
+	for _, forward := range project.Forwards {
+		if v, ok := forwarder.forwarders.Load(forward.Name); ok {
+			assert.Len(t, v.([]ForwarderTypeInterface), 1)
+		} else {
+			t.Fatal(fmt.Sprintf("No forwarder found for forward named '%s'", forward.Name))
+		}
+	}
+}
+
+func TestForwardRemoteSSH(t *testing.T) {
+	// Given
+	proxy := &mocks.ProxyInterface{}
+	project := &config.Project{
+		Name: "My project name",
+		Forwards: []*config.Forward{
+			&config.Forward{
+				Name: "test-ssh-forward",
+				Type: config.ForwarderSSHRemote,
 				Values: config.ForwardValues{
 					Remote: "root@acme.tld",
 					Ports:  []string{"8080:8080"},
