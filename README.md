@@ -136,7 +136,7 @@ Please note that you can also split this configuration in multiple files by resp
 
 This will help you in having smaller and more readable configuration files.
 
-To lear more about the configuration, please take a look at the [Configuration Wiki page](https://github.com/eko/monday/wiki/Configuration).
+To learn more about the configuration, please take a look at the [Configuration Wiki page](https://github.com/eko/monday/wiki/Configuration).
 
 For an overview of what's possible with configuration file, please look at the [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml).
 
