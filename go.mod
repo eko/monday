@@ -6,7 +6,7 @@ require (
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/jroimartin/gocui v0.4.0
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
-	github.com/manifoldco/promptui v0.7.0
+	github.com/manifoldco/promptui v0.8.0
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.9 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
