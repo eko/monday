@@ -55,7 +55,7 @@ github.com/juju/ansiterm/tabwriter
 # github.com/lunixbochs/vtclean v1.0.0
 ## explicit
 github.com/lunixbochs/vtclean
-# github.com/manifoldco/promptui v0.7.0
+# github.com/manifoldco/promptui v0.8.0
 ## explicit
 github.com/manifoldco/promptui
 github.com/manifoldco/promptui/list
@@ -81,14 +81,14 @@ github.com/pmezard/go-difflib/difflib
 # github.com/radovskyb/watcher v1.0.7
 ## explicit
 github.com/radovskyb/watcher
-# github.com/spf13/cobra v0.0.6
+# github.com/spf13/cobra v0.0.7
 ## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.3
 github.com/spf13/pflag
 # github.com/stretchr/objx v0.1.1
 github.com/stretchr/objx
-# github.com/stretchr/testify v1.5.1
+# github.com/stretchr/testify v1.6.1
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
@@ -134,9 +134,11 @@ google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
 # gopkg.in/inf.v0 v0.9.0
 gopkg.in/inf.v0
-# gopkg.in/yaml.v2 v2.2.8
+# gopkg.in/yaml.v2 v2.3.0
 ## explicit
 gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+gopkg.in/yaml.v3
 # k8s.io/api v0.0.0-20190923155552-eac758366a00
 ## explicit
 k8s.io/api/admissionregistration/v1beta1
