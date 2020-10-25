@@ -83,7 +83,12 @@ func selectProject(conf *config.Config) string {
 
 	_, choice, err := prompt.Run()
 	if err != nil {
-		panic(fmt.Sprintf("Prompt failed:\n%v", err))
+		if err.Error() == "^C" {
+			fmt.Println("\n👋  Bye")
+			os.Exit(0)
+		} else {
+			panic(fmt.Sprintf("selection error:\n%v", err))
+		}
 	}
 
 	fmt.Print("\n")
