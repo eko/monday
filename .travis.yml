@@ -20,7 +20,10 @@ install:
 
 script:
   - go test -v ./...
-  - if [ "${LATEST}" = "true" ]; then gox -ldflags "-s -w -X main.Version=$TRAVIS_TAG" -os="linux darwin" -arch="386 amd64" -osarch="linux/arm" -output="monday-{{.OS}}-{{.Arch}}"  -verbose ./...; fi
+  - if [ "${LATEST}" = "true" ]; then
+      gox -ldflags "-s -w -X main.Version=$TRAVIS_TAG" -os="darwin" -arch="amd64" -osarch="linux/arm" -output="monday-{{.OS}}-{{.Arch}}"  -verbose ./...;
+      gox -ldflags "-s -w -X main.Version=$TRAVIS_TAG" -os="linux" -arch="386 amd64" -osarch="linux/arm" -output="monday-{{.OS}}-{{.Arch}}"  -verbose ./...;
+    fi
 
 deploy:
   provider: releases
