@@ -8,10 +8,10 @@ import (
 
 type Logstreamer struct {
 	podName string
-	view    ui.ViewInterface
+	view    ui.View
 }
 
-func NewLogstreamer(view ui.ViewInterface, podName string) *Logstreamer {
+func NewLogstreamer(view ui.View, podName string) *Logstreamer {
 	return &Logstreamer{
 		podName: podName,
 		view:    view,

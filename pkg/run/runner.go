@@ -18,7 +18,7 @@ var (
 	hasSetup    = false
 )
 
-type RunnerInterface interface {
+type Runner interface {
 	RunAll()
 	SetupAll()
 	Run(application *config.Application)
@@ -26,18 +26,18 @@ type RunnerInterface interface {
 	Stop() error
 }
 
-// Runner is the struct that manage running local applications
-type Runner struct {
-	proxy        proxy.ProxyInterface
+// runner is the struct that manage running local applications
+type runner struct {
+	proxy        proxy.Proxy
 	projectName  string
 	applications []*config.Application
 	cmds         map[string]*exec.Cmd
-	view         ui.ViewInterface
+	view         ui.View
 }
 
 // NewRunner instancites a Runner struct from configuration data
-func NewRunner(view ui.ViewInterface, proxy proxy.ProxyInterface, project *config.Project) *Runner {
-	return &Runner{
+func NewRunner(view ui.View, proxy proxy.Proxy, project *config.Project) *runner {
+	return &runner{
 		proxy:        proxy,
 		projectName:  project.Name,
 		applications: project.Applications,
@@ -47,7 +47,7 @@ func NewRunner(view ui.ViewInterface, proxy proxy.ProxyInterface, project *confi
 }
 
 // RunAll runs all local applications in separated goroutines
-func (r *Runner) RunAll() {
+func (r *runner) RunAll() {
 	for _, application := range r.applications {
 		go r.Run(application)
 
@@ -59,7 +59,7 @@ func (r *Runner) RunAll() {
 }
 
 // SetupAll runs setup commands for all applications in case their directory does not already exists
-func (r *Runner) SetupAll() {
+func (r *runner) SetupAll() {
 	var wg sync.WaitGroup
 
 	for _, application := range r.applications {
@@ -75,7 +75,7 @@ func (r *Runner) SetupAll() {
 }
 
 // Run launches the application
-func (r *Runner) Run(application *config.Application) {
+func (r *runner) Run(application *config.Application) {
 	if err := r.checkApplicationExecutableEnvironment(application); err != nil {
 		r.view.Writef("❌  %s\n", err.Error())
 		return
@@ -107,7 +107,7 @@ func (r *Runner) Run(application *config.Application) {
 }
 
 // Restart kills the current application launch (if it exists) and launch a new one
-func (r *Runner) Restart(application *config.Application) {
+func (r *runner) Restart(application *config.Application) {
 	if cmd, ok := r.cmds[application.Name]; ok {
 		pgid, err := syscall.Getpgid(cmd.Process.Pid)
 		if err == nil {
@@ -120,7 +120,7 @@ func (r *Runner) Restart(application *config.Application) {
 }
 
 // Stop stops all the currently active local applications
-func (r *Runner) Stop() error {
+func (r *runner) Stop() error {
 	for _, application := range r.applications {
 		// Kill process
 		if cmd, ok := r.cmds[application.Name]; ok {
@@ -143,7 +143,7 @@ func (r *Runner) Stop() error {
 	return nil
 }
 
-func (r *Runner) checkApplicationExecutableEnvironment(application *config.Application) error {
+func (r *runner) checkApplicationExecutableEnvironment(application *config.Application) error {
 	applicationPath := application.GetPath()
 
 	// Check application path exists
@@ -155,7 +155,7 @@ func (r *Runner) checkApplicationExecutableEnvironment(application *config.Appli
 }
 
 // Setup runs setup commands for a specified application
-func (r *Runner) setup(application *config.Application, wg *sync.WaitGroup) error {
+func (r *runner) setup(application *config.Application, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
 	if err := r.checkApplicationExecutableEnvironment(application); err == nil {

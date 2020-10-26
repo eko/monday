@@ -27,10 +27,10 @@ const (
 var (
 	Version string
 
-	proxyfier *proxy.Proxy
-	forwarder *forward.Forwarder
-	runner    *run.Runner
-	watcher   *watch.Watcher
+	proxyfier proxy.Proxy
+	forwarder forward.Forwarder
+	runner    run.Runner
+	watcher   watch.Watcher
 
 	uiEnabled = len(os.Getenv("MONDAY_ENABLE_UI")) > 0
 )

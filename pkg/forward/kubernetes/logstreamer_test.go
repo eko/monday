@@ -11,7 +11,7 @@ func TestNewLogstreamer(t *testing.T) {
 	// Given
 	podName := "my-test-pod"
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	// When
 	streamer := NewLogstreamer(view, podName)
@@ -24,7 +24,7 @@ func TestNewLogstreamer(t *testing.T) {
 
 func TestWrite(t *testing.T) {
 	// When
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Writef", "%s %s", "my-test-pod", "This is a sample log from my unit test")
 
 	streamer := NewLogstreamer(view, "my-test-pod")

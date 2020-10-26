@@ -14,8 +14,8 @@ import (
 
 func TestNewWatcher(t *testing.T) {
 	// Given
-	runner := &runnermocks.RunnerInterface{}
-	forwarder := &forwardermocks.ForwarderInterface{}
+	runner := &runnermocks.Runner{}
+	forwarder := &forwardermocks.Forwarder{}
 
 	project := getProjectMock()
 
@@ -24,14 +24,15 @@ func TestNewWatcher(t *testing.T) {
 	}
 
 	// When
-	watcher := NewWatcher(runner, forwarder, watcherConfig, project)
+	w := NewWatcher(runner, forwarder, watcherConfig, project)
 
 	// Then
-	assert.IsType(t, new(Watcher), watcher)
+	assert.IsType(t, new(watcher), w)
+	assert.Implements(t, new(Watcher), w)
 
-	assert.Equal(t, runner, watcher.runner)
-	assert.Equal(t, forwarder, watcher.forwarder)
-	assert.Equal(t, project, watcher.project)
+	assert.Equal(t, runner, w.runner)
+	assert.Equal(t, forwarder, w.forwarder)
+	assert.Equal(t, project, w.project)
 	assert.Equal(t, excludeDirectories, []string{
 		".git",
 		"node_modules",
@@ -39,16 +40,16 @@ func TestNewWatcher(t *testing.T) {
 		"test-directory",
 	})
 
-	assert.Len(t, watcher.fileWatchers, 0)
+	assert.Len(t, w.fileWatchers, 0)
 }
 
 func TestWatch(t *testing.T) {
 	// Given
-	runner := &runnermocks.RunnerInterface{}
+	runner := &runnermocks.Runner{}
 	runner.On("SetupAll").Once()
 	runner.On("RunAll").Once()
 
-	forwarder := &forwardermocks.ForwarderInterface{}
+	forwarder := &forwardermocks.Forwarder{}
 	forwarder.On("ForwardAll").Once()
 
 	project := getProjectMock()
@@ -61,11 +62,11 @@ func TestWatch(t *testing.T) {
 
 func TestWatchWhenFileChange(t *testing.T) {
 	// Given
-	runner := &runnermocks.RunnerInterface{}
+	runner := &runnermocks.Runner{}
 	runner.On("SetupAll").Once()
 	runner.On("RunAll").Once()
 
-	forwarder := &forwardermocks.ForwarderInterface{}
+	forwarder := &forwardermocks.Forwarder{}
 	forwarder.On("ForwardAll").Once()
 
 	project := getProjectMock()
@@ -101,11 +102,11 @@ func TestWatchWhenFileChange(t *testing.T) {
 
 func TestStop(t *testing.T) {
 	// Given
-	runner := &runnermocks.RunnerInterface{}
+	runner := &runnermocks.Runner{}
 	runner.On("SetupAll").Once()
 	runner.On("RunAll").Once()
 
-	forwarder := &forwardermocks.ForwarderInterface{}
+	forwarder := &forwardermocks.Forwarder{}
 	forwarder.On("ForwardAll").Once()
 
 	project := getProjectMock()

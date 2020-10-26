@@ -13,24 +13,26 @@ import (
 
 func TestAddEnvVariables(t *testing.T) {
 	// Given
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Write", mock.Anything)
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
 
-	proxy := &mocks.ProxyInterface{}
+	proxy := &mocks.Proxy{}
 
 	project := getMockedProjectWithApplicationEnv()
 
-	runner := NewRunner(view, proxy, project)
+	r := NewRunner(view, proxy, project)
 
 	// When
-	runner.Run(project.Applications[0])
+	r.Run(project.Applications[0])
 
 	// Then
-	assert.IsType(t, new(Runner), runner)
-	assert.Len(t, runner.cmds, 1)
+	assert.IsType(t, new(runner), r)
+	assert.Implements(t, new(Runner), r)
 
-	cmd := runner.cmds["test-app"]
+	assert.Len(t, r.cmds, 1)
+
+	cmd := r.cmds["test-app"]
 
 	assert.Contains(t, cmd.Env, "MY_ENVVAR_1=value")
 	assert.Contains(t, cmd.Env, "MY_ENVVAR_2=My custom second value")
@@ -38,24 +40,26 @@ func TestAddEnvVariables(t *testing.T) {
 
 func TestAddEnvVariablesFromFile(t *testing.T) {
 	// Given
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Write", mock.Anything)
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
 
-	proxy := &mocks.ProxyInterface{}
+	proxy := &mocks.Proxy{}
 
 	project := getMockedProjectWithApplicationEnv()
 
-	runner := NewRunner(view, proxy, project)
+	r := NewRunner(view, proxy, project)
 
 	// When
-	runner.Run(project.Applications[0])
+	r.Run(project.Applications[0])
 
 	// Then
-	assert.IsType(t, new(Runner), runner)
-	assert.Len(t, runner.cmds, 1)
+	assert.IsType(t, new(runner), r)
+	assert.Implements(t, new(Runner), r)
 
-	cmd := runner.cmds["test-app"]
+	assert.Len(t, r.cmds, 1)
+
+	cmd := r.cmds["test-app"]
 
 	assert.Contains(t, cmd.Env, "MY_ENVFILE_VAR_1=this is ok")
 	assert.Contains(t, cmd.Env, "MY_ENVFILE_VAR_2=this is really good")

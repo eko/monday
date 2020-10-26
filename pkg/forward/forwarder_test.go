@@ -13,7 +13,7 @@ import (
 
 func TestNewForwarder(t *testing.T) {
 	// Given
-	proxy := &mocks.ProxyInterface{}
+	proxy := &mocks.Proxy{}
 
 	project := &config.Project{
 		Name: "My project name",
@@ -31,22 +31,23 @@ func TestNewForwarder(t *testing.T) {
 		},
 	}
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
 
 	// When
-	forwarder := NewForwarder(view, proxy, project)
+	f := NewForwarder(view, proxy, project)
 
 	// Then
-	assert.IsType(t, new(Forwarder), forwarder)
+	assert.IsType(t, new(forwarder), f)
+	assert.Implements(t, new(Forwarder), f)
 
-	assert.Equal(t, proxy, forwarder.proxy)
-	assert.Equal(t, project.Forwards, forwarder.forwards)
+	assert.Equal(t, proxy, f.proxy)
+	assert.Equal(t, project.Forwards, f.forwards)
 }
 
 func TestForwardAll(t *testing.T) {
 	// Given
-	proxy := &mocks.ProxyInterface{}
+	proxy := &mocks.Proxy{}
 	proxy.
 		On("AddProxyForward", mock.AnythingOfType("string"), mock.AnythingOfType("*proxy.ProxyForward")).
 		Times(2)
@@ -66,7 +67,7 @@ func TestForwardAll(t *testing.T) {
 		},
 	}
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
 
 	forwarder := NewForwarder(view, proxy, project)
@@ -79,7 +80,7 @@ func TestForwardAll(t *testing.T) {
 
 	for _, forward := range project.Forwards {
 		if v, ok := forwarder.forwarders.Load(forward.Name); ok {
-			assert.Len(t, v.([]ForwarderTypeInterface), 1)
+			assert.Len(t, v.([]ForwarderType), 1)
 		} else {
 			t.Fatal(fmt.Sprintf("No forwarder found for forward named '%s'", forward.Name))
 		}
@@ -88,7 +89,7 @@ func TestForwardAll(t *testing.T) {
 
 func TestForwardRemoteSSH(t *testing.T) {
 	// Given
-	proxy := &mocks.ProxyInterface{}
+	proxy := &mocks.Proxy{}
 	project := &config.Project{
 		Name: "My project name",
 		Forwards: []*config.Forward{
@@ -103,7 +104,7 @@ func TestForwardRemoteSSH(t *testing.T) {
 		},
 	}
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
 
 	forwarder := NewForwarder(view, proxy, project)
@@ -116,7 +117,7 @@ func TestForwardRemoteSSH(t *testing.T) {
 
 	for _, forward := range project.Forwards {
 		if v, ok := forwarder.forwarders.Load(forward.Name); ok {
-			assert.Len(t, v.([]ForwarderTypeInterface), 1)
+			assert.Len(t, v.([]ForwarderType), 1)
 		} else {
 			t.Fatal(fmt.Sprintf("No forwarder found for forward named '%s'", forward.Name))
 		}

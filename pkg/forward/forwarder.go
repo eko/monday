@@ -14,13 +14,13 @@ import (
 	"github.com/eko/monday/pkg/ui"
 )
 
-// ForwarderInterface represents all kinds of forwarders (Kubernetes, others...)
-type ForwarderInterface interface {
+// Forwarder represents all kinds of forwarders (Kubernetes, others...)
+type Forwarder interface {
 	ForwardAll()
 	Stop()
 }
 
-type ForwarderTypeInterface interface {
+type ForwarderType interface {
 	GetForwardType() string
 	Forward() error
 	Stop() error
@@ -28,17 +28,17 @@ type ForwarderTypeInterface interface {
 	GetStopChannel() chan struct{}
 }
 
-// Forwarder is the struct that manage running local applications
-type Forwarder struct {
-	view       ui.ViewInterface
-	proxy      proxy.ProxyInterface
+// forwarder is the struct that manage running local applications
+type forwarder struct {
+	view       ui.View
+	proxy      proxy.Proxy
 	forwards   []*config.Forward
 	forwarders sync.Map
 }
 
 // NewForwarder instancites a Forwarder struct from configuration data
-func NewForwarder(view ui.ViewInterface, proxy proxy.ProxyInterface, project *config.Project) *Forwarder {
-	return &Forwarder{
+func NewForwarder(view ui.View, proxy proxy.Proxy, project *config.Project) *forwarder {
+	return &forwarder{
 		view:     view,
 		proxy:    proxy,
 		forwards: project.Forwards,
@@ -46,7 +46,7 @@ func NewForwarder(view ui.ViewInterface, proxy proxy.ProxyInterface, project *co
 }
 
 // ForwardAll runs all applications forwarders in separated goroutines
-func (f *Forwarder) ForwardAll() {
+func (f *forwarder) ForwardAll() {
 	var wg sync.WaitGroup
 	for _, forward := range f.forwards {
 		wg.Add(1)
@@ -66,9 +66,9 @@ func (f *Forwarder) ForwardAll() {
 }
 
 // Stop stops all currently active forwarders
-func (f *Forwarder) Stop() {
+func (f *forwarder) Stop() {
 	f.forwarders.Range(func(key, value interface{}) bool {
-		for _, forwarder := range value.([]ForwarderTypeInterface) {
+		for _, forwarder := range value.([]ForwarderType) {
 			forwarder.Stop()
 		}
 
@@ -76,11 +76,11 @@ func (f *Forwarder) Stop() {
 	})
 }
 
-func (f *Forwarder) addForwarder(name string, forwarder ForwarderTypeInterface) {
-	var forwarders = make([]ForwarderTypeInterface, 0)
+func (f *forwarder) addForwarder(name string, forwarder ForwarderType) {
+	var forwarders = make([]ForwarderType, 0)
 
 	if fwds, ok := f.forwarders.Load(name); ok {
-		forwarders = fwds.([]ForwarderTypeInterface)
+		forwarders = fwds.([]ForwarderType)
 	}
 
 	forwarders = append(forwarders, forwarder)
@@ -88,7 +88,7 @@ func (f *Forwarder) addForwarder(name string, forwarder ForwarderTypeInterface) 
 	f.forwarders.Store(name, forwarders)
 }
 
-func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
+func (f *forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	if err := f.checkForwardEnvironment(forward); err != nil {
@@ -205,8 +205,8 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	}
 
 	if forwarders, ok := f.forwarders.Load(forward.Name); ok {
-		for _, forwarder := range forwarders.([]ForwarderTypeInterface) {
-			go func(forwarder ForwarderTypeInterface) {
+		for _, forwarder := range forwarders.([]ForwarderType) {
+			go func(forwarder ForwarderType) {
 				for {
 					err := forwarder.Forward()
 					if err != nil {
@@ -225,7 +225,7 @@ func (f *Forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 	}
 }
 
-func (f *Forwarder) checkForwardEnvironment(forward *config.Forward) error {
+func (f *forwarder) checkForwardEnvironment(forward *config.Forward) error {
 	// Check executable is already managed
 	if result, ok := config.AvailableForwarders[forward.Type]; !ok || !result {
 		return fmt.Errorf("The '%s' specified forward type named '%s' is not managed actually", forward.Type, forward.Name)

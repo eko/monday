@@ -6,52 +6,52 @@ import (
 	"github.com/jroimartin/gocui"
 )
 
-type ViewInterface interface {
+type View interface {
 	GetName() string
 	Write(str string)
 	Writef(str string, args ...interface{})
 }
 
-// View is the view structure
-type View struct {
+// view is the view structure
+type view struct {
 	name  string
 	title string
 	view  *gocui.View
 }
 
 // NewView returns a new instance of a view
-func NewView(name, title string, view *gocui.View) *View {
-	return &View{
+func NewView(name, title string, v *gocui.View) *view {
+	return &view{
 		name:  name,
 		title: title,
-		view:  view,
+		view:  v,
 	}
 }
 
 // NewEmptyView returns a new instance of an empty view
-func NewEmptyView(name string) *View {
-	return &View{
+func NewEmptyView(name string) *view {
+	return &view{
 		name: name,
 	}
 }
 
 // GetName returns the name of the view
-func (v *View) GetName() string {
+func (v *view) GetName() string {
 	return v.name
 }
 
 // GetTitle returns the title of the view
-func (v *View) GetTitle() string {
+func (v *view) GetTitle() string {
 	return v.title
 }
 
 // GetView returns the GoCUI view structure
-func (v *View) GetView() *gocui.View {
+func (v *view) GetView() *gocui.View {
 	return v.view
 }
 
 // Write allows to write a string to the view
-func (v *View) Write(str string) {
+func (v *view) Write(str string) {
 	if v.view == nil {
 		fmt.Print(str)
 		return
@@ -61,7 +61,7 @@ func (v *View) Write(str string) {
 }
 
 // Writef allows to write a string to the view with some given arguments
-func (v *View) Writef(str string, args ...interface{}) {
+func (v *view) Writef(str string, args ...interface{}) {
 	if v.view == nil {
 		fmt.Print(fmt.Sprintf(str, args...))
 		return

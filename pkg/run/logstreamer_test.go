@@ -9,7 +9,7 @@ import (
 
 func TestNewLogstreamer(t *testing.T) {
 	// Given
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	testCases := []struct {
 		stdType string

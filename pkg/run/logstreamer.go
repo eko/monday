@@ -23,10 +23,10 @@ type Logstreamer struct {
 	colorFail  string
 	colorReset string
 
-	view ui.ViewInterface
+	view ui.View
 }
 
-func NewLogstreamer(stdType string, name string, view ui.ViewInterface) *Logstreamer {
+func NewLogstreamer(stdType string, name string, view ui.View) *Logstreamer {
 	streamer := &Logstreamer{
 		buf:        bytes.NewBuffer([]byte("")),
 		stdType:    stdType,

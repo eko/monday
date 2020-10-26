@@ -12,29 +12,30 @@ import (
 func TestNewProxy(t *testing.T) {
 	// Given
 
-	hostfileMock := &mocks.HostfileInterface{}
+	hostfileMock := &mocks.Hostfile{}
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	// When
-	proxy := NewProxy(view, hostfileMock)
+	p := NewProxy(view, hostfileMock)
 
 	// Then
-	assert.IsType(t, new(Proxy), proxy)
+	assert.IsType(t, new(proxy), p)
+	assert.Implements(t, new(Proxy), p)
 
-	assert.Len(t, proxy.ProxyForwards, 0)
-	assert.Equal(t, proxy.latestPort, "9400")
-	assert.Equal(t, proxy.ipLastByte, 1)
+	assert.Len(t, p.ProxyForwards, 0)
+	assert.Equal(t, p.latestPort, "9400")
+	assert.Equal(t, p.ipLastByte, 1)
 }
 
 func TestAddProxyForward(t *testing.T) {
 	// Given
 	pf := NewProxyForward("test", "hostname.svc.local", "", "8080", "8080")
 
-	hostfileMock := &mocks.HostfileInterface{}
+	hostfileMock := &mocks.Hostfile{}
 	hostfileMock.On("AddHost", mock.AnythingOfType("string"), "hostname.svc.local").Return(nil)
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 
 	proxy := NewProxy(view, hostfileMock)
@@ -61,7 +62,7 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 		{name: "test-2", hostname: "hostname3.svc.local", localPort: "8081", forwardPort: "8082"},
 	}
 
-	hostfileMock := &mocks.HostfileInterface{}
+	hostfileMock := &mocks.Hostfile{}
 	hostfileMock.ExpectedCalls = []*mock.Call{
 		&mock.Call{
 			Method: "AddHost",
@@ -86,7 +87,7 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 		},
 	}
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 
 	proxy := NewProxy(view, hostfileMock)
@@ -106,10 +107,10 @@ func TestListen(t *testing.T) {
 	// Given
 	pf := NewProxyForward("test", "hostname.svc.local", "", "8080", "8080")
 
-	hostfileMock := &mocks.HostfileInterface{}
+	hostfileMock := &mocks.Hostfile{}
 	hostfileMock.On("AddHost", mock.AnythingOfType("string"), "hostname.svc.local").Return(nil)
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 
 	proxy := NewProxy(view, hostfileMock)

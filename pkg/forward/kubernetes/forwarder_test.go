@@ -41,7 +41,7 @@ func TestNewForwarder(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	// When
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, name, context, namespace, ports, labels)
@@ -85,7 +85,7 @@ func TestGetForwardType(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -106,7 +106,7 @@ func TestGetSelector(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -127,7 +127,7 @@ func TestGetReadyChannel(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -146,7 +146,7 @@ func TestGetStopChannel(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -165,7 +165,7 @@ func TestForwardTypeLocal(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, "test-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -236,7 +236,7 @@ func TestForwardTypeRemote(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Write", mock.Anything)
 	view.On("Writef", mock.Anything, mock.Anything)
 

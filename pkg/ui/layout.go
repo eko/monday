@@ -11,13 +11,13 @@ import (
 type Layout struct {
 	uiEnabled      bool
 	gui            *gocui.Gui
-	highlighted    *View
-	statusView     *View
-	fullscreenView *View
-	logsView       *View
-	forwardsView   *View
-	proxyView      *View
-	viewsOrder     map[string]*View
+	highlighted    *view
+	statusView     *view
+	fullscreenView *view
+	logsView       *view
+	forwardsView   *view
+	proxyView      *view
+	viewsOrder     map[string]*view
 }
 
 // NewLayout returns a new layout instance
@@ -85,7 +85,7 @@ func (l *Layout) Init() {
 	}
 	l.proxyView = proxyView
 
-	l.viewsOrder = map[string]*View{
+	l.viewsOrder = map[string]*view{
 		logsView.GetName():     forwardsView,
 		forwardsView.GetName(): proxyView,
 		proxyView.GetName():    logsView,
@@ -111,26 +111,26 @@ func (l *Layout) GetGui() *gocui.Gui {
 }
 
 // GetStatusView returns the top status bar view structure
-func (l *Layout) GetStatusView() *View {
+func (l *Layout) GetStatusView() *view {
 	return l.statusView
 }
 
 // GetLogsView returns the logs view structure
-func (l *Layout) GetLogsView() *View {
+func (l *Layout) GetLogsView() *view {
 	return l.logsView
 }
 
 // GetForwardsView returns the forward view structure
-func (l *Layout) GetForwardsView() *View {
+func (l *Layout) GetForwardsView() *view {
 	return l.forwardsView
 }
 
 // GetProxyView returns the proxy view structure
-func (l *Layout) GetProxyView() *View {
+func (l *Layout) GetProxyView() *view {
 	return l.proxyView
 }
 
-func (l *Layout) setView(name, title string, xx, xy, yx, yy int) (*View, error) {
+func (l *Layout) setView(name, title string, xx, xy, yx, yy int) (*view, error) {
 	view, err := l.gui.SetView(name, xx, xy, yx, yy)
 	if err != nil && err != gocui.ErrUnknownView {
 		return nil, err
@@ -144,7 +144,7 @@ func (l *Layout) setView(name, title string, xx, xy, yx, yy int) (*View, error) 
 	return NewView(name, title, view), nil
 }
 
-func (l *Layout) setStatusView(name string, xx, xy, yx, yy int) (*View, error) {
+func (l *Layout) setStatusView(name string, xx, xy, yx, yy int) (*view, error) {
 	view, err := l.gui.SetView(name, xx, xy, yx, yy)
 	if err != nil && err != gocui.ErrUnknownView {
 		return nil, err
@@ -194,7 +194,7 @@ func (l *Layout) setKeyBindings() {
 
 	// Focus pane (highlight) - arrow left
 	if err := l.gui.SetKeybinding("", gocui.KeyArrowLeft, gocui.ModNone, func(g *gocui.Gui, v *gocui.View) error {
-		var reversedViewsOrder = map[string]*View{}
+		var reversedViewsOrder = map[string]*view{}
 
 		for name, view := range l.viewsOrder {
 			view.GetView().Highlight = false

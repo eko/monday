@@ -8,45 +8,45 @@ import (
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/forward"
 	"github.com/eko/monday/pkg/run"
-	"github.com/radovskyb/watcher"
+	radovskyb_watcher "github.com/radovskyb/watcher"
 )
 
 var (
 	excludeDirectories = []string{".git", "node_modules", "vendor"}
 )
 
-type WatcherInterface interface {
+type Watcher interface {
 	Watch()
 	Stop() error
 }
 
 // Watcher monitors health of the currently forwarded ports and launched applications.
-type Watcher struct {
-	runner       run.RunnerInterface
-	forwarder    forward.ForwarderInterface
+type watcher struct {
+	runner       run.Runner
+	forwarder    forward.Forwarder
 	conf         *config.Watcher
 	project      *config.Project
-	fileWatchers map[string]*watcher.Watcher
+	fileWatchers map[string]*radovskyb_watcher.Watcher
 }
 
 // NewWatcher initializes a watcher instance monitoring services using both runner and forwarder
-func NewWatcher(runner run.RunnerInterface, forwarder forward.ForwarderInterface, conf *config.Watcher, project *config.Project) *Watcher {
+func NewWatcher(runner run.Runner, forwarder forward.Forwarder, conf *config.Watcher, project *config.Project) *watcher {
 	if conf != nil && len(conf.Exclude) > 0 {
 		excludeDirectories = append(excludeDirectories, conf.Exclude...)
 	}
 
-	return &Watcher{
+	return &watcher{
 		runner:       runner,
 		forwarder:    forwarder,
 		conf:         conf,
 		project:      project,
-		fileWatchers: make(map[string]*watcher.Watcher, 0),
+		fileWatchers: make(map[string]*radovskyb_watcher.Watcher, 0),
 	}
 }
 
 // Watch runs both local applications and forwarded ones and ensure they keep running.
 // It also relaunch them in case of file changes.
-func (w *Watcher) Watch() {
+func (w *watcher) Watch() {
 	w.runner.SetupAll()
 
 	go w.runner.RunAll()
@@ -62,7 +62,7 @@ func (w *Watcher) Watch() {
 }
 
 // Stop stops all currently active file watchers on local running applications
-func (w *Watcher) Stop() error {
+func (w *watcher) Stop() error {
 	for _, fileWatcher := range w.fileWatchers {
 		fileWatcher.Close()
 	}
@@ -70,11 +70,11 @@ func (w *Watcher) Stop() error {
 	return nil
 }
 
-func (w *Watcher) watchApplication(application *config.Application) error {
-	fileWatcher := watcher.New()
+func (w *watcher) watchApplication(application *config.Application) error {
+	fileWatcher := radovskyb_watcher.New()
 	fileWatcher.SetMaxEvents(1)
 	fileWatcher.IgnoreHiddenFiles(true)
-	fileWatcher.FilterOps(watcher.Write, watcher.Create, watcher.Remove)
+	fileWatcher.FilterOps(radovskyb_watcher.Write, radovskyb_watcher.Create, radovskyb_watcher.Remove)
 
 	w.fileWatchers[application.Name] = fileWatcher
 

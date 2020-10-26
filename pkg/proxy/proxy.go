@@ -17,16 +17,16 @@ const (
 	ProxyPortStart = "9400"
 )
 
-type ProxyInterface interface {
+type Proxy interface {
 	Listen() error
 	Stop() error
 	AddProxyForward(name string, proxyForward *ProxyForward)
 }
 
-// Proxy represents the proxy component instance
-type Proxy struct {
+// proxy represents the proxy component instance
+type proxy struct {
 	ProxyForwards      map[string][]*ProxyForward
-	hostfile           hostfile.HostfileInterface
+	hostfile           hostfile.Hostfile
 	listeners          map[string]net.Listener
 	listening          bool
 	addProxyForwardMux sync.Mutex
@@ -34,12 +34,12 @@ type Proxy struct {
 	latestPort         string
 	attributedIPs      map[string]net.IP
 	ipLastByte         int
-	view               ui.ViewInterface
+	view               ui.View
 }
 
 // NewProxy initializes a new proxy component instance
-func NewProxy(view ui.ViewInterface, hostfile hostfile.HostfileInterface) *Proxy {
-	return &Proxy{
+func NewProxy(view ui.View, hostfile hostfile.Hostfile) *proxy {
+	return &proxy{
 		ProxyForwards: make(map[string][]*ProxyForward, 0),
 		hostfile:      hostfile,
 		listeners:     make(map[string]net.Listener),
@@ -52,7 +52,7 @@ func NewProxy(view ui.ViewInterface, hostfile hostfile.HostfileInterface) *Proxy
 }
 
 // Listen opens a TCP proxy for each ProxyForward instance
-func (p *Proxy) Listen() error {
+func (p *proxy) Listen() error {
 	for name, pfs := range p.ProxyForwards {
 		for _, pf := range pfs {
 			if pf.LocalPort == "" {
@@ -77,7 +77,7 @@ func (p *Proxy) Listen() error {
 }
 
 // Stop stops all currently active proxy listeners
-func (p *Proxy) Stop() error {
+func (p *proxy) Stop() error {
 	p.listening = false
 
 	for name, listener := range p.listeners {
@@ -90,7 +90,7 @@ func (p *Proxy) Stop() error {
 	return nil
 }
 
-func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
+func (p *proxy) handleConnections(pf *ProxyForward, key string) {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", pf.LocalIP, pf.LocalPort))
 	if err != nil {
 		p.view.Writef("❌  Could not create proxy listener for '%s:%s' (%s): %v\n", pf.LocalIP, pf.LocalPort, pf.GetHostname(), err)
@@ -128,7 +128,7 @@ func (p *Proxy) handleConnections(pf *ProxyForward, key string) {
 }
 
 // AddProxyForward creates a new ProxyForward instance and attributes an IP address and a proxy port to it
-func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
+func (p *proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 	p.addProxyForwardMux.Lock()
 	defer p.addProxyForwardMux.Unlock()
 
@@ -159,7 +159,7 @@ func (p *Proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 	}
 }
 
-func (p *Proxy) generateIP(pf *ProxyForward) error {
+func (p *proxy) generateIP(pf *ProxyForward) error {
 	// Create new listener on a dedicated IP address if the service
 	// does not already have an IP address attributed, elsewhere give the already
 	// attributed address
@@ -181,7 +181,7 @@ func (p *Proxy) generateIP(pf *ProxyForward) error {
 	return nil
 }
 
-func (p *Proxy) generateProxyPort(proxyForward *ProxyForward) {
+func (p *proxy) generateProxyPort(proxyForward *ProxyForward) {
 	integerPort, _ := strconv.Atoi(p.latestPort)
 	p.latestPort = strconv.Itoa(integerPort + 1)
 

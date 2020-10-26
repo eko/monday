@@ -13,12 +13,13 @@ func TestNewView(t *testing.T) {
 	gocuiView := &gocui.View{}
 
 	// When
-	view := NewView("test-view", "Test View", gocuiView)
+	v := NewView("test-view", "Test View", gocuiView)
 
 	// Then
-	assert.IsType(t, new(View), view)
+	assert.IsType(t, new(view), v)
+	assert.Implements(t, new(View), v)
 
-	assert.Equal(t, "test-view", view.GetName())
-	assert.Equal(t, "Test View", view.GetTitle())
-	assert.Equal(t, gocuiView, view.GetView())
+	assert.Equal(t, "test-view", v.GetName())
+	assert.Equal(t, "Test View", v.GetTitle())
+	assert.Equal(t, gocuiView, v.GetView())
 }

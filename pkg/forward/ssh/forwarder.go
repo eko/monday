@@ -10,7 +10,7 @@ import (
 )
 
 type Forwarder struct {
-	view            ui.ViewInterface
+	view            ui.View
 	forwardType     string
 	remote          string
 	forwardHostname string
@@ -26,7 +26,7 @@ var (
 	execCommand = exec.Command
 )
 
-func NewForwarder(view ui.ViewInterface, forwardType string, values config.ForwardValues, localPort, forwardPort string) (*Forwarder, error) {
+func NewForwarder(view ui.View, forwardType string, values config.ForwardValues, localPort, forwardPort string) (*Forwarder, error) {
 	return &Forwarder{
 		view:            view,
 		forwardType:     forwardType,

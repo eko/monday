@@ -46,7 +46,7 @@ type DeploymentBackup struct {
 }
 
 type Forwarder struct {
-	view           ui.ViewInterface
+	view           ui.View
 	forwardType    string
 	name           string
 	clientConfig   *restclient.Config
@@ -62,7 +62,7 @@ type Forwarder struct {
 	readyChannel   chan struct{}
 }
 
-func NewForwarder(view ui.ViewInterface, forwardType, name, context, namespace string, ports []string, labels map[string]string) (*Forwarder, error) {
+func NewForwarder(view ui.View, forwardType, name, context, namespace string, ports []string, labels map[string]string) (*Forwarder, error) {
 	kubeConfigPath := getKubeConfigPath()
 
 	clientConfig, err := initializeClientConfig(context, kubeConfigPath)

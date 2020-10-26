@@ -16,12 +16,12 @@ mocks: ## Generate mocks for tests
 	@echo "> generating mocks..."
 
 	# Monday
-	mockery -name=ViewInterface -dir=pkg/ui/ -output internal/tests/mocks/ui
-	mockery -name=HostfileInterface -dir=pkg/hostfile/ -output internal/tests/mocks/hostfile
-	mockery -name=ProxyInterface -dir=pkg/proxy/ -output internal/tests/mocks/proxy
-	mockery -name=RunnerInterface -dir=pkg/run/ -output internal/tests/mocks/run
-	mockery -name=ForwarderInterface -dir=pkg/forward/ -output internal/tests/mocks/forward
-	mockery -name=WatcherInterface -dir=pkg/watch/ -output internal/tests/mocks/watch
+	mockery -name=View -dir=pkg/ui/ -output internal/tests/mocks/ui
+	mockery -name=Hostfile -dir=pkg/hostfile/ -output internal/tests/mocks/hostfile
+	mockery -name=Proxy -dir=pkg/proxy/ -output internal/tests/mocks/proxy
+	mockery -name=Runner -dir=pkg/run/ -output internal/tests/mocks/run
+	mockery -name=Forwarder -dir=pkg/forward/ -output internal/tests/mocks/forward
+	mockery -name=Watcher -dir=pkg/watch/ -output internal/tests/mocks/watch
 
 	# Kubernetes AppsV1
 	mockery -name=Interface -dir=vendor/k8s.io/client-go/kubernetes/ -output internal/tests/mocks/kubernetes/client

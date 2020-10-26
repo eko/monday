@@ -9,14 +9,14 @@ import (
 )
 
 // addEnvVariables adds environment variables given as key/value pair
-func (r *Runner) addEnvVariables(cmd *exec.Cmd, envs map[string]string) {
+func (r *runner) addEnvVariables(cmd *exec.Cmd, envs map[string]string) {
 	for key, value := range envs {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
 }
 
 // addEnvVariablesFromFile adds environment variables given as a filename
-func (r *Runner) addEnvVariablesFromFile(cmd *exec.Cmd, filename string) {
+func (r *runner) addEnvVariablesFromFile(cmd *exec.Cmd, filename string) {
 	if filename == "" {
 		return
 	}

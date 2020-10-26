@@ -20,7 +20,7 @@ func TestNewForwarder(t *testing.T) {
 		Args:   []string{"-i /tmp/my/private.key"},
 	}
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	// When
 	forwarder, err := NewForwarder(view, config.ForwarderSSH, values, localPort, forwardPort)
@@ -40,7 +40,7 @@ func TestNewForwarder(t *testing.T) {
 
 func TestGetForwardType(t *testing.T) {
 	// Given
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",
@@ -60,7 +60,7 @@ func TestGetForwardType(t *testing.T) {
 
 func TestGetReadyChannel(t *testing.T) {
 	// Given
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",
@@ -80,7 +80,7 @@ func TestGetReadyChannel(t *testing.T) {
 
 func TestGetStopChannel(t *testing.T) {
 	// Given
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",
@@ -102,7 +102,7 @@ func TestForwardLocal(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	values := config.ForwardValues{
 		Remote:          "root@acme.tld",
@@ -127,7 +127,7 @@ func TestForwardLocalWithForwardHostname(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",
@@ -151,7 +151,7 @@ func TestForwardRemote(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",

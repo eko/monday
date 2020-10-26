@@ -15,31 +15,32 @@ import (
 
 func TestNewRunner(t *testing.T) {
 	// Given
-	view := &uimocks.ViewInterface{}
-	proxy := &mocks.ProxyInterface{}
+	view := &uimocks.View{}
+	proxy := &mocks.Proxy{}
 
 	project := getMockedProjectWithApplication()
 
 	// When
-	runner := NewRunner(view, proxy, project)
+	r := NewRunner(view, proxy, project)
 
 	// Then
-	assert.IsType(t, new(Runner), runner)
+	assert.IsType(t, new(runner), r)
+	assert.Implements(t, new(Runner), r)
 
-	assert.Equal(t, proxy, runner.proxy)
-	assert.Equal(t, project.Name, runner.projectName)
-	assert.Equal(t, project.Applications, runner.applications)
+	assert.Equal(t, proxy, r.proxy)
+	assert.Equal(t, project.Name, r.projectName)
+	assert.Equal(t, project.Applications, r.applications)
 }
 
 func TestRunAll(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Write", mock.Anything)
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
 
-	proxy := &mocks.ProxyInterface{}
+	proxy := &mocks.Proxy{}
 
 	project := getMockedProjectWithApplication()
 
@@ -71,11 +72,11 @@ func TestStop(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Write", mock.Anything)
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
 
-	proxy := &mocks.ProxyInterface{}
+	proxy := &mocks.Proxy{}
 
 	project := getMockedProjectWithApplication()
 
@@ -109,11 +110,11 @@ func TestSetupAll(t *testing.T) {
 	// Given
 	execCommand = mockExecCommand
 
-	view := &uimocks.ViewInterface{}
+	view := &uimocks.View{}
 	view.On("Write", mock.Anything)
 	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
 
-	proxy := &mocks.ProxyInterface{}
+	proxy := &mocks.Proxy{}
 
 	project := &config.Project{
 		Name: "My project name",
