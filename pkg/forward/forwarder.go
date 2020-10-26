@@ -1,4 +1,4 @@
-package forwarder
+package forward
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/eko/monday/pkg/config"
-	"github.com/eko/monday/pkg/forwarder/kubernetes"
-	"github.com/eko/monday/pkg/forwarder/ssh"
+	"github.com/eko/monday/pkg/forward/kubernetes"
+	"github.com/eko/monday/pkg/forward/ssh"
 	"github.com/eko/monday/pkg/proxy"
 	"github.com/eko/monday/pkg/ui"
 )

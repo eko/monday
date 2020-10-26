@@ -8,12 +8,12 @@ import (
 
 	"github.com/eko/monday/internal/runtime"
 	"github.com/eko/monday/pkg/config"
-	"github.com/eko/monday/pkg/forwarder"
+	"github.com/eko/monday/pkg/forward"
 	"github.com/eko/monday/pkg/hostfile"
 	"github.com/eko/monday/pkg/proxy"
-	"github.com/eko/monday/pkg/runner"
+	"github.com/eko/monday/pkg/run"
 	"github.com/eko/monday/pkg/ui"
-	"github.com/eko/monday/pkg/watcher"
+	"github.com/eko/monday/pkg/watch"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
@@ -27,10 +27,10 @@ const (
 var (
 	Version string
 
-	proxyComponent     *proxy.Proxy
-	forwarderComponent *forwarder.Forwarder
-	runnerComponent    *runner.Runner
-	watcherComponent   *watcher.Watcher
+	proxyfier *proxy.Proxy
+	forwarder *forward.Forwarder
+	runner    *run.Runner
+	watcher   *watch.Watcher
 
 	uiEnabled = len(os.Getenv("MONDAY_ENABLE_UI")) > 0
 )
@@ -51,7 +51,7 @@ func main() {
 			}
 
 			choice := selectProject(conf)
-			run(conf, choice)
+			runProject(conf, choice)
 
 			handleExitSignal()
 		},
@@ -96,7 +96,7 @@ func selectProject(conf *config.Config) string {
 	return choice
 }
 
-func run(conf *config.Config, choice string) {
+func runProject(conf *config.Config, choice string) {
 	layout := ui.NewLayout(uiEnabled)
 	layout.Init()
 
@@ -112,12 +112,12 @@ func run(conf *config.Config, choice string) {
 		panic(err)
 	}
 
-	proxyComponent = proxy.NewProxy(layout.GetProxyView(), hostfile)
-	runnerComponent = runner.NewRunner(layout.GetLogsView(), proxyComponent, project)
-	forwarderComponent = forwarder.NewForwarder(layout.GetForwardsView(), proxyComponent, project)
+	proxyfier = proxy.NewProxy(layout.GetProxyView(), hostfile)
+	runner = run.NewRunner(layout.GetLogsView(), proxyfier, project)
+	forwarder = forward.NewForwarder(layout.GetForwardsView(), proxyfier, project)
 
-	watcherComponent = watcher.NewWatcher(runnerComponent, forwarderComponent, conf.Watcher, project)
-	go watcherComponent.Watch()
+	watcher = watch.NewWatcher(runner, forwarder, conf.Watcher, project)
+	go watcher.Watch()
 
 	if uiEnabled {
 		defer layout.GetGui().Close()
@@ -148,10 +148,10 @@ func handleExitSignal() {
 func stopAll() {
 	fmt.Println("\n👋  Bye, closing your local applications and remote connections now")
 
-	watcherComponent.Stop()
-	forwarderComponent.Stop()
-	proxyComponent.Stop()
-	runnerComponent.Stop()
+	watcher.Stop()
+	forwarder.Stop()
+	proxyfier.Stop()
+	runner.Stop()
 
 	os.Exit(0)
 }

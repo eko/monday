@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eko/monday/pkg/config"
 	clientmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/client"
 	restmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/rest"
 	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
+	"github.com/eko/monday/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	appsv1 "k8s.io/api/apps/v1"

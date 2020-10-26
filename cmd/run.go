@@ -31,7 +31,7 @@ and passing it as an argument`,
 			choice = selectProject(conf)
 		}
 
-		run(conf, choice)
+		runProject(conf, choice)
 		handleExitSignal()
 	},
 }

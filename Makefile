@@ -12,16 +12,16 @@ build-binary: ## Builds a single binary of Monday from sources
 docker-build: ## Builds a docker image of Monday from sources
 	docker build -t monday --build-arg Version=$(shell git rev-parse --short=5 HEAD) .
 
-generate-mocks: ## Generate mocks for tests
+mocks: ## Generate mocks for tests
 	@echo "> generating mocks..."
 
 	# Monday
 	mockery -name=ViewInterface -dir=pkg/ui/ -output internal/tests/mocks/ui
 	mockery -name=HostfileInterface -dir=pkg/hostfile/ -output internal/tests/mocks/hostfile
 	mockery -name=ProxyInterface -dir=pkg/proxy/ -output internal/tests/mocks/proxy
-	mockery -name=RunnerInterface -dir=pkg/runner/ -output internal/tests/mocks/runner
-	mockery -name=ForwarderInterface -dir=pkg/forwarder/ -output internal/tests/mocks/forwarder
-	mockery -name=WatcherInterface -dir=pkg/watcher/ -output internal/tests/mocks/watcher
+	mockery -name=RunnerInterface -dir=pkg/run/ -output internal/tests/mocks/run
+	mockery -name=ForwarderInterface -dir=pkg/forward/ -output internal/tests/mocks/forward
+	mockery -name=WatcherInterface -dir=pkg/watch/ -output internal/tests/mocks/watch
 
 	# Kubernetes AppsV1
 	mockery -name=Interface -dir=vendor/k8s.io/client-go/kubernetes/ -output internal/tests/mocks/kubernetes/client

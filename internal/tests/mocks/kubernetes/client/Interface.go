@@ -2,45 +2,82 @@
 
 package mocks
 
-import appsv1beta1 "k8s.io/client-go/kubernetes/typed/apps/v1beta1"
-import authenticationv1 "k8s.io/client-go/kubernetes/typed/authentication/v1"
-import authenticationv1beta1 "k8s.io/client-go/kubernetes/typed/authentication/v1beta1"
-import authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
-import authorizationv1beta1 "k8s.io/client-go/kubernetes/typed/authorization/v1beta1"
-import autoscalingv1 "k8s.io/client-go/kubernetes/typed/autoscaling/v1"
-import batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
-import batchv1beta1 "k8s.io/client-go/kubernetes/typed/batch/v1beta1"
-import certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
-import coordinationv1 "k8s.io/client-go/kubernetes/typed/coordination/v1"
-import coordinationv1beta1 "k8s.io/client-go/kubernetes/typed/coordination/v1beta1"
-import corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-import discovery "k8s.io/client-go/discovery"
-import eventsv1beta1 "k8s.io/client-go/kubernetes/typed/events/v1beta1"
-import extensionsv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
+import (
+	appsv1beta1 "k8s.io/client-go/kubernetes/typed/apps/v1beta1"
+	authenticationv1 "k8s.io/client-go/kubernetes/typed/authentication/v1"
 
-import mock "github.com/stretchr/testify/mock"
-import networkingv1 "k8s.io/client-go/kubernetes/typed/networking/v1"
-import networkingv1beta1 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
-import nodev1alpha1 "k8s.io/client-go/kubernetes/typed/node/v1alpha1"
-import nodev1beta1 "k8s.io/client-go/kubernetes/typed/node/v1beta1"
-import policyv1beta1 "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
-import rbacv1 "k8s.io/client-go/kubernetes/typed/rbac/v1"
-import rbacv1alpha1 "k8s.io/client-go/kubernetes/typed/rbac/v1alpha1"
-import rbacv1beta1 "k8s.io/client-go/kubernetes/typed/rbac/v1beta1"
-import schedulingv1 "k8s.io/client-go/kubernetes/typed/scheduling/v1"
-import schedulingv1alpha1 "k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1"
-import schedulingv1beta1 "k8s.io/client-go/kubernetes/typed/scheduling/v1beta1"
-import settingsv1alpha1 "k8s.io/client-go/kubernetes/typed/settings/v1alpha1"
-import storagev1 "k8s.io/client-go/kubernetes/typed/storage/v1"
-import storagev1alpha1 "k8s.io/client-go/kubernetes/typed/storage/v1alpha1"
-import storagev1beta1 "k8s.io/client-go/kubernetes/typed/storage/v1beta1"
-import v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
-import v1alpha1 "k8s.io/client-go/kubernetes/typed/auditregistration/v1alpha1"
-import v1beta1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1"
-import v1beta2 "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
-import v2alpha1 "k8s.io/client-go/kubernetes/typed/batch/v2alpha1"
-import v2beta1 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta1"
-import v2beta2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta2"
+	authenticationv1beta1 "k8s.io/client-go/kubernetes/typed/authentication/v1beta1"
+
+	authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
+
+	authorizationv1beta1 "k8s.io/client-go/kubernetes/typed/authorization/v1beta1"
+
+	autoscalingv1 "k8s.io/client-go/kubernetes/typed/autoscaling/v1"
+
+	batchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
+
+	batchv1beta1 "k8s.io/client-go/kubernetes/typed/batch/v1beta1"
+
+	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
+
+	coordinationv1 "k8s.io/client-go/kubernetes/typed/coordination/v1"
+
+	coordinationv1beta1 "k8s.io/client-go/kubernetes/typed/coordination/v1beta1"
+
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	discovery "k8s.io/client-go/discovery"
+
+	eventsv1beta1 "k8s.io/client-go/kubernetes/typed/events/v1beta1"
+
+	extensionsv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
+
+	mock "github.com/stretchr/testify/mock"
+
+	networkingv1 "k8s.io/client-go/kubernetes/typed/networking/v1"
+
+	networkingv1beta1 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
+
+	nodev1alpha1 "k8s.io/client-go/kubernetes/typed/node/v1alpha1"
+
+	nodev1beta1 "k8s.io/client-go/kubernetes/typed/node/v1beta1"
+
+	policyv1beta1 "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
+
+	rbacv1 "k8s.io/client-go/kubernetes/typed/rbac/v1"
+
+	rbacv1alpha1 "k8s.io/client-go/kubernetes/typed/rbac/v1alpha1"
+
+	rbacv1beta1 "k8s.io/client-go/kubernetes/typed/rbac/v1beta1"
+
+	schedulingv1 "k8s.io/client-go/kubernetes/typed/scheduling/v1"
+
+	schedulingv1alpha1 "k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1"
+
+	schedulingv1beta1 "k8s.io/client-go/kubernetes/typed/scheduling/v1beta1"
+
+	settingsv1alpha1 "k8s.io/client-go/kubernetes/typed/settings/v1alpha1"
+
+	storagev1 "k8s.io/client-go/kubernetes/typed/storage/v1"
+
+	storagev1alpha1 "k8s.io/client-go/kubernetes/typed/storage/v1alpha1"
+
+	storagev1beta1 "k8s.io/client-go/kubernetes/typed/storage/v1beta1"
+
+	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
+
+	v1alpha1 "k8s.io/client-go/kubernetes/typed/auditregistration/v1alpha1"
+
+	v1beta1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1"
+
+	v1beta2 "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
+
+	v2alpha1 "k8s.io/client-go/kubernetes/typed/batch/v2alpha1"
+
+	v2beta1 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta1"
+
+	v2beta2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta2"
+)
 
 // Interface is an autogenerated mock type for the Interface type
 type Interface struct {

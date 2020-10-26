@@ -1,13 +1,13 @@
-package watcher
+package watch
 
 import (
 	"os"
 	"testing"
 	"time"
 
+	forwardermocks "github.com/eko/monday/internal/tests/mocks/forward"
+	runnermocks "github.com/eko/monday/internal/tests/mocks/run"
 	"github.com/eko/monday/pkg/config"
-	forwardermocks "github.com/eko/monday/internal/tests/mocks/forwarder"
-	runnermocks "github.com/eko/monday/internal/tests/mocks/runner"
 	watcherlib "github.com/radovskyb/watcher"
 	"github.com/stretchr/testify/assert"
 )

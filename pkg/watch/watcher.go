@@ -1,4 +1,4 @@
-package watcher
+package watch
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/eko/monday/pkg/config"
-	"github.com/eko/monday/pkg/forwarder"
-	"github.com/eko/monday/pkg/runner"
+	"github.com/eko/monday/pkg/forward"
+	"github.com/eko/monday/pkg/run"
 	"github.com/radovskyb/watcher"
 )
 
@@ -22,15 +22,15 @@ type WatcherInterface interface {
 
 // Watcher monitors health of the currently forwarded ports and launched applications.
 type Watcher struct {
-	runner       runner.RunnerInterface
-	forwarder    forwarder.ForwarderInterface
+	runner       run.RunnerInterface
+	forwarder    forward.ForwarderInterface
 	conf         *config.Watcher
 	project      *config.Project
 	fileWatchers map[string]*watcher.Watcher
 }
 
 // NewWatcher initializes a watcher instance monitoring services using both runner and forwarder
-func NewWatcher(runner runner.RunnerInterface, forwarder forwarder.ForwarderInterface, conf *config.Watcher, project *config.Project) *Watcher {
+func NewWatcher(runner run.RunnerInterface, forwarder forward.ForwarderInterface, conf *config.Watcher, project *config.Project) *Watcher {
 	if conf != nil && len(conf.Exclude) > 0 {
 		excludeDirectories = append(excludeDirectories, conf.Exclude...)
 	}
