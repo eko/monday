@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 
 	"github.com/eko/monday/internal/runtime"
 	"github.com/eko/monday/pkg/config"
@@ -50,8 +51,7 @@ func main() {
 				return
 			}
 
-			choice := selectProject(conf)
-			runProject(conf, choice)
+			runProject(conf, selectProject(conf))
 
 			handleExitSignal()
 		},
@@ -75,10 +75,18 @@ func main() {
 }
 
 func selectProject(conf *config.Config) string {
+	projects := conf.GetProjectNames()
+
 	prompt := promptui.Select{
 		Label: "Which project do you want to work on?",
-		Items: conf.GetProjectNames(),
+		Items: projects,
 		Size:  20,
+		Searcher: func(input string, index int) bool {
+			return strings.Contains(
+				strings.Replace(strings.ToLower(projects[index]), " ", "", -1),
+				strings.Replace(strings.ToLower(input), " ", "", -1),
+			)
+		},
 	}
 
 	_, choice, err := prompt.Run()
