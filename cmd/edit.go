@@ -29,9 +29,10 @@ in the source code repository.`,
 			files = []string{config.Filepath}
 		}
 
-		command := exec.Command(runtime.EditorCommand, files...)
+		editorArgs := append(runtime.EditorArgs, files...)
+		editorCommand := exec.Command(runtime.EditorCommand, editorArgs...)
 
-		if err := command.Start(); err != nil {
+		if err := editorCommand.Start(); err != nil {
 			fmt.Printf("❌  Cannot run the '%s' command to edit config file: %v\n", runtime.EditorCommand, err)
 			return
 		}
