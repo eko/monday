@@ -5,12 +5,16 @@ import (
 	"strings"
 	"testing"
 
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/ui"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewForwarder(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	// Given
 	localPort := "8080"
 	forwardPort := "8081"
@@ -20,7 +24,7 @@ func TestNewForwarder(t *testing.T) {
 		Args:   []string{"-i /tmp/my/private.key"},
 	}
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	// When
 	forwarder, err := NewForwarder(view, config.ForwarderSSH, values, localPort, forwardPort)
@@ -40,7 +44,10 @@ func TestNewForwarder(t *testing.T) {
 
 func TestGetForwardType(t *testing.T) {
 	// Given
-	view := &uimocks.View{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	view := ui.NewMockView(ctrl)
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",
@@ -60,7 +67,10 @@ func TestGetForwardType(t *testing.T) {
 
 func TestGetReadyChannel(t *testing.T) {
 	// Given
-	view := &uimocks.View{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	view := ui.NewMockView(ctrl)
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",
@@ -80,7 +90,10 @@ func TestGetReadyChannel(t *testing.T) {
 
 func TestGetStopChannel(t *testing.T) {
 	// Given
-	view := &uimocks.View{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	view := ui.NewMockView(ctrl)
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",
@@ -100,9 +113,12 @@ func TestGetStopChannel(t *testing.T) {
 
 func TestForwardLocal(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	execCommand = mockExecCommand
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	values := config.ForwardValues{
 		Remote:          "root@acme.tld",
@@ -125,9 +141,12 @@ func TestForwardLocal(t *testing.T) {
 
 func TestForwardLocalWithForwardHostname(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	execCommand = mockExecCommand
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",
@@ -149,9 +168,12 @@ func TestForwardLocalWithForwardHostname(t *testing.T) {
 
 func TestForwardRemote(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	execCommand = mockExecCommand
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	values := config.ForwardValues{
 		Remote: "root@acme.tld",

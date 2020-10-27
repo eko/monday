@@ -4,16 +4,19 @@ import (
 	"fmt"
 	"testing"
 
-	mocks "github.com/eko/monday/internal/tests/mocks/proxy"
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/proxy"
+	"github.com/eko/monday/pkg/ui"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestNewForwarder(t *testing.T) {
 	// Given
-	proxy := &mocks.Proxy{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	proxyfier := proxy.NewMockProxy(ctrl)
 
 	project := &config.Project{
 		Name: "My project name",
@@ -31,27 +34,28 @@ func TestNewForwarder(t *testing.T) {
 		},
 	}
 
-	view := &uimocks.View{}
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
 
 	// When
-	f := NewForwarder(view, proxy, project)
+	f := NewForwarder(view, proxyfier, project)
 
 	// Then
 	assert.IsType(t, new(forwarder), f)
 	assert.Implements(t, new(Forwarder), f)
 
-	assert.Equal(t, proxy, f.proxy)
+	assert.Equal(t, proxyfier, f.proxy)
 	assert.Equal(t, project.Forwards, f.forwards)
 }
 
 func TestForwardAll(t *testing.T) {
 	// Given
-	proxy := &mocks.Proxy{}
-	proxy.
-		On("AddProxyForward", mock.AnythingOfType("string"), mock.AnythingOfType("*proxy.ProxyForward")).
-		Times(2)
-	proxy.On("Listen").Once().Return(nil)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	proxyForward := proxy.NewProxyForward("test-ssh-forward", "", "", "8080", "8080")
+
+	proxyfier := proxy.NewMockProxy(ctrl)
+	proxyfier.EXPECT().AddProxyForward("test-ssh-forward", proxyForward)
 
 	project := &config.Project{
 		Name: "My project name",
@@ -67,10 +71,10 @@ func TestForwardAll(t *testing.T) {
 		},
 	}
 
-	view := &uimocks.View{}
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("📡  Forwarding '%s' over %s...\n", "test-ssh-forward", "ssh")
 
-	forwarder := NewForwarder(view, proxy, project)
+	forwarder := NewForwarder(view, proxyfier, project)
 
 	// When
 	forwarder.ForwardAll()
@@ -89,7 +93,11 @@ func TestForwardAll(t *testing.T) {
 
 func TestForwardRemoteSSH(t *testing.T) {
 	// Given
-	proxy := &mocks.Proxy{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	proxy := proxy.NewMockProxy(ctrl)
+
 	project := &config.Project{
 		Name: "My project name",
 		Forwards: []*config.Forward{
@@ -104,8 +112,8 @@ func TestForwardRemoteSSH(t *testing.T) {
 		},
 	}
 
-	view := &uimocks.View{}
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("📡  Forwarding '%s' over %s...\n", "test-ssh-forward", "ssh-remote")
 
 	forwarder := NewForwarder(view, proxy, project)
 

@@ -5,17 +5,21 @@ import (
 	"testing"
 	"time"
 
-	forwardermocks "github.com/eko/monday/internal/tests/mocks/forward"
-	runnermocks "github.com/eko/monday/internal/tests/mocks/run"
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/forward"
+	"github.com/eko/monday/pkg/run"
+	"github.com/golang/mock/gomock"
 	watcherlib "github.com/radovskyb/watcher"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewWatcher(t *testing.T) {
 	// Given
-	runner := &runnermocks.Runner{}
-	forwarder := &forwardermocks.Forwarder{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	runner := run.NewMockRunner(ctrl)
+	forwarder := forward.NewMockForwarder(ctrl)
 
 	project := getProjectMock()
 
@@ -45,12 +49,15 @@ func TestNewWatcher(t *testing.T) {
 
 func TestWatch(t *testing.T) {
 	// Given
-	runner := &runnermocks.Runner{}
-	runner.On("SetupAll").Once()
-	runner.On("RunAll").Once()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	forwarder := &forwardermocks.Forwarder{}
-	forwarder.On("ForwardAll").Once()
+	runner := run.NewMockRunner(ctrl)
+	runner.EXPECT().SetupAll().Times(1)
+	runner.EXPECT().RunAll().Times(1)
+
+	forwarder := forward.NewMockForwarder(ctrl)
+	forwarder.EXPECT().ForwardAll().Times(1)
 
 	project := getProjectMock()
 
@@ -58,20 +65,24 @@ func TestWatch(t *testing.T) {
 
 	// When - Then
 	watcher.Watch()
+
+	// Wait 1 second to ensure the watch is effective
+	time.Sleep(1 * time.Second)
 }
 
 func TestWatchWhenFileChange(t *testing.T) {
 	// Given
-	runner := &runnermocks.Runner{}
-	runner.On("SetupAll").Once()
-	runner.On("RunAll").Once()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	forwarder := &forwardermocks.Forwarder{}
-	forwarder.On("ForwardAll").Once()
+	runner := run.NewMockRunner(ctrl)
+	runner.EXPECT().SetupAll().Times(1)
+	runner.EXPECT().RunAll().Times(1)
+
+	forwarder := forward.NewMockForwarder(ctrl)
+	forwarder.EXPECT().ForwardAll().Times(1)
 
 	project := getProjectMock()
-
-	runner.On("Restart", project.Applications[0])
 
 	watcher := NewWatcher(runner, forwarder, &config.Watcher{}, project)
 	watcher.Watch()
@@ -102,17 +113,15 @@ func TestWatchWhenFileChange(t *testing.T) {
 
 func TestStop(t *testing.T) {
 	// Given
-	runner := &runnermocks.Runner{}
-	runner.On("SetupAll").Once()
-	runner.On("RunAll").Once()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	forwarder := &forwardermocks.Forwarder{}
-	forwarder.On("ForwardAll").Once()
+	runner := run.NewMockRunner(ctrl)
+	forwarder := forward.NewMockForwarder(ctrl)
 
 	project := getProjectMock()
 
 	watcher := NewWatcher(runner, forwarder, &config.Watcher{}, project)
-	watcher.Watch()
 
 	// When - Then
 	watcher.Stop()

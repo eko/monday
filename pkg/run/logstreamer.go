@@ -12,6 +12,16 @@ import (
 const (
 	StdOut = "stdout"
 	StdErr = "stderr"
+
+	ColorGreen = "\x1b[32m"
+	ColorRed   = "\x1b[31m"
+	ColorWhite = "\x1b[0m"
+)
+
+var (
+	ColorOkay  = ""
+	ColorFail  = ""
+	ColorReset = ""
 )
 
 type Logstreamer struct {
@@ -19,29 +29,21 @@ type Logstreamer struct {
 	stdType string
 	name    string
 
-	colorOkay  string
-	colorFail  string
-	colorReset string
-
 	view ui.View
 }
 
 func NewLogstreamer(stdType string, name string, view ui.View) *Logstreamer {
 	streamer := &Logstreamer{
-		buf:        bytes.NewBuffer([]byte("")),
-		stdType:    stdType,
-		name:       name,
-		colorOkay:  "",
-		colorFail:  "",
-		colorReset: "",
-		view:       view,
+		buf:     bytes.NewBuffer([]byte("")),
+		stdType: stdType,
+		name:    name,
+		view:    view,
 	}
 
-	hasColors := regexp.MustCompile(`^(xterm|screen)`)
-	if hasColors.MatchString(os.Getenv("TERM")) {
-		streamer.colorOkay = "\x1b[32m"
-		streamer.colorFail = "\x1b[31m"
-		streamer.colorReset = "\x1b[0m"
+	if hasColors := regexp.MustCompile(`^(xterm|screen)`); hasColors.MatchString(os.Getenv("TERM")) {
+		ColorOkay = ColorGreen
+		ColorFail = ColorRed
+		ColorReset = ColorWhite
 	}
 
 	return streamer
@@ -93,10 +95,10 @@ func (l *Logstreamer) output() (err error) {
 func (l *Logstreamer) out(str string) (err error) {
 	switch l.stdType {
 	case StdOut:
-		str = l.colorOkay + l.name + l.colorReset + " " + str
+		str = ColorOkay + l.name + ColorReset + " " + str
 
 	case StdErr:
-		str = l.colorFail + l.name + l.colorReset + " " + str
+		str = ColorFail + l.name + ColorReset + " " + str
 
 	default:
 		str = l.stdType + str

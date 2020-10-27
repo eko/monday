@@ -4,24 +4,27 @@ import (
 	"os"
 	"testing"
 
-	mocks "github.com/eko/monday/internal/tests/mocks/proxy"
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/proxy"
+	"github.com/eko/monday/pkg/ui"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestAddEnvVariables(t *testing.T) {
 	// Given
-	view := &uimocks.View{}
-	view.On("Write", mock.Anything)
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	proxy := &mocks.Proxy{}
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("⚙️   Running local app '%s' (%s)...\n", "test-app", "/")
+	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " OK Arguments Seems -to=work\n")
+
+	proxyfier := proxy.NewMockProxy(ctrl)
 
 	project := getMockedProjectWithApplicationEnv()
 
-	r := NewRunner(view, proxy, project)
+	r := NewRunner(view, proxyfier, project)
 
 	// When
 	r.Run(project.Applications[0])
@@ -40,15 +43,18 @@ func TestAddEnvVariables(t *testing.T) {
 
 func TestAddEnvVariablesFromFile(t *testing.T) {
 	// Given
-	view := &uimocks.View{}
-	view.On("Write", mock.Anything)
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	proxy := &mocks.Proxy{}
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("⚙️   Running local app '%s' (%s)...\n", "test-app", "/")
+	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " OK Arguments Seems -to=work\n")
+
+	proxyfier := proxy.NewMockProxy(ctrl)
 
 	project := getMockedProjectWithApplicationEnv()
 
-	r := NewRunner(view, proxy, project)
+	r := NewRunner(view, proxyfier, project)
 
 	// When
 	r.Run(project.Applications[0])

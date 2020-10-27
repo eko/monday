@@ -3,18 +3,20 @@ package proxy
 import (
 	"testing"
 
-	mocks "github.com/eko/monday/internal/tests/mocks/hostfile"
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
+	"github.com/eko/monday/pkg/hostfile"
+	"github.com/eko/monday/pkg/ui"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestNewProxy(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-	hostfileMock := &mocks.Hostfile{}
+	hostfileMock := hostfile.NewMockHostfile(ctrl)
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	// When
 	p := NewProxy(view, hostfileMock)
@@ -30,13 +32,16 @@ func TestNewProxy(t *testing.T) {
 
 func TestAddProxyForward(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	pf := NewProxyForward("test", "hostname.svc.local", "", "8080", "8080")
 
-	hostfileMock := &mocks.Hostfile{}
-	hostfileMock.On("AddHost", mock.AnythingOfType("string"), "hostname.svc.local").Return(nil)
+	hostfileMock := hostfile.NewMockHostfile(ctrl)
+	hostfileMock.EXPECT().AddHost("127.1.2.1", "hostname.svc.local").Return(nil)
 
-	view := &uimocks.View{}
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.1.2.1", "9401")
 
 	proxy := NewProxy(view, hostfileMock)
 
@@ -51,6 +56,9 @@ func TestAddProxyForward(t *testing.T) {
 
 func TestAddProxyForwardWhenMultiple(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	testCases := []struct {
 		name        string
 		hostname    string
@@ -62,33 +70,15 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 		{name: "test-2", hostname: "hostname3.svc.local", localPort: "8081", forwardPort: "8082"},
 	}
 
-	hostfileMock := &mocks.Hostfile{}
-	hostfileMock.ExpectedCalls = []*mock.Call{
-		&mock.Call{
-			Method: "AddHost",
-			Arguments: mock.Arguments{
-				mock.AnythingOfType("string"), "hostname.svc.local",
-			},
-			ReturnArguments: mock.Arguments{nil},
-		},
-		&mock.Call{
-			Method: "AddHost",
-			Arguments: mock.Arguments{
-				mock.AnythingOfType("string"), "hostname2.svc.local",
-			},
-			ReturnArguments: mock.Arguments{nil},
-		},
-		&mock.Call{
-			Method: "AddHost",
-			Arguments: mock.Arguments{
-				mock.AnythingOfType("string"), "hostname3.svc.local",
-			},
-			ReturnArguments: mock.Arguments{nil},
-		},
-	}
+	hostfileMock := hostfile.NewMockHostfile(ctrl)
+	hostfileMock.EXPECT().AddHost("127.1.2.1", "hostname.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("127.1.2.2", "hostname2.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("127.1.2.2", "hostname3.svc.local").Return(nil)
 
-	view := &uimocks.View{}
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.1.2.1", "9401")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname2.svc.local", "127.1.2.2", "9402")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname3.svc.local", "127.1.2.2", "9403")
 
 	proxy := NewProxy(view, hostfileMock)
 
@@ -105,13 +95,17 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 
 func TestListen(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	pf := NewProxyForward("test", "hostname.svc.local", "", "8080", "8080")
 
-	hostfileMock := &mocks.Hostfile{}
-	hostfileMock.On("AddHost", mock.AnythingOfType("string"), "hostname.svc.local").Return(nil)
+	hostfileMock := hostfile.NewMockHostfile(ctrl)
+	hostfileMock.EXPECT().AddHost("127.1.2.1", "hostname.svc.local").Return(nil)
 
-	view := &uimocks.View{}
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.1.2.1", "9401")
+	view.EXPECT().Writef("🔌  Proxifying %s locally (%s:%s) <-> forwarding to %s:%s\n", "hostname.svc.local", "127.1.2.1", "8080", "127.0.0.1", "9401")
 
 	proxy := NewProxy(view, hostfileMock)
 	proxy.AddProxyForward("test", pf)

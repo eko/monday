@@ -3,15 +3,19 @@ package kubernetes
 import (
 	"testing"
 
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
+	"github.com/eko/monday/pkg/ui"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewLogstreamer(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	podName := "my-test-pod"
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	// When
 	streamer := NewLogstreamer(view, podName)
@@ -23,9 +27,12 @@ func TestNewLogstreamer(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	// When
-	view := &uimocks.View{}
-	view.On("Writef", "%s %s", "my-test-pod", "This is a sample log from my unit test")
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("%s %s", "my-test-pod", "This is a sample log from my unit test")
 
 	streamer := NewLogstreamer(view, "my-test-pod")
 

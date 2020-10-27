@@ -11,8 +11,9 @@ import (
 
 	clientmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/client"
 	restmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/rest"
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/ui"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	appsv1 "k8s.io/api/apps/v1"
@@ -30,6 +31,9 @@ func (r RESTClient) Do(request *http.Request) (*http.Response, error) {
 
 func TestNewForwarder(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	name := "test-forward"
 	context := "context-test"
 	namespace := "platform"
@@ -41,7 +45,7 @@ func TestNewForwarder(t *testing.T) {
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	// When
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, name, context, namespace, ports, labels)
@@ -82,10 +86,13 @@ func TestGetKubeConfigPathWhenCustom(t *testing.T) {
 
 func TestGetForwardType(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -103,10 +110,13 @@ func TestGetForwardType(t *testing.T) {
 
 func TestGetSelector(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -124,10 +134,13 @@ func TestGetSelector(t *testing.T) {
 
 func TestGetReadyChannel(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -143,10 +156,13 @@ func TestGetReadyChannel(t *testing.T) {
 
 func TestGetStopChannel(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -162,10 +178,13 @@ func TestGetStopChannel(t *testing.T) {
 
 func TestForwardTypeLocal(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.View{}
+	view := ui.NewMockView(ctrl)
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, "test-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
 		"app": "my-test-app",
@@ -233,12 +252,14 @@ func TestForwardTypeLocal(t *testing.T) {
 
 func TestForwardTypeRemote(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	initKubeConfig(t)
 	defer os.Remove(defaultKubeConfigPath)
 
-	view := &uimocks.View{}
-	view.On("Write", mock.Anything)
-	view.On("Writef", mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("📡  Setting up proxy on application '%s', please wait some seconds for pod to be ready...\n", "my-remote-app-deployment")
 
 	forwarder, err := NewForwarder(view, config.ForwarderKubernetesRemote, "test-remote-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
 		"app": "my-remote-app",

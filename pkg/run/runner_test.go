@@ -6,45 +6,51 @@ import (
 	"testing"
 	"time"
 
-	mocks "github.com/eko/monday/internal/tests/mocks/proxy"
-	uimocks "github.com/eko/monday/internal/tests/mocks/ui"
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/proxy"
+	"github.com/eko/monday/pkg/ui"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestNewRunner(t *testing.T) {
 	// Given
-	view := &uimocks.View{}
-	proxy := &mocks.Proxy{}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	view := ui.NewMockView(ctrl)
+	proxyfier := proxy.NewMockProxy(ctrl)
 
 	project := getMockedProjectWithApplication()
 
 	// When
-	r := NewRunner(view, proxy, project)
+	r := NewRunner(view, proxyfier, project)
 
 	// Then
 	assert.IsType(t, new(runner), r)
 	assert.Implements(t, new(Runner), r)
 
-	assert.Equal(t, proxy, r.proxy)
+	assert.Equal(t, proxyfier, r.proxy)
 	assert.Equal(t, project.Name, r.projectName)
 	assert.Equal(t, project.Applications, r.applications)
 }
 
 func TestRunAll(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	execCommand = mockExecCommand
 
-	view := &uimocks.View{}
-	view.On("Write", mock.Anything)
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("⚙️   Running local app '%s' (%s)...\n", "test-app", "/")
+	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " OK Arguments Seems -to=work\n")
 
-	proxy := &mocks.Proxy{}
+	proxyfier := proxy.NewMockProxy(ctrl)
 
 	project := getMockedProjectWithApplication()
 
-	runner := NewRunner(view, proxy, project)
+	runner := NewRunner(view, proxyfier, project)
 
 	// When
 	runner.RunAll()
@@ -70,17 +76,20 @@ func TestRunAll(t *testing.T) {
 
 func TestStop(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	execCommand = mockExecCommand
 
-	view := &uimocks.View{}
-	view.On("Write", mock.Anything)
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("⚙️   Running local app '%s' (%s)...\n", "test-app", "/")
+	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " OK Arguments Seems -to=work\n")
 
-	proxy := &mocks.Proxy{}
+	proxyfier := proxy.NewMockProxy(ctrl)
 
 	project := getMockedProjectWithApplication()
 
-	runner := NewRunner(view, proxy, project)
+	runner := NewRunner(view, proxyfier, project)
 	runner.RunAll()
 
 	// Wait for goroutine to launch application and be available
@@ -108,13 +117,19 @@ func TestStop(t *testing.T) {
 
 func TestSetupAll(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
 	execCommand = mockExecCommand
 
-	view := &uimocks.View{}
-	view.On("Write", mock.Anything)
-	view.On("Writef", mock.Anything, mock.Anything, mock.Anything)
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef("⚙️  Please wait while setup of application '%s'...\n", "test-app")
+	view.EXPECT().Writef("👉  Running commands:\n%s\n\n", "echo Starting test command setup...\necho ...and a second setup command to confirm it works")
+	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " Starting test command setup...\n")
+	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " ...and a second setup command to confirm it works\n")
+	view.EXPECT().Write("\n✅  Setup complete!\n\n")
 
-	proxy := &mocks.Proxy{}
+	proxyfier := proxy.NewMockProxy(ctrl)
 
 	project := &config.Project{
 		Name: "My project name",
@@ -130,7 +145,7 @@ func TestSetupAll(t *testing.T) {
 		},
 	}
 
-	runner := NewRunner(view, proxy, project)
+	runner := NewRunner(view, proxyfier, project)
 
 	// When
 	runner.SetupAll()
