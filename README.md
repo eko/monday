@@ -72,7 +72,24 @@ Then, build the binary using the available target in Makefile:
 $ make build
 ```
 
-## Usage
+## Configuration: Define your projects
+
+Configuration of Monday lives in one or multiple YAML files, depending on how you want to organize your files.
+
+By default, `monday init` will initiates a `~/monday.yaml` file. You can customize the configuration directory by setting the `MONDAY_CONFIG_PATH` environment variable.
+
+Please note that you can also split this configuration in multiple files by respecting the following pattern: `~/monday.<something>.yaml`, for instance:
+* `~/monday.localapps.yaml`
+* `~/monday.forwards.yaml`
+* `~/monday.projects.yaml`
+
+This will help you in having smaller and more readable configuration files.
+
+To learn more about the configuration, please take a look at the [Configuration Wiki page](https://github.com/eko/monday/wiki/Configuration).
+
+For an overview of what's possible with configuration file, please look at the [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml).
+
+## Usage: Run your projects!
 [![Monday Asciinema](https://asciinema.org/a/aB9ZkCmJS6m1b4uv8Dio1i59U.svg)](https://asciinema.org/a/aB9ZkCmJS6m1b4uv8Dio1i59U)
 
 First, you have to initialize monday and edit your configuration file (you have a [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml)).
@@ -123,23 +140,6 @@ The following environment variables can be used to tweak your Monday configurati
 | MONDAY_EDITOR_ARGS           | Specify the editor arguments you want to pass (separated by coma), example: -t,--wite     |
 | MONDAY_ENABLE_UI             | Specify that you want to use the terminal UI instead of simply logging to stdout          |
 | MONDAY_KUBE_CONFIG           | Specify the location of your Kubernetes config file  (if not in your home directory)      |
-
-## Configuration
-
-Configuration of Monday lives in one or multiple YAML files, depending on how you want to organize your files.
-
-By default, `monday init` will initiates a `~/monday.yaml` file. You can customize the configuration directory by setting the `MONDAY_CONFIG_PATH` environment variable.
-
-Please note that you can also split this configuration in multiple files by respecting the following pattern: `~/monday.<something>.yaml`, for instance:
-* `~/monday.localapps.yaml`
-* `~/monday.forwards.yaml`
-* `~/monday.projects.yaml`
-
-This will help you in having smaller and more readable configuration files.
-
-To learn more about the configuration, please take a look at the [Configuration Wiki page](https://github.com/eko/monday/wiki/Configuration).
-
-For an overview of what's possible with configuration file, please look at the [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml).
 
 ## Community
 
