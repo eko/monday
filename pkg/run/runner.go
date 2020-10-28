@@ -1,7 +1,6 @@
 package run
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -9,6 +8,8 @@ import (
 	"syscall"
 
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/helper"
+	"github.com/eko/monday/pkg/log"
 	"github.com/eko/monday/pkg/proxy"
 	"github.com/eko/monday/pkg/ui"
 )
@@ -76,17 +77,22 @@ func (r *runner) SetupAll() {
 
 // Run launches the application
 func (r *runner) Run(application *config.Application) {
-	if err := r.checkApplicationExecutableEnvironment(application); err != nil {
+	if err := helper.CheckPathExists(application.GetPath()); err != nil {
 		r.view.Writef("❌  %s\n", err.Error())
 		return
 	}
 
-	r.view.Writef("⚙️   Running local app '%s' (%s)...\n", application.Name, application.Path)
+	r.run(application)
+}
+
+// Run launches the application
+func (r *runner) run(application *config.Application) {
+	r.view.Writef("🏁  Running local app '%s' (%s)...\n", application.Name, application.Path)
 
 	applicationPath := application.GetPath()
 
-	stdoutStream := NewLogstreamer(StdOut, application.Name, r.view)
-	stderrStream := NewLogstreamer(StdErr, application.Name, r.view)
+	stdoutStream := log.NewStreamer(log.StdOut, application.Name, r.view)
+	stderrStream := log.NewStreamer(log.StdErr, application.Name, r.view)
 
 	cmd := exec.Command(application.Executable, application.Args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -95,19 +101,35 @@ func (r *runner) Run(application *config.Application) {
 	cmd.Stderr = stderrStream
 	cmd.Env = os.Environ()
 
-	r.addEnvVariables(cmd, application.Env)
-	r.addEnvVariablesFromFile(cmd, application.GetEnvFile())
+	helper.AddEnvVariables(cmd, application.Env)
+	if err := helper.AddEnvVariablesFromFile(cmd, application.GetEnvFile()); err != nil {
+		r.view.Writef("❌  %v\n", err)
+	}
 
 	r.cmds[application.Name] = cmd
 
 	if err := cmd.Run(); err != nil {
-		r.view.Writef("❌  Cannot run the following application: %s: %v\n", applicationPath, err)
+		r.view.Writef("❌  Cannot run the application %s on path %s: %v\n", application.Name, applicationPath, err)
 		return
 	}
 }
 
 // Restart kills the current application launch (if it exists) and launch a new one
 func (r *runner) Restart(application *config.Application) {
+	r.stopApplication(application)
+	go r.Run(application)
+}
+
+// Stop stops all the currently active local applications
+func (r *runner) Stop() error {
+	for _, application := range r.applications {
+		r.stopApplication(application)
+	}
+
+	return nil
+}
+
+func (r *runner) stopApplication(application *config.Application) {
 	if cmd, ok := r.cmds[application.Name]; ok {
 		pgid, err := syscall.Getpgid(cmd.Process.Pid)
 		if err == nil {
@@ -116,49 +138,22 @@ func (r *runner) Restart(application *config.Application) {
 		}
 	}
 
-	go r.Run(application)
-}
-
-// Stop stops all the currently active local applications
-func (r *runner) Stop() error {
-	for _, application := range r.applications {
-		// Kill process
-		if cmd, ok := r.cmds[application.Name]; ok {
-			pgid, err := syscall.Getpgid(cmd.Process.Pid)
-			if err == nil {
-				syscall.Kill(-pgid, syscall.SIGKILL)
-				cmd.Wait()
-			}
+	// In case we have stop command, run it
+	if application.StopExecutable != "" {
+		cmd := exec.Command(application.StopExecutable, application.StopArgs...)
+		if err := cmd.Run(); err != nil {
+			r.view.Writef("❌  Cannot run stop command for application '%s': %v\n", application.Name, err)
 		}
 
-		// In case we have stop command, run it
-		if application.StopExecutable != "" {
-			err := exec.Command(application.StopExecutable, application.StopArgs...).Start()
-			if err != nil {
-				r.view.Writef("❌  Cannot run stop command for application '%s': %v\n", application.Name, err)
-			}
-		}
+		cmd.Wait()
 	}
-
-	return nil
-}
-
-func (r *runner) checkApplicationExecutableEnvironment(application *config.Application) error {
-	applicationPath := application.GetPath()
-
-	// Check application path exists
-	if _, err := os.Stat(applicationPath); os.IsNotExist(err) {
-		return fmt.Errorf("Unable to find application path: %s", applicationPath)
-	}
-
-	return nil
 }
 
 // Setup runs setup commands for a specified application
 func (r *runner) setup(application *config.Application, wg *sync.WaitGroup) error {
 	defer wg.Done()
 
-	if err := r.checkApplicationExecutableEnvironment(application); err == nil {
+	if err := helper.CheckPathExists(application.GetPath()); err == nil {
 		return nil
 	}
 
@@ -170,8 +165,8 @@ func (r *runner) setup(application *config.Application, wg *sync.WaitGroup) erro
 
 	r.view.Writef("⚙️  Please wait while setup of application '%s'...\n", application.Name)
 
-	stdoutStream := NewLogstreamer(StdOut, application.Name, r.view)
-	stderrStream := NewLogstreamer(StdErr, application.Name, r.view)
+	stdoutStream := log.NewStreamer(log.StdOut, application.Name, r.view)
+	stderrStream := log.NewStreamer(log.StdErr, application.Name, r.view)
 
 	var setup = strings.Join(application.Setup, "; ")
 

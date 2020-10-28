@@ -1,4 +1,4 @@
-package run
+package log
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ var (
 	ColorReset = ""
 )
 
-type Logstreamer struct {
+type Streamer struct {
 	buf     *bytes.Buffer
 	stdType string
 	name    string
@@ -32,8 +32,8 @@ type Logstreamer struct {
 	view ui.View
 }
 
-func NewLogstreamer(stdType string, name string, view ui.View) *Logstreamer {
-	streamer := &Logstreamer{
+func NewStreamer(stdType string, name string, view ui.View) *Streamer {
+	streamer := &Streamer{
 		buf:     bytes.NewBuffer([]byte("")),
 		stdType: stdType,
 		name:    name,
@@ -49,7 +49,7 @@ func NewLogstreamer(stdType string, name string, view ui.View) *Logstreamer {
 	return streamer
 }
 
-func (l *Logstreamer) Write(p []byte) (n int, err error) {
+func (l *Streamer) Write(p []byte) (n int, err error) {
 	if n, err = l.buf.Write(p); err != nil {
 		return
 	}
@@ -61,12 +61,12 @@ func (l *Logstreamer) Write(p []byte) (n int, err error) {
 	return
 }
 
-func (l *Logstreamer) Close() {
+func (l *Streamer) Close() {
 	l.Flush()
 	l.buf = bytes.NewBuffer([]byte(""))
 }
 
-func (l *Logstreamer) Flush() error {
+func (l *Streamer) Flush() error {
 	var p []byte
 	if _, err := l.buf.Read(p); err != nil {
 		return err
@@ -76,7 +76,7 @@ func (l *Logstreamer) Flush() error {
 	return nil
 }
 
-func (l *Logstreamer) output() (err error) {
+func (l *Streamer) output() (err error) {
 	for {
 		line, err := l.buf.ReadString('\n')
 		if err == io.EOF {
@@ -92,7 +92,7 @@ func (l *Logstreamer) output() (err error) {
 	return nil
 }
 
-func (l *Logstreamer) out(str string) (err error) {
+func (l *Streamer) out(str string) (err error) {
 	switch l.stdType {
 	case StdOut:
 		str = ColorOkay + l.name + ColorReset + " " + str

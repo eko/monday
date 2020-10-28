@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/log"
 	"github.com/eko/monday/pkg/proxy"
 	"github.com/eko/monday/pkg/ui"
 	"github.com/golang/mock/gomock"
@@ -43,8 +44,8 @@ func TestRunAll(t *testing.T) {
 	execCommand = mockExecCommand
 
 	view := ui.NewMockView(ctrl)
-	view.EXPECT().Writef("⚙️   Running local app '%s' (%s)...\n", "test-app", "/")
-	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " OK Arguments Seems -to=work\n")
+	view.EXPECT().Writef("🏁  Running local app '%s' (%s)...\n", "test-app", "/")
+	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " OK Arguments Seems -to=work\n")
 
 	proxyfier := proxy.NewMockProxy(ctrl)
 
@@ -82,8 +83,8 @@ func TestStop(t *testing.T) {
 	execCommand = mockExecCommand
 
 	view := ui.NewMockView(ctrl)
-	view.EXPECT().Writef("⚙️   Running local app '%s' (%s)...\n", "test-app", "/")
-	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " OK Arguments Seems -to=work\n")
+	view.EXPECT().Writef("🏁  Running local app '%s' (%s)...\n", "test-app", "/")
+	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " OK Arguments Seems -to=work\n")
 
 	proxyfier := proxy.NewMockProxy(ctrl)
 
@@ -125,8 +126,8 @@ func TestSetupAll(t *testing.T) {
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("⚙️  Please wait while setup of application '%s'...\n", "test-app")
 	view.EXPECT().Writef("👉  Running commands:\n%s\n\n", "echo Starting test command setup...\necho ...and a second setup command to confirm it works")
-	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " Starting test command setup...\n")
-	view.EXPECT().Write(ColorGreen + "test-app" + ColorWhite + " ...and a second setup command to confirm it works\n")
+	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " Starting test command setup...\n")
+	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " ...and a second setup command to confirm it works\n")
 	view.EXPECT().Write("\n✅  Setup complete!\n\n")
 
 	proxyfier := proxy.NewMockProxy(ctrl)
@@ -134,7 +135,7 @@ func TestSetupAll(t *testing.T) {
 	project := &config.Project{
 		Name: "My project name",
 		Applications: []*config.Application{
-			&config.Application{
+			{
 				Name: "test-app",
 				Path: "/unkown/directory",
 				Setup: []string{
@@ -163,7 +164,7 @@ func getMockedProjectWithApplication() *config.Project {
 	return &config.Project{
 		Name: "My project name",
 		Applications: []*config.Application{
-			&config.Application{
+			{
 				Name:       "test-app",
 				Path:       "/",
 				Executable: "echo",

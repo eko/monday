@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/log"
 	"github.com/eko/monday/pkg/ui"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -200,9 +201,10 @@ func (f *Forwarder) forwardLocal(selector string) error {
 
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", &url)
 
-	l := NewLogstreamer(f.view, pod.Name)
+	stdoutStream := log.NewStreamer(log.StdOut, pod.Name, f.view)
+	stderrStream := log.NewStreamer(log.StdErr, pod.Name, f.view)
 
-	fw, err := portforward.New(dialer, f.ports, f.stopChannel, f.readyChannel, l, l)
+	fw, err := portforward.New(dialer, f.ports, f.stopChannel, f.readyChannel, stdoutStream, stderrStream)
 	if err != nil {
 		return err
 	}
