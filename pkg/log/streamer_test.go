@@ -1,4 +1,4 @@
-package run
+package log
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewLogstreamer(t *testing.T) {
+func TestNewStreamer(t *testing.T) {
 	// Given
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -25,10 +25,10 @@ func TestNewLogstreamer(t *testing.T) {
 
 	for _, testCase := range testCases {
 		// When
-		streamer := NewLogstreamer(testCase.stdType, testCase.name, view)
+		streamer := NewStreamer(testCase.stdType, testCase.name, view)
 
 		// Then
-		assert.IsType(t, new(Logstreamer), streamer)
+		assert.IsType(t, new(Streamer), streamer)
 
 		assert.Equal(t, testCase.stdType, streamer.stdType)
 		assert.Equal(t, testCase.name, streamer.name)

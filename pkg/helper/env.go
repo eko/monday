@@ -1,4 +1,4 @@
-package run
+package helper
 
 import (
 	"bufio"
@@ -8,25 +8,24 @@ import (
 	"regexp"
 )
 
-// addEnvVariables adds environment variables given as key/value pair
-func (r *runner) addEnvVariables(cmd *exec.Cmd, envs map[string]string) {
+// AddEnvVariables adds environment variables given as key/value pair
+func AddEnvVariables(cmd *exec.Cmd, envs map[string]string) {
 	for key, value := range envs {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
 	}
 }
 
-// addEnvVariablesFromFile adds environment variables given as a filename
-func (r *runner) addEnvVariablesFromFile(cmd *exec.Cmd, filename string) {
+// AddEnvVariablesFromFile adds environment variables given as a filename
+func AddEnvVariablesFromFile(cmd *exec.Cmd, filename string) error {
 	if filename == "" {
-		return
+		return nil
 	}
 
 	filename = os.ExpandEnv(filename)
 
 	file, err := os.OpenFile(filename, os.O_RDONLY, os.ModePerm)
 	if err != nil {
-		r.view.Writef("❌  Unable to open environment file '%s': %v\n", filename, err)
-		return
+		return fmt.Errorf("unable to open environment file '%s': %v", filename, err)
 	}
 	defer file.Close()
 
@@ -45,7 +44,8 @@ func (r *runner) addEnvVariablesFromFile(cmd *exec.Cmd, filename string) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		r.view.Writef("❌  An error has occured while reading environment file '%s': %v\n", filename, err)
-		return
+		return fmt.Errorf("an error has occured while reading environment file '%s': %v", filename, err)
 	}
+
+	return nil
 }
