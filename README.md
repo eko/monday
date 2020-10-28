@@ -61,12 +61,6 @@ $ go get -u github.com/eko/monday
 $ git clone https://github.com/eko/monday.git
 ```
 
-Install the needed vendors:
-
-```
-$ GO111MODULE=on go mod vendor
-```
-
 Then, build the binary using the available target in Makefile:
 ```bash
 $ make build
@@ -83,11 +77,63 @@ Please note that you can also split this configuration in multiple files by resp
 * `~/monday.forwards.yaml`
 * `~/monday.projects.yaml`
 
-This will help you in having smaller and more readable configuration files.
+This will help you navigate more easily in your configuration files.
+
+### Define a local project
+
+Here is an example of a local application:
+
+```yaml
+<: &graphql-local
+  name: graphql
+  path: $GOPATH/src/github.com/eko/graphql
+  watch: true
+  hostname: graphql.svc.local # Project will be available using this hostname on your machine
+  setup: # Setup, installation step in case specified path does not exists
+    - go get github.com/eko/graphql
+  build: # Optionally, you can define a build section to build your application before running it
+    type: command
+    commands:
+      - go build -o ./build/graphql-app cmd/ # Here, just build the Go application
+    env:
+      CGO_ENABLED: on
+  executable: ./build/graphql-app # Then, run it using the executable
+  env: # Optional, in case you want to specify some environment variables for this app
+    HTTP_PORT: 8005
+  env_file: "github.com/eko/graphql/.env" # Or via a .env file also
+```
+
+Then, imagine this GraphQL instance needs to call a user-api but we want to forward it from a Kubernetes environment, we will define it as:
+
+```yaml
+<: &user-api-forward
+  name: user-api
+  type: kubernetes
+  values:
+    context: staging # This is your kubernetes cluster (kubectl config context name)
+    namespace: backend
+    labels:
+      app: user-api
+    hostname: user-api.svc.local # API will be available under this hostname
+    ports:
+     - 8080:8080
+```
+
+Well, you have defined both a local app and an application that needs to be forwarded, now just create the project with:
+
+```yaml
+ - name: graphql
+   local:
+    - *graphql-local
+   forward:
+    - *user-api-forward
+```
+
+Your project configuration is ready, you can now work easily with your microservices.
+
+For an overview of what's possible to do with configuration file, please look at the [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml).
 
 To learn more about the configuration, please take a look at the [Configuration Wiki page](https://github.com/eko/monday/wiki/Configuration).
-
-For an overview of what's possible with configuration file, please look at the [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml).
 
 ## Usage: Run your projects!
 [![Monday Asciinema](https://asciinema.org/a/aB9ZkCmJS6m1b4uv8Dio1i59U.svg)](https://asciinema.org/a/aB9ZkCmJS6m1b4uv8Dio1i59U)

@@ -63,6 +63,21 @@ type Application struct {
 	Env            map[string]string `yaml:"env"`
 	EnvFile        string            `yaml:"env_file"`
 	Setup          []string          `yaml:"setup"`
+	Build          *Build            `yaml:"build"`
+}
+
+// Build represents application build information
+type Build struct {
+	Type     string            `yaml:"type"`
+	Path     string            `yaml:"path"`
+	Commands []string          `yaml:"commands"`
+	Env      map[string]string `yaml:"env"`
+	EnvFile  string            `yaml:"env_file"`
+}
+
+// GetPath returns the path dependending on overrided value or not
+func (b *Build) GetPath() string {
+	return getValueByExecutionContext(b.Path, "")
 }
 
 // GetEnvFile returns the filename guessed with current application environment

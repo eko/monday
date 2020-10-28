@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/eko/monday/pkg/build"
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/forward"
 	"github.com/eko/monday/pkg/run"
@@ -18,6 +19,7 @@ func TestNewWatcher(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	builder := build.NewMockBuilder(ctrl)
 	runner := run.NewMockRunner(ctrl)
 	forwarder := forward.NewMockForwarder(ctrl)
 
@@ -28,7 +30,7 @@ func TestNewWatcher(t *testing.T) {
 	}
 
 	// When
-	w := NewWatcher(runner, forwarder, watcherConfig, project)
+	w := NewWatcher(builder, runner, forwarder, watcherConfig, project)
 
 	// Then
 	assert.IsType(t, new(watcher), w)
@@ -52,6 +54,9 @@ func TestWatch(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	builder := build.NewMockBuilder(ctrl)
+	builder.EXPECT().BuildAll().Times(1)
+
 	runner := run.NewMockRunner(ctrl)
 	runner.EXPECT().SetupAll().Times(1)
 	runner.EXPECT().RunAll().Times(1)
@@ -61,7 +66,7 @@ func TestWatch(t *testing.T) {
 
 	project := getProjectMock()
 
-	watcher := NewWatcher(runner, forwarder, &config.Watcher{}, project)
+	watcher := NewWatcher(builder, runner, forwarder, &config.Watcher{}, project)
 
 	// When - Then
 	watcher.Watch()
@@ -75,6 +80,9 @@ func TestWatchWhenFileChange(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	builder := build.NewMockBuilder(ctrl)
+	builder.EXPECT().BuildAll().Times(1)
+
 	runner := run.NewMockRunner(ctrl)
 	runner.EXPECT().SetupAll().Times(1)
 	runner.EXPECT().RunAll().Times(1)
@@ -84,7 +92,7 @@ func TestWatchWhenFileChange(t *testing.T) {
 
 	project := getProjectMock()
 
-	watcher := NewWatcher(runner, forwarder, &config.Watcher{}, project)
+	watcher := NewWatcher(builder, runner, forwarder, &config.Watcher{}, project)
 	watcher.Watch()
 
 	// When
@@ -116,12 +124,13 @@ func TestStop(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	builder := build.NewMockBuilder(ctrl)
 	runner := run.NewMockRunner(ctrl)
 	forwarder := forward.NewMockForwarder(ctrl)
 
 	project := getProjectMock()
 
-	watcher := NewWatcher(runner, forwarder, &config.Watcher{}, project)
+	watcher := NewWatcher(builder, runner, forwarder, &config.Watcher{}, project)
 
 	// When - Then
 	watcher.Stop()
@@ -134,7 +143,7 @@ func getProjectMock() *config.Project {
 	return &config.Project{
 		Name: "My project name",
 		Applications: []*config.Application{
-			&config.Application{
+			{
 				Name:  "test-app",
 				Path:  path,
 				Watch: true,

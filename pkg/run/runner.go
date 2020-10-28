@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	execCommand = exec.Command
-	hasSetup    = false
+	hasSetup = false
 )
 
 type Runner interface {
@@ -168,22 +167,13 @@ func (r *runner) setup(application *config.Application, wg *sync.WaitGroup) erro
 	stdoutStream := log.NewStreamer(log.StdOut, application.Name, r.view)
 	stderrStream := log.NewStreamer(log.StdErr, application.Name, r.view)
 
-	var setup = strings.Join(application.Setup, "; ")
-
-	setup = strings.Replace(setup, "~", "$HOME", -1)
-	setup = os.ExpandEnv(setup)
-
 	commands := strings.Join(application.Setup, "\n")
 	r.view.Writef("👉  Running commands:\n%s\n\n", commands)
 
-	cmd := exec.Command("/bin/sh", "-c", setup)
-	cmd.Stdout = stdoutStream
-	cmd.Stderr = stderrStream
-	cmd.Env = os.Environ()
-
-	setup = os.ExpandEnv(setup)
-
-	cmd.Run()
+	cmd := helper.BuildCmd(application.Setup, "", stdoutStream, stderrStream)
+	if err := cmd.Run(); err != nil {
+		r.view.Writef("❌  Cannot run build command for application '%s': %v\n", application.Name, err)
+	}
 
 	return nil
 }

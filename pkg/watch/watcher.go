@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/eko/monday/pkg/build"
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/forward"
 	"github.com/eko/monday/pkg/run"
@@ -22,6 +23,7 @@ type Watcher interface {
 
 // Watcher monitors health of the currently forwarded ports and launched applications.
 type watcher struct {
+	builder      build.Builder
 	runner       run.Runner
 	forwarder    forward.Forwarder
 	conf         *config.Watcher
@@ -30,12 +32,13 @@ type watcher struct {
 }
 
 // NewWatcher initializes a watcher instance monitoring services using both runner and forwarder
-func NewWatcher(runner run.Runner, forwarder forward.Forwarder, conf *config.Watcher, project *config.Project) *watcher {
+func NewWatcher(builder build.Builder, runner run.Runner, forwarder forward.Forwarder, conf *config.Watcher, project *config.Project) *watcher {
 	if conf != nil && len(conf.Exclude) > 0 {
 		excludeDirectories = append(excludeDirectories, conf.Exclude...)
 	}
 
 	return &watcher{
+		builder:      builder,
 		runner:       runner,
 		forwarder:    forwarder,
 		conf:         conf,
@@ -48,6 +51,7 @@ func NewWatcher(runner run.Runner, forwarder forward.Forwarder, conf *config.Wat
 // It also relaunch them in case of file changes.
 func (w *watcher) Watch() {
 	w.runner.SetupAll()
+	w.builder.BuildAll()
 
 	go w.runner.RunAll()
 	go w.forwarder.ForwardAll()
@@ -101,6 +105,7 @@ func (w *watcher) watchApplication(application *config.Application) error {
 			select {
 			case event := <-fileWatcher.Event:
 				fmt.Printf("👓  Watcher has detected a file change: %v\n", event)
+				w.builder.Build(application)
 				w.runner.Restart(application)
 			case err := <-fileWatcher.Error:
 				fmt.Printf("❌  An error has occured while file watching: %v\n", err)

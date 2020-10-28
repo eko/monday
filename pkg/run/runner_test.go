@@ -1,7 +1,6 @@
 package run
 
 import (
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -41,8 +40,6 @@ func TestRunAll(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	execCommand = mockExecCommand
-
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("🏁  Running local app '%s' (%s)...\n", "test-app", "/")
 	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " OK Arguments Seems -to=work\n")
@@ -79,8 +76,6 @@ func TestStop(t *testing.T) {
 	// Given
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-
-	execCommand = mockExecCommand
 
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("🏁  Running local app '%s' (%s)...\n", "test-app", "/")
@@ -121,8 +116,6 @@ func TestSetupAll(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	execCommand = mockExecCommand
-
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("⚙️  Please wait while setup of application '%s'...\n", "test-app")
 	view.EXPECT().Writef("👉  Running commands:\n%s\n\n", "echo Starting test command setup...\necho ...and a second setup command to confirm it works")
@@ -153,11 +146,6 @@ func TestSetupAll(t *testing.T) {
 
 	// Then
 	assert.True(t, hasSetup)
-}
-
-func mockExecCommand(command string, args ...string) *exec.Cmd {
-	args = append([]string{"<runner>"}, args...)
-	return exec.Command("echo", args...)
 }
 
 func getMockedProjectWithApplication() *config.Project {
