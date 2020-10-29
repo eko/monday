@@ -16,13 +16,26 @@ watcher: # Optional
   path: github.com/eko/graphql # Will find in GOPATH (as executable is "go")
   watch: true # Default: false (do not watch directory)
   hostname: graphql.svc.local # Optional, in case you want to map a specific hostname with a single IP address
-  executable: go
+  build: # Optionally, you can define a build section to build your application before running it
+    type: command # There is only a 'command' type actually but maybe we could add more in the future
+    commands:
+      - docker build -t graphql-image .
+    env:
+      DOCKER_BUILDKIT: 1
+  executable: docker
   args:
     - run
-    - cmd/main.go
+    - --rm
+    - --name
+    - graphql
+    - graphql-image
   env: # Optional, in case you want to specify some environment variables for this app
     HTTP_PORT: 8005
   env_file: "github.com/eko/graphql/.env" # Optional, in case you want to specify some environment variables from a file
+  stop_executable: docker
+  stop_args:
+    - stop
+    - graphql
   setup: # Optional, in case you want to setup the project first if directory does not exists
     - go get github.com/eko/graphql
     - echo You can use ~/path syntax and environment variables like $GOPATH in your commands

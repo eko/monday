@@ -16,6 +16,7 @@ mocks: ## Generate mocks for tests
 	@echo "> generating mocks..."
 
 	# Monday
+	mockgen -source=pkg/build/builder.go -destination=pkg/build/builder_mock.go -package=build
 	mockgen -source=pkg/ui/view.go -destination=pkg/ui/view_mock.go -package=ui
 	mockgen -source=pkg/hostfile/client.go -destination=pkg/hostfile/client_mock.go -package=hostfile
 	mockgen -source=pkg/proxy/proxy.go -destination=pkg/proxy/proxy_mock.go -package=proxy

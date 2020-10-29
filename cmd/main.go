@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/eko/monday/internal/runtime"
+	"github.com/eko/monday/pkg/build"
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/forward"
 	"github.com/eko/monday/pkg/hostfile"
@@ -30,6 +31,7 @@ var (
 
 	proxyfier proxy.Proxy
 	forwarder forward.Forwarder
+	builder   build.Builder
 	runner    run.Runner
 	watcher   watch.Watcher
 
@@ -121,10 +123,11 @@ func runProject(conf *config.Config, choice string) {
 	}
 
 	proxyfier = proxy.NewProxy(layout.GetProxyView(), hostfile)
+	builder = build.NewBuilder(layout.GetLogsView(), project)
 	runner = run.NewRunner(layout.GetLogsView(), proxyfier, project)
 	forwarder = forward.NewForwarder(layout.GetForwardsView(), proxyfier, project)
 
-	watcher = watch.NewWatcher(runner, forwarder, conf.Watcher, project)
+	watcher = watch.NewWatcher(builder, runner, forwarder, conf.Watcher, project)
 	go watcher.Watch()
 
 	if uiEnabled {
