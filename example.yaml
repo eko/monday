@@ -1,9 +1,17 @@
-# Settings
+# Global settings
 
 kubeconfig: /dev/custom/.kube/config # Optional, default to user's .kube/config file path
 gopath: /dev/golang # Optional, default to user's $GOPATH env var
 
-watcher: # Optional
+build: # Optional, allows to set global environment variables for all the builder commands
+  env:
+    DOCKER_BUILDKIT: 1
+
+setup: # Optional, allows to set global environment variables for all the setup commands
+  env:
+    GIT_SSH_COMMAND: ssh -i /home/myuser/.ssh/id_rsa
+
+watch: # Optional
   exclude: # Optional, in case you want to exclude some (sub-)directories from file watching
     - .git
     - node_modules
@@ -16,6 +24,13 @@ watcher: # Optional
   path: github.com/eko/graphql # Will find in GOPATH (as executable is "go")
   watch: true # Default: false (do not watch directory)
   hostname: graphql.svc.local # Optional, in case you want to map a specific hostname with a single IP address
+  setup: # Optional, in case you want to setup the project first if directory does not exists
+    commands:
+      - go get github.com/eko/graphql
+      - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
+    env: # Also optional, in case you need to specify some environment variables
+      GOPRIVATE=*.acme.tld
+    env_file: ~/my/project/.env # Or, via an environment file...
   build: # Optionally, you can define a build section to build your application before running it
     type: command # There is only a 'command' type actually but maybe we could add more in the future
     commands:
@@ -36,15 +51,19 @@ watcher: # Optional
   stop_args:
     - stop
     - graphql
-  setup: # Optional, in case you want to setup the project first if directory does not exists
-    - go get github.com/eko/graphql
-    - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
 
 <: &grpc-api-local
   name: grpc-api
   path: github.com/eko/grpc-api # Will find in GOPATH (as executable is "go")
   watch: true # Default: false (do not watch directory)
   hostname: grpc-api.svc.local # Optional, in case you want to map a specific hostname with a single IP address
+  setup: # Optional, in case you want to setup the project first if directory does not exists
+    commands:
+      - go get github.com/eko/grpc-api
+      - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
+    env: # Also optional, in case you need to specify some environment variables
+      GOPRIVATE=*.acme.tld
+    env_file: ~/my/project/.env # Or, via an environment file...
   executable: go
   args:
     - run
@@ -52,9 +71,6 @@ watcher: # Optional
   env: # Optional, in case you want to specify some environment variables for this app
     GRPC_PORT: 8006
   env_file: "github.com/eko/grpc-api/.env" # Optional, in case you want to specify some environment variables from a file
-  setup: # Optional, in case you want to setup the project first if directory does not exists
-    - go get github.com/eko/grpc-api
-    - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
 
 <: &elasticsearch-local
   name: elasticsearch

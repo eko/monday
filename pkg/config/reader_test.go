@@ -21,7 +21,7 @@ func TestLoadSingleFile(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Len(t, conf.Projects, 2)
-	assert.Equal(t, conf.Watcher.Exclude, []string{
+	assert.Equal(t, conf.Watch.Exclude, []string{
 		".git",
 		"node_modules",
 	})
@@ -44,7 +44,7 @@ func TestLoadMultipleFiles(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Len(t, conf.Projects, 4)
-	assert.Equal(t, conf.Watcher.Exclude, []string{
+	assert.Equal(t, conf.Watch.Exclude, []string{
 		".git",
 		"node_modules",
 		"/event/an/absolute/path/in/multiple/files",
@@ -68,7 +68,7 @@ func TestLoadWhenCustomDirectory(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Len(t, conf.Projects, 2)
-	assert.Equal(t, conf.Watcher.Exclude, []string{
+	assert.Equal(t, conf.Watch.Exclude, []string{
 		".git",
 		"node_modules",
 	})

@@ -37,10 +37,33 @@ var (
 
 // Config represents the root configuration item
 type Config struct {
-	GoPath     string     `yaml:"gopath"`
-	KubeConfig string     `yaml:"kubeconfig"`
-	Projects   []*Project `yaml:"projects"`
-	Watcher    *Watcher   `yaml:"watcher"`
+	GoPath     string       `yaml:"gopath"`
+	KubeConfig string       `yaml:"kubeconfig"`
+	Projects   []*Project   `yaml:"projects"`
+	Build      *GlobalBuild `yaml:"build"`
+	Run        *GlobalRun   `yaml:"run"`
+	Setup      *GlobalSetup `yaml:"setup"`
+	Watch      *GlobalWatch `yaml:"watch"`
+}
+
+// GlobalBuild represents the global configuration values for the file builder component
+type GlobalBuild struct {
+	Env map[string]string `yaml:"env"`
+}
+
+// GlobalRun represents the global configuration values for the file runner component
+type GlobalRun struct {
+	Env map[string]string `yaml:"env"`
+}
+
+// GlobalSetup represents the global configuration values for the file setuper component
+type GlobalSetup struct {
+	Env map[string]string `yaml:"env"`
+}
+
+// GlobalWatch represents the global configuration values for the file watcher component
+type GlobalWatch struct {
+	Exclude []string `yaml:"exclude"`
 }
 
 // Project represents a project name, that could be a group of multiple projects
@@ -62,7 +85,7 @@ type Application struct {
 	Watch          bool              `yaml:"watch"`
 	Env            map[string]string `yaml:"env"`
 	EnvFile        string            `yaml:"env_file"`
-	Setup          []string          `yaml:"setup"`
+	Setup          *Setup            `yaml:"setup"`
 	Build          *Build            `yaml:"build"`
 }
 
@@ -123,9 +146,20 @@ type ForwardValues struct {
 	Args            []string          `yaml:"args"`
 }
 
-// Watcher represents the configuration values for the file watcher component
-type Watcher struct {
-	Exclude []string `yaml:"exclude"`
+// Setup represents application setup information
+type Setup struct {
+	Commands []string          `yaml:"commands"`
+	Env      map[string]string `yaml:"env"`
+	EnvFile  string            `yaml:"env_file"`
+}
+
+// GetEnvFile returns the filename guessed with current application environment
+func (s *Setup) GetEnvFile() string {
+	if s.EnvFile == "" {
+		return ""
+	}
+
+	return getValueByExecutionContext(s.EnvFile, "")
 }
 
 func getValueByExecutionContext(path, executable string) string {

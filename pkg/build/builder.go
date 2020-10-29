@@ -19,14 +19,16 @@ type builder struct {
 	projectName  string
 	applications []*config.Application
 	view         ui.View
+	conf         *config.GlobalBuild
 }
 
 // NewBuilder instanciates a new builder instance
-func NewBuilder(view ui.View, project *config.Project) *builder {
+func NewBuilder(view ui.View, project *config.Project, conf *config.GlobalBuild) *builder {
 	return &builder{
 		projectName:  project.Name,
 		applications: project.Applications,
 		view:         view,
+		conf:         conf,
 	}
 }
 
@@ -61,8 +63,8 @@ func (b *builder) Build(application *config.Application) {
 
 	switch build.Type {
 	case command.BuilderType:
-		b.view.Writef("⚙️   Building local app '%s' via %s...\n", application.Name, build.Type)
-		err = command.Build(application, b.view)
+		b.view.Writef("⚙️   Building application '%s' via %s...\n", application.Name, build.Type)
+		err = command.Build(application, b.view, b.conf)
 
 	default:
 		b.view.Writef("❌  Unknown build type '%s' for application '%s'\n", build.Type, application.Name)
@@ -73,5 +75,5 @@ func (b *builder) Build(application *config.Application) {
 		return
 	}
 
-	b.view.Writef("✅  Build of application '%s' complete!\n", application.Name)
+	b.view.Writef("\n✅  Build of application '%s' complete!\n\n", application.Name)
 }

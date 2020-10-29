@@ -103,7 +103,9 @@ Here is an example of a local application:
   env_file: "github.com/eko/graphql/.env" # Or via a .env file also
 ```
 
-Then, imagine this GraphQL instance needs to call a user-api but we want to forward it from a Kubernetes environment, we will define it as:
+Then, imagine this GraphQL instance needs to call a user-api but we want to forward it from a Kubernetes environment, we will define it as follows.
+
+### Define a port-forwarded project
 
 ```yaml
 <: &user-api-forward
@@ -119,7 +121,9 @@ Then, imagine this GraphQL instance needs to call a user-api but we want to forw
      - 8080:8080
 ```
 
-Well, you have defined both a local app and an application that needs to be forwarded, now just create the project with:
+Well, you have defined both a local app and an application that needs to be forwarded, now just create the project!
+
+### Define a project with both local app and a port-forwarded one
 
 ```yaml
  - name: graphql

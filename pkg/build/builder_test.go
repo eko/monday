@@ -20,7 +20,7 @@ func TestNewBuilder(t *testing.T) {
 	project := getMockedProjectWithApplication()
 
 	// When
-	b := NewBuilder(view, project)
+	b := NewBuilder(view, project, &config.GlobalBuild{})
 
 	// Then
 	assert.IsType(t, new(builder), b)
@@ -37,15 +37,15 @@ func TestBuildAll(t *testing.T) {
 	defer ctrl.Finish()
 
 	view := ui.NewMockView(ctrl)
-	view.EXPECT().Writef("⚙️   Building local app '%s' via %s...\n", "test-app", "command")
+	view.EXPECT().Writef("⚙️   Building application '%s' via %s...\n", "test-app", "command")
 	view.EXPECT().Writef("👉  Running commands:\n%s\n", "echo 'ok it works'\necho yes it's ok")
 	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " 'ok it works'\n")
 	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " yes it's ok\n")
-	view.EXPECT().Writef("✅  Build of application '%s' complete!\n", "test-app")
+	view.EXPECT().Writef("\n✅  Build of application '%s' complete!\n\n", "test-app")
 
 	project := getMockedProjectWithApplication()
 
-	builder := NewBuilder(view, project)
+	builder := NewBuilder(view, project, &config.GlobalBuild{})
 
 	// When - Then
 	builder.BuildAll()

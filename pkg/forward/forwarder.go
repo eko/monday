@@ -36,7 +36,7 @@ type forwarder struct {
 	forwarders sync.Map
 }
 
-// NewForwarder instancites a Forwarder struct from configuration data
+// NewForwarder instanciates a Forwarder struct from configuration data
 func NewForwarder(view ui.View, proxy proxy.Proxy, project *config.Project) *forwarder {
 	return &forwarder{
 		view:     view,

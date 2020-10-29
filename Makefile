@@ -21,6 +21,7 @@ mocks: ## Generate mocks for tests
 	mockgen -source=pkg/hostfile/client.go -destination=pkg/hostfile/client_mock.go -package=hostfile
 	mockgen -source=pkg/proxy/proxy.go -destination=pkg/proxy/proxy_mock.go -package=proxy
 	mockgen -source=pkg/run/runner.go -destination=pkg/run/runner_mock.go -package=run
+	mockgen -source=pkg/setup/setuper.go -destination=pkg/setup/setuper_mock.go -package=setup
 	mockgen -source=pkg/forward/forwarder.go -destination=pkg/forward/forwarder_mock.go -package=forward
 	mockgen -source=pkg/watch/watcher.go -destination=pkg/watch/watcher_mock.go -package=watch
 

@@ -2,7 +2,7 @@
 
 gopath: /dev/golang
 
-watcher: # Optional
+watch: # Optional
   exclude:
     - .git
     - node_modules

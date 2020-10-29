@@ -9,6 +9,7 @@ import (
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/forward"
 	"github.com/eko/monday/pkg/run"
+	"github.com/eko/monday/pkg/setup"
 	radovskyb_watcher "github.com/radovskyb/watcher"
 )
 
@@ -23,21 +24,23 @@ type Watcher interface {
 
 // Watcher monitors health of the currently forwarded ports and launched applications.
 type watcher struct {
+	setuper      setup.Setuper
 	builder      build.Builder
 	runner       run.Runner
 	forwarder    forward.Forwarder
-	conf         *config.Watcher
+	conf         *config.GlobalWatch
 	project      *config.Project
 	fileWatchers map[string]*radovskyb_watcher.Watcher
 }
 
 // NewWatcher initializes a watcher instance monitoring services using both runner and forwarder
-func NewWatcher(builder build.Builder, runner run.Runner, forwarder forward.Forwarder, conf *config.Watcher, project *config.Project) *watcher {
+func NewWatcher(setuper setup.Setuper, builder build.Builder, runner run.Runner, forwarder forward.Forwarder, conf *config.GlobalWatch, project *config.Project) *watcher {
 	if conf != nil && len(conf.Exclude) > 0 {
 		excludeDirectories = append(excludeDirectories, conf.Exclude...)
 	}
 
 	return &watcher{
+		setuper:      setuper,
 		builder:      builder,
 		runner:       runner,
 		forwarder:    forwarder,
@@ -50,7 +53,7 @@ func NewWatcher(builder build.Builder, runner run.Runner, forwarder forward.Forw
 // Watch runs both local applications and forwarded ones and ensure they keep running.
 // It also relaunch them in case of file changes.
 func (w *watcher) Watch() {
-	w.runner.SetupAll()
+	w.setuper.SetupAll()
 	w.builder.BuildAll()
 
 	go w.runner.RunAll()

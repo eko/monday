@@ -14,7 +14,7 @@ const (
 	BuilderType = "command"
 )
 
-func Build(application *config.Application, view ui.View) error {
+func Build(application *config.Application, view ui.View, conf *config.GlobalBuild) error {
 	var build = application.Build
 
 	var buildPath = build.GetPath()
@@ -32,7 +32,13 @@ func Build(application *config.Application, view ui.View) error {
 
 	cmd := helper.BuildCmd(build.Commands, buildPath, stdoutStream, stderrStream)
 
-	helper.AddEnvVariables(cmd, build.Env)
+	// Merge global environment variables with given ones
+	var envs = build.Env
+	if conf != nil {
+		envs = helper.MergeMapString(build.Env, conf.Env)
+	}
+
+	helper.AddEnvVariables(cmd, envs)
 	if err := helper.AddEnvVariablesFromFile(cmd, application.GetEnvFile()); err != nil {
 		return err
 	}

@@ -23,7 +23,7 @@ func TestBuild(t *testing.T) {
 	application := getMockedApplication()
 
 	// When
-	err := Build(application, view)
+	err := Build(application, view, &config.GlobalBuild{})
 
 	// Then
 	assert := assert.New(t)
