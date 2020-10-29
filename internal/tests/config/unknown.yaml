@@ -72,8 +72,9 @@
   env:
     HTTP_PORT: 8005
   setup:
-    - go get github.com/eko/graphql
-    - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
+    commands:
+      - go get github.com/eko/graphql
+      - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
 
 <: &grpc-api-local
   name: grpc-api
@@ -87,8 +88,9 @@
   env:
     GRPC_PORT: 8006
   setup:
-    - go get github.com/eko/grpc-api
-    - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
+    commands:
+      - go get github.com/eko/grpc-api
+      - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
 
 <: &elasticsearch-local
   name: elasticsearch
@@ -103,7 +105,7 @@
 
 gopath: /dev/golang
 
-watcher: # Optional
+watch: # Optional
   exclude:
     - .git
     - node_modules

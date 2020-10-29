@@ -2,7 +2,7 @@
 
 gopath: /dev/golang
 
-watcher: # Optional
+watch: # Optional
   exclude:
     - .git
     - node_modules
@@ -37,8 +37,9 @@ watcher: # Optional
   env:
     HTTP_PORT: 8005
   setup:
-    - go get github.com/eko/graphql
-    - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
+    commands:
+      - go get github.com/eko/graphql
+      - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
 
 # Projects
 

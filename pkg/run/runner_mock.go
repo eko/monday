@@ -46,18 +46,6 @@ func (mr *MockRunnerMockRecorder) RunAll() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunAll", reflect.TypeOf((*MockRunner)(nil).RunAll))
 }
 
-// SetupAll mocks base method.
-func (m *MockRunner) SetupAll() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetupAll")
-}
-
-// SetupAll indicates an expected call of SetupAll.
-func (mr *MockRunnerMockRecorder) SetupAll() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupAll", reflect.TypeOf((*MockRunner)(nil).SetupAll))
-}
-
 // Run mocks base method.
 func (m *MockRunner) Run(application *config.Application) {
 	m.ctrl.T.Helper()
