@@ -9,15 +9,18 @@ import (
 
 func TestApplicationGetPathWhenAbsoluePath(t *testing.T) {
 	// Given
+	tmpDirectory := os.TempDir()
+	defer os.Remove(tmpDirectory)
+
 	application := Application{
-		Path: "/tmp/this/is/a/test",
+		Path: tmpDirectory,
 	}
 
 	// When
 	path := application.GetPath()
 
 	// Path
-	assert.Equal(t, "/tmp/this/is/a/test", path)
+	assert.Equal(t, tmpDirectory, path)
 }
 
 func TestApplicationGetPathWhenGoPath(t *testing.T) {
@@ -25,8 +28,7 @@ func TestApplicationGetPathWhenGoPath(t *testing.T) {
 	os.Setenv("GOPATH", "/tmp/gopath")
 
 	application := Application{
-		Executable: "go",
-		Path:       "fake.github.com/user/repository",
+		Path: "fake.github.com/user/repository",
 	}
 
 	// When

@@ -69,14 +69,10 @@ func getMockedProjectWithApplication() *config.Project {
 		Name: "My project name",
 		Applications: []*config.Application{
 			{
-				Name:       "test-app",
-				Path:       "/",
-				Executable: "echo",
-				Args: []string{
-					"OK",
-					"Arguments",
-					"Seems",
-					"-to=work",
+				Name: "test-app",
+				Path: "/",
+				Run: &config.Run{
+					Command: "echo OK Arguments Seems -to=work",
 				},
 			},
 		},

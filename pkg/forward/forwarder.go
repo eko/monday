@@ -226,7 +226,7 @@ func (f *forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 }
 
 func (f *forwarder) checkForwardEnvironment(forward *config.Forward) error {
-	// Check executable is already managed
+	// Check forward type is already managed
 	if result, ok := config.AvailableForwarders[forward.Type]; !ok || !result {
 		return fmt.Errorf("The '%s' specified forward type named '%s' is not managed actually", forward.Type, forward.Name)
 	}
