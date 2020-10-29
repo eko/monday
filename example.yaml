@@ -32,7 +32,6 @@ watch: # Optional
       GOPRIVATE=*.acme.tld
     env_file: ~/my/project/.env # Or, via an environment file...
   build: # Optionally, you can define a build section to build your application before running it
-    type: command # There is only a 'command' type actually but maybe we could add more in the future
     commands:
       - docker build -t graphql-image .
     env:

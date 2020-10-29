@@ -61,13 +61,14 @@ func (b *builder) Build(application *config.Application) {
 	var build = application.Build
 	var err error
 
+	b.view.Writef("⚙️   Building application '%s' via %s...\n", application.Name, build.Type)
+
 	switch build.Type {
 	case command.BuilderType:
-		b.view.Writef("⚙️   Building application '%s' via %s...\n", application.Name, build.Type)
 		err = command.Build(application, b.view, b.conf)
 
 	default:
-		b.view.Writef("❌  Unknown build type '%s' for application '%s'\n", build.Type, application.Name)
+		err = command.Build(application, b.view, b.conf)
 	}
 
 	if err != nil {

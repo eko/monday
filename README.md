@@ -92,7 +92,6 @@ Here is an example of a local application:
   setup: # Setup, installation step in case specified path does not exists
     - go get github.com/eko/graphql
   build: # Optionally, you can define a build section to build your application before running it
-    type: command
     commands:
       - go build -o ./build/graphql-app cmd/ # Here, just build the Go application
     env:
