@@ -16,7 +16,7 @@ func TestAddEnvVariables(t *testing.T) {
 	cmd := &exec.Cmd{}
 
 	// When
-	AddEnvVariables(cmd, application.Env)
+	AddEnvVariables(cmd, application.Run.Env)
 
 	// Then
 	assert.Contains(t, cmd.Env, "MY_ENVVAR_1=value")
@@ -30,7 +30,7 @@ func TestAddEnvVariablesFromFile(t *testing.T) {
 	cmd := &exec.Cmd{}
 
 	// When
-	AddEnvVariablesFromFile(cmd, application.EnvFile)
+	AddEnvVariablesFromFile(cmd, application.Run.EnvFile)
 
 	// Then
 	assert.Contains(t, cmd.Env, "MY_ENVFILE_VAR_1=this is ok")
@@ -42,19 +42,15 @@ func getMockedApplication() *config.Application {
 	dir, _ := os.Getwd()
 
 	return &config.Application{
-		Name:       "test-app",
-		Path:       "/",
-		Executable: "echo",
-		Args: []string{
-			"OK",
-			"Arguments",
-			"Seems",
-			"-to=work",
+		Name: "test-app",
+		Path: "/",
+		Run: &config.Run{
+			Command: "echo OK Arguments Seems -to=work",
+			Env: map[string]string{
+				"MY_ENVVAR_1": "value",
+				"MY_ENVVAR_2": "My custom second value",
+			},
+			EnvFile: dir + "/../../internal/tests/runner/test.env",
 		},
-		Env: map[string]string{
-			"MY_ENVVAR_1": "value",
-			"MY_ENVVAR_2": "My custom second value",
-		},
-		EnvFile: dir + "/../../internal/tests/runner/test.env",
 	}
 }

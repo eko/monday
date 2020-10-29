@@ -97,10 +97,11 @@ Here is an example of a local application:
       - go build -o ./build/graphql-app cmd/ # Here, just build the Go application
     env:
       CGO_ENABLED: on
-  executable: ./build/graphql-app # Then, run it using the executable
-  env: # Optional, in case you want to specify some environment variables for this app
-    HTTP_PORT: 8005
-  env_file: "github.com/eko/graphql/.env" # Or via a .env file also
+  run:
+    command: ./build/graphql-app # Then, run it using this built binary
+    env: # Optional, in case you want to specify some environment variables for this app
+      HTTP_PORT: 8005
+    env_file: "github.com/eko/graphql/.env" # Or via a .env file also
 ```
 
 Then, imagine this GraphQL instance needs to call a user-api but we want to forward it from a Kubernetes environment, we will define it as follows.

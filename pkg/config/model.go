@@ -7,8 +7,6 @@ import (
 )
 
 const (
-	ExecutableGo = "go"
-
 	ForwarderKubernetes       = "kubernetes"
 	ForwarderKubernetesRemote = "kubernetes-remote"
 	ForwarderProxy            = "proxy"
@@ -37,13 +35,15 @@ var (
 
 // Config represents the root configuration item
 type Config struct {
-	GoPath     string       `yaml:"gopath"`
-	KubeConfig string       `yaml:"kubeconfig"`
-	Projects   []*Project   `yaml:"projects"`
-	Build      *GlobalBuild `yaml:"build"`
-	Run        *GlobalRun   `yaml:"run"`
-	Setup      *GlobalSetup `yaml:"setup"`
-	Watch      *GlobalWatch `yaml:"watch"`
+	GoPath     string     `yaml:"gopath"`
+	KubeConfig string     `yaml:"kubeconfig"`
+	Projects   []*Project `yaml:"projects"`
+
+	// Global packages configurations
+	Build *GlobalBuild `yaml:"build"`
+	Run   *GlobalRun   `yaml:"run"`
+	Setup *GlobalSetup `yaml:"setup"`
+	Watch *GlobalWatch `yaml:"watch"`
 }
 
 // GlobalBuild represents the global configuration values for the file builder component
@@ -75,18 +75,13 @@ type Project struct {
 
 // Application represents application information
 type Application struct {
-	Name           string            `yaml:"name"`
-	Path           string            `yaml:"path"`
-	Executable     string            `yaml:"executable"`
-	Args           []string          `yaml:"args"`
-	StopExecutable string            `yaml:"stop_executable"`
-	StopArgs       []string          `yaml:"stop_args"`
-	Hostname       string            `yaml:"hostname"`
-	Watch          bool              `yaml:"watch"`
-	Env            map[string]string `yaml:"env"`
-	EnvFile        string            `yaml:"env_file"`
-	Setup          *Setup            `yaml:"setup"`
-	Build          *Build            `yaml:"build"`
+	Name     string `yaml:"name"`
+	Path     string `yaml:"path"`
+	Hostname string `yaml:"hostname"`
+	Watch    bool   `yaml:"watch"`
+	Setup    *Setup `yaml:"setup"`
+	Build    *Build `yaml:"build"`
+	Run      *Run   `yaml:"run"`
 }
 
 // Build represents application build information
@@ -98,23 +93,23 @@ type Build struct {
 	EnvFile  string            `yaml:"env_file"`
 }
 
-// GetPath returns the path dependending on overrided value or not
-func (b *Build) GetPath() string {
-	return getValueByExecutionContext(b.Path, "")
-}
-
 // GetEnvFile returns the filename guessed with current application environment
-func (a *Application) GetEnvFile() string {
-	if a.EnvFile == "" {
+func (b *Build) GetEnvFile() string {
+	if b.EnvFile == "" {
 		return ""
 	}
 
-	return getValueByExecutionContext(a.EnvFile, a.Executable)
+	return getValueByExecutionContext(b.EnvFile)
+}
+
+// GetPath returns the path dependending on overrided value or not
+func (b *Build) GetPath() string {
+	return getValueByExecutionContext(b.Path)
 }
 
 // GetPath returns the path dependending on overrided value or not
 func (a *Application) GetPath() string {
-	return getValueByExecutionContext(a.Path, a.Executable)
+	return getValueByExecutionContext(a.Path)
 }
 
 type Forward struct {
@@ -146,6 +141,24 @@ type ForwardValues struct {
 	Args            []string          `yaml:"args"`
 }
 
+// Run represents application run information
+type Run struct {
+	Path         string            `yaml:"path"`
+	Command      string            `yaml:"command"`
+	Env          map[string]string `yaml:"env"`
+	EnvFile      string            `yaml:"env_file"`
+	StopCommands []string          `yaml:"stop_commands"`
+}
+
+// GetEnvFile returns the filename guessed with current application environment
+func (r *Run) GetEnvFile() string {
+	if r.EnvFile == "" {
+		return ""
+	}
+
+	return getValueByExecutionContext(r.EnvFile)
+}
+
 // Setup represents application setup information
 type Setup struct {
 	Commands []string          `yaml:"commands"`
@@ -159,22 +172,19 @@ func (s *Setup) GetEnvFile() string {
 		return ""
 	}
 
-	return getValueByExecutionContext(s.EnvFile, "")
+	return getValueByExecutionContext(s.EnvFile)
 }
 
-func getValueByExecutionContext(path, executable string) string {
+func getValueByExecutionContext(path string) string {
 	if strings.Contains(path, "~") {
 		path = strings.Replace(path, "~", "$HOME", -1)
 	}
 
 	path = os.ExpandEnv(path)
 
-	switch executable {
-	case ExecutableGo:
-		// First try to use the given directory, else, add the Go's $GOPATH
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			path = os.ExpandEnv(fmt.Sprintf("$GOPATH/src/%s", path))
-		}
+	// First try to use the given directory, else, try with the Go's $GOPATH
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		path = os.ExpandEnv(fmt.Sprintf("$GOPATH/src/%s", path))
 	}
 
 	return path

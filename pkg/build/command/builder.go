@@ -39,7 +39,7 @@ func Build(application *config.Application, view ui.View, conf *config.GlobalBui
 	}
 
 	helper.AddEnvVariables(cmd, envs)
-	if err := helper.AddEnvVariablesFromFile(cmd, application.GetEnvFile()); err != nil {
+	if err := helper.AddEnvVariablesFromFile(cmd, build.GetEnvFile()); err != nil {
 		return err
 	}
 

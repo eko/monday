@@ -21,7 +21,7 @@ watch: # Optional
 
 <: &graphql-local
   name: graphql
-  path: github.com/eko/graphql # Will find in GOPATH (as executable is "go")
+  path: github.com/eko/graphql # Will find in GOPATH
   watch: true # Default: false (do not watch directory)
   hostname: graphql.svc.local # Optional, in case you want to map a specific hostname with a single IP address
   setup: # Optional, in case you want to setup the project first if directory does not exists
@@ -37,24 +37,17 @@ watch: # Optional
       - docker build -t graphql-image .
     env:
       DOCKER_BUILDKIT: 1
-  executable: docker
-  args:
-    - run
-    - --rm
-    - --name
-    - graphql
-    - graphql-image
-  env: # Optional, in case you want to specify some environment variables for this app
-    HTTP_PORT: 8005
-  env_file: "github.com/eko/graphql/.env" # Optional, in case you want to specify some environment variables from a file
-  stop_executable: docker
-  stop_args:
-    - stop
-    - graphql
+  run:
+    command: docker run --rm --name graphql --network=host graphql-image
+    env: # Optional, in case you want to specify some environment variables for this app
+      HTTP_PORT: 8005
+    env_file: "github.com/eko/graphql/.env" # Optional, in case you want to specify some environment variables from a file
+    stop_commands:
+      - docker stop graphql
 
 <: &grpc-api-local
   name: grpc-api
-  path: github.com/eko/grpc-api # Will find in GOPATH (as executable is "go")
+  path: github.com/eko/grpc-api # Will find in GOPATH
   watch: true # Default: false (do not watch directory)
   hostname: grpc-api.svc.local # Optional, in case you want to map a specific hostname with a single IP address
   setup: # Optional, in case you want to setup the project first if directory does not exists
@@ -64,27 +57,20 @@ watch: # Optional
     env: # Also optional, in case you need to specify some environment variables
       GOPRIVATE=*.acme.tld
     env_file: ~/my/project/.env # Or, via an environment file...
-  executable: go
-  args:
-    - run
-    - main.go
-  env: # Optional, in case you want to specify some environment variables for this app
-    GRPC_PORT: 8006
-  env_file: "github.com/eko/grpc-api/.env" # Optional, in case you want to specify some environment variables from a file
+  run:
+    command: go run main.go
+    env: # Optional, in case you want to specify some environment variables for this app
+      GRPC_PORT: 8006
+    env_file: "github.com/eko/grpc-api/.env" # Optional, in case you want to specify some environment variables from a file
 
 <: &elasticsearch-local
   name: elasticsearch
   path: /Users/vincent/dev/docker
   watch: true # Default: false (do not watch directory)
-  executable: docker
-  args:
-    - start
-    - -i
-    - elastic
-  stop_executable: docker # Optional, but useful for stopping containers for instance
-  stop_args: # Optional
-    - stop
-    - elastic
+  run:
+    command: docker start -i elastic
+    stop_commands:
+      - docker stop elastic
 
 # Kubernetes forwards
 

@@ -66,7 +66,7 @@ func TestRunAll(t *testing.T) {
 	// Check for application to be runned properly
 	if cmd, ok := runner.cmds["test-app"]; ok {
 		runCommand := strings.Replace(strings.Join(cmd.Args, " "), "echo <runner>", "runner", -1)
-		assert.Equal(t, "echo OK Arguments Seems -to=work", runCommand)
+		assert.Equal(t, "/bin/sh -c echo OK Arguments Seems -to=work", runCommand)
 	} else {
 		t.Fatal("Cannot retrieve just launched application command execution")
 	}
@@ -103,7 +103,7 @@ func TestStop(t *testing.T) {
 	// Then
 	if cmd, ok := runner.cmds["test-app"]; ok {
 		runCommand := strings.Replace(strings.Join(cmd.Args, " "), "echo <runner>", "runner", -1)
-		assert.Equal(t, "echo OK Arguments Seems -to=work", runCommand)
+		assert.Equal(t, "/bin/sh -c echo OK Arguments Seems -to=work", runCommand)
 
 		assert.True(t, cmd.ProcessState.Exited())
 	} else {
@@ -116,14 +116,10 @@ func getMockedProjectWithApplication() *config.Project {
 		Name: "My project name",
 		Applications: []*config.Application{
 			{
-				Name:       "test-app",
-				Path:       "/",
-				Executable: "echo",
-				Args: []string{
-					"OK",
-					"Arguments",
-					"Seems",
-					"-to=work",
+				Name: "test-app",
+				Path: "/",
+				Run: &config.Run{
+					Command: "echo OK Arguments Seems -to=work",
 				},
 			},
 		},

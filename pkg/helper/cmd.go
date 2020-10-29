@@ -20,9 +20,15 @@ func BuildCmd(commandsList []string, path string, stdout, stderr *log.Streamer) 
 	cmd := exec.Command("/bin/sh", "-c", strings.Replace(commands, "'", "\\'", -1))
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Dir = path
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
 	cmd.Env = os.Environ()
+
+	if stdout != nil {
+		cmd.Stdout = stdout
+	}
+
+	if stderr != nil {
+		cmd.Stderr = stderr
+	}
 
 	return cmd
 }

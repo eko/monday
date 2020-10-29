@@ -1,7 +1,6 @@
 package run
 
 import (
-	"os"
 	"os/exec"
 	"syscall"
 
@@ -65,6 +64,13 @@ func (r *runner) Run(application *config.Application) {
 
 // Run launches the application
 func (r *runner) run(application *config.Application) {
+	var run = application.Run
+
+	if run == nil {
+		r.view.Writef("❌  Please declare a 'run' section for application %s\n", application.Name)
+		return
+	}
+
 	r.view.Writef("🏁  Running local app '%s' (%s)...\n", application.Name, application.Path)
 
 	applicationPath := application.GetPath()
@@ -72,21 +78,16 @@ func (r *runner) run(application *config.Application) {
 	stdoutStream := log.NewStreamer(log.StdOut, application.Name, r.view)
 	stderrStream := log.NewStreamer(log.StdErr, application.Name, r.view)
 
-	cmd := exec.Command(application.Executable, application.Args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Dir = applicationPath
-	cmd.Stdout = stdoutStream
-	cmd.Stderr = stderrStream
-	cmd.Env = os.Environ()
+	cmd := helper.BuildCmd([]string{run.Command}, applicationPath, stdoutStream, stderrStream)
 
 	// Merge global environment variables with given ones
-	var envs = application.Env
+	var envs = run.Env
 	if r.conf != nil {
-		envs = helper.MergeMapString(application.Env, r.conf.Env)
+		envs = helper.MergeMapString(run.Env, r.conf.Env)
 	}
 
 	helper.AddEnvVariables(cmd, envs)
-	if err := helper.AddEnvVariablesFromFile(cmd, application.GetEnvFile()); err != nil {
+	if err := helper.AddEnvVariablesFromFile(cmd, run.GetEnvFile()); err != nil {
 		r.view.Writef("❌  %v\n", err)
 		return
 	}
@@ -124,8 +125,8 @@ func (r *runner) stopApplication(application *config.Application) {
 	}
 
 	// In case we have stop command, run it
-	if application.StopExecutable != "" {
-		cmd := exec.Command(application.StopExecutable, application.StopArgs...)
+	if len(application.Run.StopCommands) > 0 {
+		cmd := helper.BuildCmd(application.Run.StopCommands, application.GetPath(), nil, nil)
 		if err := cmd.Run(); err != nil {
 			r.view.Writef("❌  Cannot run stop command for application '%s': %v\n", application.Name, err)
 		}
