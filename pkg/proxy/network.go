@@ -24,18 +24,17 @@ func init() {
 func getNetworkInterface() (string, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		fmt.Println("Cannot retrieve interfaces list: ", err)
-		return "", err
+		return "", fmt.Errorf("cannot retrieve interfaces list: %v", err)
 	}
 
-	for _, i := range ifaces {
-		ifaceFlags := i.Flags.String()
+	for _, iface := range ifaces {
+		ifaceFlags := iface.Flags.String()
 		if strings.Contains(ifaceFlags, "loopback") {
-			return i.Name, nil
+			return iface.Name, nil
 		}
 	}
 
-	return "", errors.New("Unable to find loopback network interface")
+	return "", errors.New("unable to find 'loopback' network interface")
 }
 
 // getAddIPCommandWithArgs returns the command (ifconfig, ip, ...) that will be used for the current OS
@@ -67,52 +66,64 @@ func getAddIPCommandWithArgs(ip string) (string, []string) {
 	return command, args
 }
 
-func generateIP(a byte, b byte, c byte, d int, port string) (net.IP, error) {
-	ip := net.IPv4(a, b, c, byte(d))
-
+func assignIpToPort(a, b, c, d byte, port string) (byte, byte, byte, byte, error) {
 	// Retrieve network interface
 	iface, err := net.InterfaceByName(networkInterface)
 	if err != nil {
-		return net.IP{}, err
+		return a, b, c, d, err
 	}
 
-	command, args := getAddIPCommandWithArgs(ip.String())
+	for {
+		// Maximum IP bytes reached
+		if b == 255 && c == 255 && d == 255 {
+			break
+		}
 
-	for i := d; i < 255; i++ {
-		ip = net.IPv4(a, b, c, byte(i))
+		ip := net.IPv4(a, b, c, d)
 
 		addrs, err := iface.Addrs()
 		if err != nil {
-			return net.IP{}, err
+			return a, b, c, d, err
 		}
 
-		// Try to assign port to the IP addresses already assigned to the interface
-		for _, addr := range addrs {
-			if addr.String() == ip.String()+"/8" {
-				conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", ip.String(), port))
-				if err != nil {
-					return net.IPv4(a, b, c, byte(i)), nil
-				}
-				if conn != nil {
-					conn.Close()
-				}
+		// In case IP is already assigned to network interface, don't try to create it again
+		if !isAlreadyAssigned(ip, addrs) {
+			command, args := getAddIPCommandWithArgs(ip.String())
+
+			if err := exec.Command(command, args...).Run(); err != nil {
+				return a, b, c, d, fmt.Errorf("error while trying to run ifconfig/ip command to add new IP address (%s) on network interface '%s': %v", ip.String(), networkInterface, err)
 			}
 		}
 
-		// No already assigned IP/Port available, add IP address to the network interface
-		if err := exec.Command(command, args...).Run(); err != nil {
-			return net.IP{}, fmt.Errorf("Cannot run ifconfig command to add new IP address (%s) on network interface '%s': %v", ip.String(), networkInterface, err)
+		// Can't be contacted on ip/port? it means this couple is free to be used
+		if !canDial(ip.String(), port) {
+			return a, b, c, d, nil
 		}
 
-		// Try to assign port to the newly assigned IP
-		conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", ip.String(), port))
-		if err != nil {
-			return net.IPv4(a, b, c, byte(i)), nil
-		}
-		if conn != nil {
-			conn.Close()
+		a, b, c, d = getNextIPAddress(a, b, c, d)
+	}
+
+	return a, b, c, d, fmt.Errorf("unable to find an available IP/Port (ip: %d.%d.%d.%d:%s)", a, b, c, d, port)
+}
+
+func isAlreadyAssigned(ip net.IP, addrs []net.Addr) bool {
+	for _, addr := range addrs {
+		if addr.String() == ip.String()+"/8" {
+			return true
 		}
 	}
 
-	return net.IP{}, fmt.Errorf("Unable to find an available IP/Port (ip: %d.%d.%d.%d:%s)", a, b, c, d, port)
+	return false
+}
+
+func canDial(ip, port string) bool {
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", ip, port))
+	if conn != nil {
+		conn.Close()
+	}
+	if err != nil {
+		return false
+	}
+
+	return true
 }
