@@ -32,8 +32,10 @@ type proxy struct {
 	addProxyForwardMux sync.Mutex
 	listenerMux        sync.Mutex
 	latestPort         string
-	attributedIPs      map[string]net.IP
-	ipLastByte         int
+	lastIpByteA        byte
+	lastIpByteB        byte
+	lastIpByteC        byte
+	lastIpByteD        byte
 	view               ui.View
 }
 
@@ -45,8 +47,10 @@ func NewProxy(view ui.View, hostfile hostfile.Hostfile) *proxy {
 		listeners:     make(map[string]net.Listener),
 		listening:     true,
 		latestPort:    ProxyPortStart,
-		attributedIPs: make(map[string]net.IP, 0),
-		ipLastByte:    1,
+		lastIpByteA:   127,
+		lastIpByteB:   0,
+		lastIpByteC:   1,
+		lastIpByteD:   0,
 		view:          view,
 	}
 }
@@ -160,25 +164,41 @@ func (p *proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 }
 
 func (p *proxy) generateIP(pf *ProxyForward) error {
-	// Create new listener on a dedicated IP address if the service
-	// does not already have an IP address attributed, elsewhere give the already
-	// attributed address
-	var localIP net.IP
 	var err error
-	if v, ok := p.attributedIPs[pf.Name]; ok {
-		localIP = v
-	} else {
-		localIP, err = generateIP(127, 1, 2, p.ipLastByte, pf.LocalPort)
-		p.ipLastByte = p.ipLastByte + 1
-		if err != nil {
-			return err
-		}
+
+	a, b, c, d := getNextIPAddress(p.lastIpByteA, p.lastIpByteB, p.lastIpByteC, p.lastIpByteD)
+
+	p.lastIpByteA = a
+	p.lastIpByteB = b
+	p.lastIpByteC = c
+	p.lastIpByteD = d
+
+	a, b, c, d, err = assignIpToPort(a, b, c, d, pf.LocalPort)
+	if err != nil {
+		return err
 	}
 
-	p.attributedIPs[pf.Name] = localIP
-	pf.SetLocalIP(localIP.String())
+	ip := net.IPv4(a, b, c, d)
+	pf.SetLocalIP(ip.String())
 
 	return nil
+}
+
+func getNextIPAddress(a, b, c, d byte) (byte, byte, byte, byte) {
+	if b == 255 && c == 255 && d == 255 {
+		return a, b, c, d
+	} else if c == 255 && d == 255 {
+		b++
+		c = 1
+		d = 1
+	} else if d == 255 {
+		c++
+		d = 1
+	} else {
+		d++
+	}
+
+	return a, b, c, d
 }
 
 func (p *proxy) generateProxyPort(proxyForward *ProxyForward) {
