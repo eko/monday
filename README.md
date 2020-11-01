@@ -8,7 +8,7 @@ Your new microservice development environment friend. This CLI tool allows you t
 
 The Monday GUI (available for macOS and Linux) application is now also available here: [https://github.com/eko/monday-app](https://github.com/eko/monday-app)
 
-![Schema](https://github.com/eko/monday/blob/master/misc/schema.jpg?raw=true)
+[<img src="https://github.com/eko/monday/blob/master/misc/schema.jpg?raw=true" />](https://youtu.be/6hyCkqHYFQ8)
 
 ## What Monday can do for you?
 
