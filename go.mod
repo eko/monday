@@ -1,22 +1,20 @@
 module github.com/eko/monday
 
-go 1.14
+go 1.15
 
 require (
 	github.com/golang/mock v1.4.4
-	github.com/imdario/mergo v0.3.7 // indirect
+	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/jroimartin/gocui v0.4.0
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/manifoldco/promptui v0.8.0
-	github.com/mattn/go-colorable v0.1.2 // indirect
-	github.com/mattn/go-isatty v0.0.9 // indirect
-	github.com/mattn/go-runewidth v0.0.4 // indirect
+	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/nsf/termbox-go v0.0.0-20190624072549-eeb6cd0a1762 // indirect
 	github.com/radovskyb/watcher v1.0.7
-	github.com/spf13/cobra v0.0.7
+	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.6.1
 	github.com/txn2/txeh v1.3.0
-	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.0.0-20190923155552-eac758366a00
 	k8s.io/apimachinery v0.0.0-20190923155427-ec87dd743e08
