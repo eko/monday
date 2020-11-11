@@ -30,7 +30,11 @@ func TestNewProxy(t *testing.T) {
 
 	assert.Len(t, p.ProxyForwards, 0)
 	assert.Equal(t, p.latestPort, "9400")
-	assert.Equal(t, p.ipLastByte, byte(1))
+
+	assert.Equal(t, p.lastIpByteA, byte(127))
+	assert.Equal(t, p.lastIpByteB, byte(0))
+	assert.Equal(t, p.lastIpByteC, byte(1))
+	assert.Equal(t, p.lastIpByteD, byte(0))
 }
 
 func TestAddProxyForward(t *testing.T) {
@@ -41,10 +45,10 @@ func TestAddProxyForward(t *testing.T) {
 	pf := NewProxyForward("test", "hostname.svc.local", "", "8080", "8080")
 
 	hostfileMock := hostfile.NewMockHostfile(ctrl)
-	hostfileMock.EXPECT().AddHost("127.1.2.1", "hostname.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("127.0.1.1", "hostname.svc.local").Return(nil)
 
 	view := ui.NewMockView(ctrl)
-	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.1.2.1", "9401")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9401")
 
 	proxy := NewProxy(view, hostfileMock)
 
@@ -54,7 +58,11 @@ func TestAddProxyForward(t *testing.T) {
 	// Then
 	assert.Len(t, proxy.ProxyForwards, 1)
 	assert.Equal(t, proxy.latestPort, "9401")
-	assert.Equal(t, proxy.ipLastByte, byte(2))
+
+	assert.Equal(t, proxy.lastIpByteA, byte(127))
+	assert.Equal(t, proxy.lastIpByteB, byte(0))
+	assert.Equal(t, proxy.lastIpByteC, byte(1))
+	assert.Equal(t, proxy.lastIpByteD, byte(1))
 }
 
 func TestAddProxyForwardWhenMultiple(t *testing.T) {
@@ -74,14 +82,14 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 	}
 
 	hostfileMock := hostfile.NewMockHostfile(ctrl)
-	hostfileMock.EXPECT().AddHost("127.1.2.1", "hostname.svc.local").Return(nil)
-	hostfileMock.EXPECT().AddHost("127.1.2.2", "hostname2.svc.local").Return(nil)
-	hostfileMock.EXPECT().AddHost("127.1.2.2", "hostname3.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("127.0.1.1", "hostname.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("127.0.1.2", "hostname2.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("127.0.1.3", "hostname3.svc.local").Return(nil)
 
 	view := ui.NewMockView(ctrl)
-	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.1.2.1", "9401")
-	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname2.svc.local", "127.1.2.2", "9402")
-	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname3.svc.local", "127.1.2.2", "9403")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9401")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname2.svc.local", "127.0.1.2", "9402")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname3.svc.local", "127.0.1.3", "9403")
 
 	proxy := NewProxy(view, hostfileMock)
 
@@ -104,11 +112,11 @@ func TestListen(t *testing.T) {
 	pf := NewProxyForward("test", "hostname.svc.local", "", "8080", "8080")
 
 	hostfileMock := hostfile.NewMockHostfile(ctrl)
-	hostfileMock.EXPECT().AddHost("127.1.2.1", "hostname.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("127.0.1.1", "hostname.svc.local").Return(nil)
 
 	view := ui.NewMockView(ctrl)
-	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.1.2.1", "9401")
-	view.EXPECT().Writef("🔌  Proxifying %s locally (%s:%s) <-> forwarding to %s:%s\n", "hostname.svc.local", "127.1.2.1", "8080", "127.0.0.1", "9401")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9401")
+	view.EXPECT().Writef("🔌  Proxifying %s locally (%s:%s) <-> forwarding to %s:%s\n", "hostname.svc.local", "127.0.1.1", "8080", "127.0.0.1", "9401")
 
 	proxy := NewProxy(view, hostfileMock)
 	proxy.AddProxyForward("test", pf)
@@ -121,7 +129,11 @@ func TestListen(t *testing.T) {
 
 	assert.Len(t, proxy.ProxyForwards, 1)
 	assert.Equal(t, proxy.latestPort, "9401")
-	assert.Equal(t, proxy.ipLastByte, byte(2))
+
+	assert.Equal(t, proxy.lastIpByteA, byte(127))
+	assert.Equal(t, proxy.lastIpByteB, byte(0))
+	assert.Equal(t, proxy.lastIpByteC, byte(1))
+	assert.Equal(t, proxy.lastIpByteD, byte(1))
 }
 
 func TestGetNextIPAddress(t *testing.T) {
