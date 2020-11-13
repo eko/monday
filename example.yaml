@@ -162,6 +162,13 @@ watch: # Optional
     ports:
      - 9200:443
 
+# Optional, global local applications and/or forwards: these will be launched for every project you declare later
+local:
+  - *grafana-global # Not declared in this file for readability
+  - *prometheus-global # Not declared in this file for readability
+forward:
+  - *graylog-forward-kubernetes
+
 # Projects
 
 projects:

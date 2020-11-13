@@ -35,15 +35,22 @@ var (
 
 // Config represents the root configuration item
 type Config struct {
-	GoPath     string     `yaml:"gopath"`
-	KubeConfig string     `yaml:"kubeconfig"`
-	Projects   []*Project `yaml:"projects"`
-
 	// Global packages configurations
 	Build *GlobalBuild `yaml:"build"`
 	Run   *GlobalRun   `yaml:"run"`
 	Setup *GlobalSetup `yaml:"setup"`
 	Watch *GlobalWatch `yaml:"watch"`
+
+	// Global applications and forward list. If specified, these will always be launched with any project
+	Applications []*Application `yaml:"local"`
+	Forwards     []*Forward     `yaml:"forward"`
+
+	// Other global configuration values
+	GoPath     string `yaml:"gopath"`
+	KubeConfig string `yaml:"kubeconfig"`
+
+	// Projects
+	Projects []*Project `yaml:"projects"`
 }
 
 // GlobalBuild represents the global configuration values for the file builder component
@@ -71,6 +78,16 @@ type Project struct {
 	Name         string         `yaml:"name"`
 	Applications []*Application `yaml:"local"`
 	Forwards     []*Forward     `yaml:"forward"`
+}
+
+// PrependApplications prepends some global local applications to the current project.
+func (p *Project) PrependApplications(applications []*Application) {
+	p.Applications = append(applications, p.Applications...)
+}
+
+// PrependForwards prepends some global forwards to the current project.
+func (p *Project) PrependForwards(forwards []*Forward) {
+	p.Forwards = append(forwards, p.Forwards...)
 }
 
 // Application represents application information
