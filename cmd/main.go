@@ -17,6 +17,7 @@ import (
 	"github.com/eko/monday/pkg/setup"
 	"github.com/eko/monday/pkg/ui"
 	"github.com/eko/monday/pkg/watch"
+	"github.com/eko/monday/pkg/write"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
@@ -34,6 +35,7 @@ var (
 	forwarder forward.Forwarder
 	setuper   setup.Setuper
 	builder   build.Builder
+	writer    write.Writer
 	runner    run.Runner
 	watcher   watch.Watcher
 
@@ -131,10 +133,11 @@ func runProject(conf *config.Config, choice string) {
 	proxyfier = proxy.NewProxy(layout.GetProxyView(), hostfile)
 	setuper = setup.NewSetuper(layout.GetLogsView(), project, conf.Setup)
 	builder = build.NewBuilder(layout.GetLogsView(), project, conf.Build)
+	writer = write.NewWriter(layout.GetLogsView(), project)
 	runner = run.NewRunner(layout.GetLogsView(), proxyfier, project, conf.Run)
 	forwarder = forward.NewForwarder(layout.GetForwardsView(), proxyfier, project)
 
-	watcher = watch.NewWatcher(setuper, builder, runner, forwarder, conf.Watch, project)
+	watcher = watch.NewWatcher(setuper, builder, writer, runner, forwarder, conf.Watch, project)
 	go watcher.Watch()
 
 	if uiEnabled {

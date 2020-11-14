@@ -10,6 +10,7 @@ import (
 	"github.com/eko/monday/pkg/forward"
 	"github.com/eko/monday/pkg/run"
 	"github.com/eko/monday/pkg/setup"
+	"github.com/eko/monday/pkg/write"
 	"github.com/golang/mock/gomock"
 	watcherlib "github.com/radovskyb/watcher"
 	"github.com/stretchr/testify/assert"
@@ -22,6 +23,7 @@ func TestNewWatcher(t *testing.T) {
 
 	setuper := setup.NewMockSetuper(ctrl)
 	builder := build.NewMockBuilder(ctrl)
+	writer := write.NewMockWriter(ctrl)
 	runner := run.NewMockRunner(ctrl)
 	forwarder := forward.NewMockForwarder(ctrl)
 
@@ -32,12 +34,13 @@ func TestNewWatcher(t *testing.T) {
 	}
 
 	// When
-	w := NewWatcher(setuper, builder, runner, forwarder, watchConfig, project)
+	w := NewWatcher(setuper, builder, writer, runner, forwarder, watchConfig, project)
 
 	// Then
 	assert.IsType(t, new(watcher), w)
 	assert.Implements(t, new(Watcher), w)
 
+	assert.Equal(t, writer, w.writer)
 	assert.Equal(t, runner, w.runner)
 	assert.Equal(t, forwarder, w.forwarder)
 	assert.Equal(t, project, w.project)
@@ -62,6 +65,9 @@ func TestWatch(t *testing.T) {
 	builder := build.NewMockBuilder(ctrl)
 	builder.EXPECT().BuildAll().Times(1)
 
+	writer := write.NewMockWriter(ctrl)
+	writer.EXPECT().WriteAll().Times(1)
+
 	runner := run.NewMockRunner(ctrl)
 	runner.EXPECT().RunAll().Times(1)
 
@@ -70,7 +76,12 @@ func TestWatch(t *testing.T) {
 
 	project := getProjectMock()
 
-	watcher := NewWatcher(setuper, builder, runner, forwarder, &config.GlobalWatch{}, project)
+	dir, _ := os.Getwd()
+	writerDirectory := dir + "/../../internal/test/write"
+
+	watcher := NewWatcher(setuper, builder, writer, runner, forwarder, &config.GlobalWatch{
+		Exclude: []string{writerDirectory},
+	}, project)
 
 	// When - Then
 	watcher.Watch()
@@ -90,6 +101,9 @@ func TestWatchWhenFileChange(t *testing.T) {
 	builder := build.NewMockBuilder(ctrl)
 	builder.EXPECT().BuildAll().Times(1)
 
+	writer := write.NewMockWriter(ctrl)
+	writer.EXPECT().WriteAll().Times(1)
+
 	runner := run.NewMockRunner(ctrl)
 	runner.EXPECT().RunAll().Times(1)
 
@@ -98,14 +112,14 @@ func TestWatchWhenFileChange(t *testing.T) {
 
 	project := getProjectMock()
 
-	watcher := NewWatcher(setuper, builder, runner, forwarder, &config.GlobalWatch{}, project)
+	watcher := NewWatcher(setuper, builder, writer, runner, forwarder, &config.GlobalWatch{}, project)
 	watcher.Watch()
 
 	// When
 	time.Sleep(time.Duration(1 * time.Second)) // Wait 1 second to be sure filesystem is watching
 
 	dir, _ := os.Getwd()
-	filepath := dir + "/../../internal/tests/watcher-test"
+	filepath := dir + "/../../internal/test/watcher-test"
 
 	// Create a file to trigger a file change and restart the application
 	file, err := os.Create(filepath)
@@ -132,12 +146,13 @@ func TestStop(t *testing.T) {
 
 	setuper := setup.NewMockSetuper(ctrl)
 	builder := build.NewMockBuilder(ctrl)
+	writer := write.NewMockWriter(ctrl)
 	runner := run.NewMockRunner(ctrl)
 	forwarder := forward.NewMockForwarder(ctrl)
 
 	project := getProjectMock()
 
-	watcher := NewWatcher(setuper, builder, runner, forwarder, &config.GlobalWatch{}, project)
+	watcher := NewWatcher(setuper, builder, writer, runner, forwarder, &config.GlobalWatch{}, project)
 
 	// When - Then
 	watcher.Stop()
@@ -145,7 +160,7 @@ func TestStop(t *testing.T) {
 
 func getProjectMock() *config.Project {
 	dir, _ := os.Getwd()
-	path := dir + "/../../internal/tests/"
+	path := dir + "/../../internal/test/"
 
 	return &config.Project{
 		Name: "My project name",

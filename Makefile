@@ -24,6 +24,7 @@ mocks: ## Generate mocks for tests
 	mockgen -source=pkg/setup/setuper.go -destination=pkg/setup/setuper_mock.go -package=setup
 	mockgen -source=pkg/forward/forwarder.go -destination=pkg/forward/forwarder_mock.go -package=forward
 	mockgen -source=pkg/watch/watcher.go -destination=pkg/watch/watcher_mock.go -package=watch
+	mockgen -source=pkg/write/writer.go -destination=pkg/write/writer_mock.go -package=write
 
 	# Kubernetes AppsV1
 	mockery -name=Interface -dir=vendor/k8s.io/client-go/kubernetes/ -output internal/tests/mocks/kubernetes/client

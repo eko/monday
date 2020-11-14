@@ -43,6 +43,17 @@ watch: # Optional
     env_file: "github.com/eko/graphql/.env" # Optional, in case you want to specify some environment variables from a file
     stop_commands:
       - docker stop graphql
+  files: # Optional, you can also declare some files content with dynamic values coming from your project YAML or simply copy files
+    - type: content
+      to: $GOPATH/src/github.com/eko/graphql/my_file
+      content: |
+        This is my file content and here are the current project applications:
+          {{- range $app := .Applications }}
+          Name: {{ $app.Name }}
+          {{- end }}
+    - type: copy
+      from: $GOPATH/src/github.com/eko/graphql/.env.dist
+      to: $GOPATH/src/github.com/eko/graphql/.env
 
 <: &grpc-api-local
   name: grpc-api
