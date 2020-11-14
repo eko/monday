@@ -101,6 +101,17 @@ Here is an example of a local application:
     env: # Optional, in case you want to specify some environment variables for this app
       HTTP_PORT: 8005
     env_file: "github.com/eko/graphql/.env" # Or via a .env file also
+  files: # Optional, you can also declare some files content with dynamic values coming from your project YAML or simply copy files
+    - type: content
+      to: $GOPATH/src/github.com/eko/graphql/my_file
+      content: |
+        This is my file content and here are the current project applications:
+          {{- range $app := .Applications }}
+          Name: {{ $app.Name }}
+          {{- end }}
+    - type: copy
+      from: $GOPATH/src/github.com/eko/graphql/.env.dist
+      to: $GOPATH/src/github.com/eko/graphql/.env
 ```
 
 Then, imagine this GraphQL instance needs to call a user-api but we want to forward it from a Kubernetes environment, we will define it as follows.

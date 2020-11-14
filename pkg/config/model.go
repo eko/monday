@@ -92,13 +92,14 @@ func (p *Project) PrependForwards(forwards []*Forward) {
 
 // Application represents application information
 type Application struct {
-	Name     string `yaml:"name"`
-	Path     string `yaml:"path"`
-	Hostname string `yaml:"hostname"`
-	Watch    bool   `yaml:"watch"`
-	Setup    *Setup `yaml:"setup"`
-	Build    *Build `yaml:"build"`
-	Run      *Run   `yaml:"run"`
+	Name     string  `yaml:"name"`
+	Path     string  `yaml:"path"`
+	Hostname string  `yaml:"hostname"`
+	Watch    bool    `yaml:"watch"`
+	Setup    *Setup  `yaml:"setup"`
+	Build    *Build  `yaml:"build"`
+	Run      *Run    `yaml:"run"`
+	Files    []*File `yaml:"files"`
 }
 
 // Build represents application build information
@@ -127,6 +128,24 @@ func (b *Build) GetPath() string {
 // GetPath returns the path dependending on overrided value or not
 func (a *Application) GetPath() string {
 	return getValueByExecutionContext(a.Path)
+}
+
+// File represents a file that have to be written
+type File struct {
+	Type    string `yaml:"type"`
+	From    string `yaml:"from"`
+	To      string `yaml:"to"`
+	Content string `yaml:"content"`
+}
+
+// GetFrom returns the copy from file path dependending on overrided value or not
+func (f *File) GetFrom() string {
+	return expandValueFromEnvironment(f.From)
+}
+
+// GetTo returns the output file path dependending on overrided value or not
+func (f *File) GetTo() string {
+	return expandValueFromEnvironment(f.To)
 }
 
 type Forward struct {
@@ -192,12 +211,16 @@ func (s *Setup) GetEnvFile() string {
 	return getValueByExecutionContext(s.EnvFile)
 }
 
-func getValueByExecutionContext(path string) string {
+func expandValueFromEnvironment(path string) string {
 	if strings.Contains(path, "~") {
 		path = strings.Replace(path, "~", "$HOME", -1)
 	}
 
-	path = os.ExpandEnv(path)
+	return os.ExpandEnv(path)
+}
+
+func getValueByExecutionContext(path string) string {
+	path = expandValueFromEnvironment(path)
 
 	// First try to use the given directory, else, try with the Go's $GOPATH
 	if _, err := os.Stat(path); os.IsNotExist(err) {

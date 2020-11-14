@@ -50,7 +50,7 @@ func getMockedApplication() *config.Application {
 				"MY_ENVVAR_1": "value",
 				"MY_ENVVAR_2": "My custom second value",
 			},
-			EnvFile: dir + "/../../internal/tests/runner/test.env",
+			EnvFile: dir + "/../../internal/test/runner/test.env",
 		},
 	}
 }

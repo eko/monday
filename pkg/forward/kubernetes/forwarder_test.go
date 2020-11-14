@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	clientmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/client"
-	restmocks "github.com/eko/monday/internal/tests/mocks/kubernetes/rest"
+	clientmocks "github.com/eko/monday/internal/test/mocks/kubernetes/client"
+	restmocks "github.com/eko/monday/internal/test/mocks/kubernetes/rest"
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/ui"
 	"github.com/golang/mock/gomock"
@@ -381,7 +381,7 @@ func initKubeConfig(t *testing.T) {
 	defer file.Close()
 
 	dir, _ := os.Getwd()
-	configFile := dir + "/../../../internal/tests/forwarder/kubernetes/config"
+	configFile := dir + "/../../../internal/test/forwarder/kubernetes/config"
 
 	from, err := os.OpenFile(configFile, os.O_RDONLY, 0666)
 	if err != nil {

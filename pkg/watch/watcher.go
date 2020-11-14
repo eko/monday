@@ -10,6 +10,7 @@ import (
 	"github.com/eko/monday/pkg/forward"
 	"github.com/eko/monday/pkg/run"
 	"github.com/eko/monday/pkg/setup"
+	"github.com/eko/monday/pkg/write"
 	radovskyb_watcher "github.com/radovskyb/watcher"
 )
 
@@ -26,6 +27,7 @@ type Watcher interface {
 type watcher struct {
 	setuper      setup.Setuper
 	builder      build.Builder
+	writer       write.Writer
 	runner       run.Runner
 	forwarder    forward.Forwarder
 	conf         *config.GlobalWatch
@@ -34,7 +36,15 @@ type watcher struct {
 }
 
 // NewWatcher initializes a watcher instance monitoring services using both runner and forwarder
-func NewWatcher(setuper setup.Setuper, builder build.Builder, runner run.Runner, forwarder forward.Forwarder, conf *config.GlobalWatch, project *config.Project) *watcher {
+func NewWatcher(
+	setuper setup.Setuper,
+	builder build.Builder,
+	writer write.Writer,
+	runner run.Runner,
+	forwarder forward.Forwarder,
+	conf *config.GlobalWatch,
+	project *config.Project,
+) *watcher {
 	if conf != nil && len(conf.Exclude) > 0 {
 		excludeDirectories = append(excludeDirectories, conf.Exclude...)
 	}
@@ -42,6 +52,7 @@ func NewWatcher(setuper setup.Setuper, builder build.Builder, runner run.Runner,
 	return &watcher{
 		setuper:      setuper,
 		builder:      builder,
+		writer:       writer,
 		runner:       runner,
 		forwarder:    forwarder,
 		conf:         conf,
@@ -54,6 +65,7 @@ func NewWatcher(setuper setup.Setuper, builder build.Builder, runner run.Runner,
 // It also relaunch them in case of file changes.
 func (w *watcher) Watch() {
 	w.setuper.SetupAll()
+	w.writer.WriteAll()
 	w.builder.BuildAll()
 
 	go w.runner.RunAll()
