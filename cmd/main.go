@@ -118,6 +118,10 @@ func runProject(conf *config.Config, choice string) {
 		panic(err)
 	}
 
+	// Prepend global configurations
+	project.PrependApplications(conf.Applications)
+	project.PrependForwards(conf.Forwards)
+
 	// Initializes hosts file manager
 	hostfile, err := hostfile.NewClient()
 	if err != nil {
