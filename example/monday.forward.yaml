@@ -1,0 +1,97 @@
+#
+# Forwarded applications
+#
+
+# Kubernetes forwards
+
+<: &kubernetes-context preprod
+
+# Example of Kubernetes local port-forward: forward a specific pod port locally
+# This is cool for avoiding to run applications locally and hit an environment from your
+# local machine
+<: &graphql-forward
+  name: graphql
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    disable_proxy: true # In case you don't want to proxy ports, use this option
+    labels:
+      app: graphql
+    hostname: graphql.svc.local # Optional
+    ports:
+     - 8080:8000
+  monitoring:
+    port: 8001
+    url: /metrics
+
+# Example of Kubernetes remote-forward: this replaces your current pod in an environment with
+# a proxy that allows us to forward traffic locally. This is really cool to debug on an environment
+# but we disaprove using it on your production environment!
+<: &grpc-api-kubernetes-remote
+  name: grpc-api
+  type: kubernetes-remote
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: grpc-api
+    ports:
+     - 8080:8080
+     - 8001:8001
+
+<: &grpc-api-forward
+  name: grpc-api
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: backend
+    labels:
+      app: grpc-api
+    hostname: grpc-api.svc.local # Optional
+    ports:
+     - 8080:8080
+
+# SSH Forwards
+
+# Example of SSH local forward: forward a specific remote port locally
+# Here, I'm forwarding on port 8080 locally my production website (port 80)
+# I am also pointing the SSH forward to the bastion.svc.local hostname so the SSH
+# command will be: ssh -L 80:bastion.svc.local:8080 vincent@composieux.fr
+<: &composieux-fr-local
+  name: composieux-fr-local
+  type: ssh
+  values:
+    remote: vincent@composieux.fr # SSH <user>@<hostname>
+    args:
+      - "-i/Users/name/.ssh/private_key"
+    forward_hostname: bastion.svc.local # Optional, SSH forward hostname. Defaults to 127.0.0.1
+    hostname: composieux.fr.svc.local # Optional
+    ports:
+     - 8080:80
+
+# Example of SSH remote forward: forward all trafic on remote to a local application
+# You don't have to do this at home but here, I'm forwarding all my production traffic
+# on my local machine.
+<: &composieux-fr-remote
+  name: composieux-fr-remote
+  type: ssh-remote
+  values:
+    remote: vincent@composieux.fr # SSH <user>@<hostname>
+    args:
+      - "-i/Users/name/.ssh/private_key"
+    ports:
+     - 8080:80
+
+# Proxy forwards
+
+# Example of Proxy forward type: this will allow you to call locally elasticsearch.svc.local:9200
+# and your call will be proxified to vpc-xxx-rO6gjlqbkwzmzde.eu-west-3.es.amazonaws.com:443
+<: &elasticsearch-proxy
+  name: elasticsearch-proxy
+  type: proxy
+  values:
+    hostname: elasticsearch.svc.local
+    proxy_hostname: vpc-xxx-rO6gjlqbkwzmzde.eu-west-3.es.amazonaws.com
+    ports:
+     - 9200:443

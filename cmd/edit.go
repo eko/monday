@@ -12,8 +12,8 @@ import (
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "This command allows you to open the configuration file in your default editor",
-	Long: `For more information about the configuration, see the "example.yaml" file available
-in the source code repository.`,
+	Long: `For more information about the configuration, see the "example" directory available
+in the source code repository at https://github.com/eko/monday.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Check for multiple configuration file
 		files := config.FindMultipleConfigFiles()
