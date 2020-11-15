@@ -148,14 +148,14 @@ Well, you have defined both a local app and an application that needs to be forw
 
 Your project configuration is ready, you can now work easily with your microservices.
 
-For an overview of what's possible to do with configuration file, please look at the [configuration example file here](https://github.com/eko/monday/tree/master/example).
+For an overview of what's possible to do with configuration file, please look at the [configuration example directory here](https://github.com/eko/monday/tree/master/example).
 
 To learn more about the configuration, please take a look at the [Configuration Wiki page](https://github.com/eko/monday/wiki/Configuration).
 
 ## Usage: Run your projects!
 [![Monday Asciinema](https://asciinema.org/a/aB9ZkCmJS6m1b4uv8Dio1i59U.svg)](https://asciinema.org/a/aB9ZkCmJS6m1b4uv8Dio1i59U)
 
-First, you have to initialize monday and edit your configuration file (you have a [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml)).
+First, you have to initialize monday and edit your configuration file (you have a [configuration example directory here](https://github.com/eko/monday/tree/master/example)).
 Run the following command and edit the `~/monday.yaml` configuration file just created for you:
 
 ⚠️ *Important note*: Because Monday tries to be your best dev tool and manage things for you, you have to give it some chances to help you in editing host file and manipulating network interface for IP/port mapping.
