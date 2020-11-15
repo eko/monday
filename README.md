@@ -12,19 +12,21 @@ The Monday GUI (available for macOS and Linux) application is now also available
 
 ## What Monday can do for you?
 
-✅ Define a unified way to setup applications for all your developers
+✅  Define a unified way to setup applications for all your developers
 
-✅ Run your local applications
+✅  Run your local applications
 
-✅ Hot reload your applications automatically when a change is made locally
+✅  Hot reload your applications automatically when a change is made locally
 
-✅ Port-forward an application locally using a remote one on Kubernetes (targeting a pod via label) or over SSH
+✅  Port-forward an application locally using a remote one on Kubernetes (targeting a pod via label) or over SSH
 
-✅ Forward traffic of a remote application over Kubernetes, SSH or TCP locally (see example forward types)
+✅  Forward traffic of a remote application over Kubernetes, SSH or TCP locally (see example forward types)
 
-✅ Auto reconnect when a port-forward connection is lost
+✅  Auto reconnect when a port-forward connection is lost
 
-✅ Forward multiple times the same port locally, using an hostname
+✅  Forward multiple times the same port locally, using an hostname
+
+✅  Monitor your local and/or forwarded applications
 
 ## Installation
 
@@ -146,7 +148,7 @@ Well, you have defined both a local app and an application that needs to be forw
 
 Your project configuration is ready, you can now work easily with your microservices.
 
-For an overview of what's possible to do with configuration file, please look at the [configuration example file here](https://raw.githubusercontent.com/eko/monday/master/example.yaml).
+For an overview of what's possible to do with configuration file, please look at the [configuration example file here](https://github.com/eko/monday/tree/master/example).
 
 To learn more about the configuration, please take a look at the [Configuration Wiki page](https://github.com/eko/monday/wiki/Configuration).
 

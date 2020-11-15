@@ -1,0 +1,74 @@
+#
+# Monitoring
+#
+
+# Defines Prometheus server setup steps and configuration files
+<: &prometheus-global
+  name: prometheus
+  path: ~/.monday/prometheus-2.22.1.darwin-amd64
+  hostname: "prometheus.svc.local"
+  setup:
+    commands:
+      - mkdir -p ~/.monday/download
+      - curl -Lo ~/.monday/download/prometheus.tar.gz https://github.com/prometheus/prometheus/releases/download/v2.22.1/prometheus-2.22.1.darwin-amd64.tar.gz
+      - tar -xzvf ~/.monday/download/prometheus.tar.gz --directory ~/.monday/
+      - rm -rf ~/.monday/download/prometheus*
+  run:
+    command: ./prometheus
+  files:
+    - type: content
+      to: ~/.monday/prometheus-2.22.1.darwin-amd64/prometheus.yml
+      content: | # Prepare the Prometheus configuration with all services that have to be scrapped from monday
+        global:
+          scrape_interval:     15s
+          evaluation_interval: 15s
+
+        scrape_configs:
+          {{- range $app := .Applications }}
+          {{- if $app.Monitoring }}
+          - job_name: '{{ $app.Name }}'
+            static_configs:
+              - targets: ['{{ $app.Hostname }}:{{ $app.Monitoring.Port }}']
+            metrics_path: {{ $app.Monitoring.URL }}
+          {{- end }}
+          {{- end }}
+
+# Defines Grafana setup steps and configuration files
+<: &grafana-global
+  name: grafana
+  path: ~/.monday/grafana-7.1.5
+  hostname: "grafana.svc.local"
+  setup:
+    commands:
+      - mkdir -p ~/.monday/download
+      - curl -Lo ~/.monday/download/grafana.tar.gz https://dl.grafana.com/oss/release/grafana-7.1.5.darwin-amd64.tar.gz
+      - tar -xzvf ~/.monday/download/grafana.tar.gz --directory ~/.monday/
+      - rm -rf ~/.monday/download/grafana*
+  run:
+    command: ./bin/grafana-server web
+  files:
+    - type: content
+      to: ~/.monday/grafana-7.1.5/conf/provisioning/datasources/prometheus.yml
+      content: | # Specify the Prometheus datasource in Grafana
+        apiVersion: 1
+        datasources:
+          - name: prometheus
+            type: prometheus
+            access: proxy
+            url: http://prometheus.svc.local:9090
+    - type: content
+      to: ~/.monday/grafana-7.1.5/conf/provisioning/dashboards/monday.yml
+      content: | # In case you want to provision some dashboards, specify the path
+        apiVersion: 1
+        providers:
+          - name: 'monday'
+            orgId: 1
+            folder: ''
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: $HOME/.monday/grafana-7.1.5/conf/provisioning/dashboards
+    - type: copy # In case you want to prepare a Grafana dashboard that will be provisionned with Grafana
+      from: ~/.monday/grafana-dashboard.json
+      to: ~/.monday/grafana-7.1.5/conf/provisioning/dashboards/dashboard.json

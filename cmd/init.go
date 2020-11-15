@@ -13,8 +13,8 @@ import (
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "This command initializes a new configuration file and opens it in your favorite editor",
-	Long: `For more information about the configuration, see the "example.yaml" file available
-in the source code repository.`,
+	Long: `For more information about the configuration, see the "example" directory available
+in the source code repository at https://github.com/eko/monday.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if _, err := os.Stat(config.Filepath); os.IsNotExist(err) {
 			f, err := os.Create(config.Filepath)

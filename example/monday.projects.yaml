@@ -1,0 +1,53 @@
+#
+# Global settings
+#
+
+kubeconfig: /dev/custom/.kube/config # Optional, default to user's .kube/config file path
+gopath: /dev/golang # Optional, default to user's $GOPATH env var
+
+build: # Optional, allows to set global environment variables for all the builder commands
+  env:
+    DOCKER_BUILDKIT: 1
+
+setup: # Optional, allows to set global environment variables for all the setup commands
+  env:
+    GIT_SSH_COMMAND: ssh -i /home/myuser/.ssh/id_rsa
+
+watch: # Optional
+  exclude: # Optional, in case you want to exclude some (sub-)directories from file watching
+    - .git
+    - node_modules
+    - /event/an/absolute/path
+
+# Optional, global local applications and/or forwards: these will be launched for every project you declare later
+local:
+  - *grafana-global
+  - *prometheus-global
+forward:
+  - *graylog-forward-kubernetes # Not declared in this configuration
+
+#
+# Projects
+#
+
+projects:
+ - name: full
+   local:
+    - *graphql-local
+    - *grpc-api-local
+    - *elasticsearch-local
+
+ - name: graphql
+   local:
+    - *graphql-local
+   forward:
+    - *grpc-api-forward
+
+ - name: forward-only
+   forward:
+    - *graphql-forward
+    - *grpc-api-forward
+
+ - name: forward-composieux-website
+   forward:
+    - *composieux-fr-local

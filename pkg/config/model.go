@@ -92,14 +92,15 @@ func (p *Project) PrependForwards(forwards []*Forward) {
 
 // Application represents application information
 type Application struct {
-	Name     string  `yaml:"name"`
-	Path     string  `yaml:"path"`
-	Hostname string  `yaml:"hostname"`
-	Watch    bool    `yaml:"watch"`
-	Setup    *Setup  `yaml:"setup"`
-	Build    *Build  `yaml:"build"`
-	Run      *Run    `yaml:"run"`
-	Files    []*File `yaml:"files"`
+	Name       string      `yaml:"name"`
+	Path       string      `yaml:"path"`
+	Hostname   string      `yaml:"hostname"`
+	Watch      bool        `yaml:"watch"`
+	Setup      *Setup      `yaml:"setup"`
+	Build      *Build      `yaml:"build"`
+	Run        *Run        `yaml:"run"`
+	Files      []*File     `yaml:"files"`
+	Monitoring *Monitoring `yaml:"monitoring"`
 }
 
 // Build represents application build information
@@ -149,9 +150,10 @@ func (f *File) GetTo() string {
 }
 
 type Forward struct {
-	Name   string        `yaml:"name"`
-	Type   string        `yaml:"type"`
-	Values ForwardValues `yaml:"values"`
+	Name       string        `yaml:"name"`
+	Type       string        `yaml:"type"`
+	Values     ForwardValues `yaml:"values"`
+	Monitoring *Monitoring   `yaml:"monitoring"`
 }
 
 // IsProxified indicates if the current forward rule will use the proxy
@@ -209,6 +211,12 @@ func (s *Setup) GetEnvFile() string {
 	}
 
 	return getValueByExecutionContext(s.EnvFile)
+}
+
+// Monitoring represents application monitoring information
+type Monitoring struct {
+	Port string `yaml:"port"`
+	URL  string `yaml:"url"`
 }
 
 func expandValueFromEnvironment(path string) string {
