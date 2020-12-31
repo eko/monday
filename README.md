@@ -43,7 +43,6 @@ This will install the latest available release
 You can download the latest version of the binary built for your architecture here:
 
 * Architecture **i386** [
-    [Darwin](https://github.com/eko/monday/releases/latest/download/monday-darwin-386) /
     [Linux](https://github.com/eko/monday/releases/latest/download/monday-linux-386)
 ]
 * Architecture **amd64** [
@@ -51,6 +50,7 @@ You can download the latest version of the binary built for your architecture he
     [Linux](https://github.com/eko/monday/releases/latest/download/monday-linux-amd64)
 ]
 * Architecture **arm** [
+    [Darwin](https://github.com/eko/monday/releases/latest/download/monday-darwin-arm) /
     [Linux](https://github.com/eko/monday/releases/latest/download/monday-linux-arm)
 ]
 

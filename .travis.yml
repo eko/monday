@@ -30,8 +30,8 @@ deploy:
   skip_cleanup: true
   api_key: $GITHUB_TOKEN
   file:
-    - monday-darwin-386
     - monday-darwin-amd64
+    - monday-darwin-arm
     - monday-linux-386
     - monday-linux-amd64
     - monday-linux-arm
