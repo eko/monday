@@ -52,6 +52,7 @@ jobs:
     - name: Run docker buildx build
       run: |
         docker buildx build \
+          --build-arg Version=${{ github.ref }} \
           --platform linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64 \
           --output=type=registry \
           --tag ekofr/monday:${{ steps.get_version.outputs.TAG_NAME }} \
@@ -106,7 +107,7 @@ jobs:
         run: go get -t -v ./...
 
       - name: Create release
-        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "-s -w" -o monday-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd
+        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "-s -w -X main.Version=${{ github.ref }}" -o monday-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd
 
       - name: Upload release assets
         id: upload-release-asset
