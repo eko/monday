@@ -1,6 +1,6 @@
 <h1 align="center"><img src="misc/logo.jpg" title="Monday: dev tool for local app and port-forwarding" alt="Monday: dev tool for local app and port-forwarding"></h1>
 
-[![TravisBuildStatus](https://api.travis-ci.org/eko/monday.svg?branch=master)](https://travis-ci.org/eko/monday)
+![Test (master)](https://github.com/eko/monday/workflows/Test%20(master)/badge.svg)
 [![GoDoc](https://godoc.org/github.com/eko/monday?status.png)](https://godoc.org/github.com/eko/monday)
 [![GoReportCard](https://goreportcard.com/badge/github.com/eko/monday)](https://goreportcard.com/report/github.com/eko/monday)
 
