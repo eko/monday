@@ -1,0 +1,120 @@
+name: Test/Build/Push (tag)
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go_version: [ '1.12', '1.13', '1.14', '1.15' ]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go_version }}
+
+      - name: Install go dependencies & run tests
+        shell: script -q -e -c "bash {0}"
+        run: |
+          export TERM=xterm
+          go get -t -v ./...
+          go test -v -cover -tags=ci ./...
+
+  docker-build-push:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: azure/docker-login@v1
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Set up docker buildx
+      id: buildx
+      uses: crazy-max/ghaction-docker-buildx@v1
+      with:
+        buildx-version: latest
+        qemu-version: latest
+
+    - name: Docker buildx available platforms
+      run: echo ${{ steps.buildx.outputs.platforms }}
+
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=TAG_NAME::${GITHUB_REF/refs\/tags\//}
+
+    - name: Run docker buildx build
+      run: |
+        docker buildx build \
+          --platform linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64 \
+          --output=type=registry \
+          --tag ekofr/monday:${{ steps.get_version.outputs.TAG_NAME }} \
+          .
+
+  release:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Create release
+        id: create
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+    outputs:
+      upload_url: ${{ steps.create.outputs.upload_url }}
+
+  upload-binaries:
+    needs: release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: 386
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+          # Waiting go 1.16 release to be able to build darwin/arm64
+          # - os: macos-latest
+          #   goos: darwin
+          #   goarch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+
+      - name: Download go dependencies
+        run: go get -t -v ./...
+
+      - name: Create release
+        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "-s -w" -o monday-${{ matrix.goos }}-${{ matrix.goarch }} ./
+
+      - name: Upload release assets
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./monday-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_name: monday-${{ matrix.goos }}-${{ matrix.goarch }}
+          asset_content_type: application/octet-stream
