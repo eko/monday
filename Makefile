@@ -1,4 +1,14 @@
-.PHONY: help
+.PHONY: brew-bottle build build-binary docker-build mocks help
+
+# Usage:
+# VERSION=2.1.1 make brew-bottle
+brew-bottle:
+	brew bottle --no-rebuild --json --root-url "https://github.com/eko/monday/releases/download/v${VERSION}/" eko/tap/monday
+	@rm monday--${VERSION}.big_sur*
+	@echo Next steps:
+	@echo "  1: put new value in /usr/local/Homebrew/Library/Taps/eko/homebrew-tap/Formula/monday.rb"
+	@echo "  2: $ brew uninstall monday && brew install --build-bottle monday"
+	@echo "  3: $ brew bottle --json --root-url "https://github.com/eko/monday/releases/download/v${VERSION}/" eko/tap/monday"
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
