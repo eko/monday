@@ -36,6 +36,7 @@ type proxy struct {
 	lastIpByteB        byte
 	lastIpByteC        byte
 	lastIpByteD        byte
+	attributedIPs      map[string]string
 	view               ui.View
 }
 
@@ -51,6 +52,7 @@ func NewProxy(view ui.View, hostfile hostfile.Hostfile) *proxy {
 		lastIpByteB:   0,
 		lastIpByteC:   1,
 		lastIpByteD:   0,
+		attributedIPs: make(map[string]string),
 		view:          view,
 	}
 }
@@ -145,11 +147,6 @@ func (p *proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 		p.generateProxyPort(proxyForward)
 	}
 
-	err = p.hostfile.AddHost(proxyForward.LocalIP, proxyForward.GetHostname())
-	if err != nil {
-		p.view.Writef("❌  An error has occured while trying to write host file for application '%s' (ip: %s): %v\n", proxyForward.Name, proxyForward.LocalIP, err)
-	}
-
 	if proxyForward.LocalPort != "" {
 		p.view.Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", proxyForward.GetHostname(), proxyForward.LocalIP, proxyForward.ProxyPort)
 	} else {
@@ -166,6 +163,11 @@ func (p *proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 func (p *proxy) generateIP(pf *ProxyForward) error {
 	var err error
 
+	if attributedIP, ok := p.attributedIPs[pf.GetHostname()]; ok {
+		pf.SetLocalIP(attributedIP)
+		return nil
+	}
+
 	a, b, c, d := getNextIPAddress(p.lastIpByteA, p.lastIpByteB, p.lastIpByteC, p.lastIpByteD)
 
 	p.lastIpByteA = a
@@ -179,7 +181,14 @@ func (p *proxy) generateIP(pf *ProxyForward) error {
 	}
 
 	ip := net.IPv4(a, b, c, d)
+
 	pf.SetLocalIP(ip.String())
+	p.attributedIPs[pf.GetHostname()] = ip.String()
+
+	err = p.hostfile.AddHost(pf.LocalIP, pf.GetHostname())
+	if err != nil {
+		p.view.Writef("❌  An error has occured while trying to write host file for application '%s' (ip: %s): %v\n", pf.Name, pf.LocalIP, err)
+	}
 
 	return nil
 }

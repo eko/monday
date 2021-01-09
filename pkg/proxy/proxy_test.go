@@ -76,9 +76,10 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 		localPort   string
 		forwardPort string
 	}{
-		{name: "test", hostname: "hostname.svc.local", localPort: "8080", forwardPort: "8081"},
-		{name: "test-2", hostname: "hostname2.svc.local", localPort: "8080", forwardPort: "8081"},
-		{name: "test-2", hostname: "hostname3.svc.local", localPort: "8081", forwardPort: "8082"},
+		{name: "test1", hostname: "hostname.svc.local", localPort: "8080", forwardPort: "8081"},
+		{name: "test1-2", hostname: "hostname.svc.local", localPort: "8081", forwardPort: "8082"},
+		{name: "test2", hostname: "hostname2.svc.local", localPort: "8080", forwardPort: "8081"},
+		{name: "test2", hostname: "hostname3.svc.local", localPort: "8081", forwardPort: "8082"},
 	}
 
 	hostfileMock := hostfile.NewMockHostfile(ctrl)
@@ -88,8 +89,9 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9401")
-	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname2.svc.local", "127.0.1.2", "9402")
-	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname3.svc.local", "127.0.1.3", "9403")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9402")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname2.svc.local", "127.0.1.2", "9403")
+	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname3.svc.local", "127.0.1.3", "9404")
 
 	proxy := NewProxy(view, hostfileMock)
 
@@ -100,8 +102,8 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 	}
 
 	// Then
-	assert.Len(t, proxy.ProxyForwards, 2)
-	assert.Equal(t, proxy.latestPort, "9403")
+	assert.Len(t, proxy.ProxyForwards, 3)
+	assert.Equal(t, proxy.latestPort, "9404")
 }
 
 func TestListen(t *testing.T) {
