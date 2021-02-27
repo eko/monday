@@ -19,7 +19,7 @@ github.com/docker/spdystream/spdy
 # github.com/gogo/protobuf v1.2.2-0.20190723190241-65acae22fc9d
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
-# github.com/golang/mock v1.4.4
+# github.com/golang/mock v1.5.0
 ## explicit
 github.com/golang/mock/gomock
 # github.com/golang/protobuf v1.3.2
@@ -97,7 +97,7 @@ github.com/stretchr/testify/mock
 # github.com/txn2/txeh v1.3.0
 ## explicit
 github.com/txn2/txeh
-# golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
+# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20190812203447-cdfb69ac37fc
 golang.org/x/net/context
