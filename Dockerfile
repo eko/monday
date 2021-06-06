@@ -1,4 +1,4 @@
-FROM golang:1.16.4-alpine3.12 as builder
+FROM golang:1.16-alpine3.13 as builder
 
 ARG Version
 
@@ -9,7 +9,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -ldflags "-X main.Version=sources-$Version -s -w" -o monday /sources/cmd
 
-FROM alpine:3.13.5
+FROM alpine:3.13
 
 LABEL name="monday"
 LABEL description="A dev tool for microservice developers to run local applications and/or forward others from/to Kubernetes SSH or TCP"
