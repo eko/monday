@@ -3,7 +3,7 @@ module github.com/eko/monday
 go 1.15
 
 require (
-	github.com/golang/mock v1.5.0
+	github.com/golang/mock v1.6.0
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/jroimartin/gocui v0.4.0
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
