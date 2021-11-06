@@ -6,9 +6,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/jroimartin/gocui v0.5.0
-	github.com/lunixbochs/vtclean v1.0.0 // indirect
-	github.com/manifoldco/promptui v0.8.0
-	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/manifoldco/promptui v0.9.0
 	github.com/radovskyb/watcher v1.0.7
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.7.0
@@ -34,8 +32,6 @@ require (
 	github.com/gophercloud/gophercloud v0.0.0-20190126172459-c818fa66e4c8 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.7 // indirect
-	github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a // indirect
-	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
