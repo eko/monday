@@ -75,6 +75,39 @@ jobs:
     outputs:
       upload_url: ${{ steps.create.outputs.upload_url }}
 
+  update-homebrew:
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Update monday Homebrew formula
+        uses: Justintime50/homebrew-releaser@v1
+        with:
+          commit_owner: eko
+          commit_email: github@composieux.fr
+          homebrew_owner: eko
+          homebrew_tap: homebrew-tap
+          formula_folder: Formula
+          github_token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          install: |
+            ENV["GOPATH"] = buildpath
+
+                dir = buildpath/"src/github.com/eko/monday"
+                dir.install buildpath.children - [buildpath/".brew_home"]
+
+                cd dir do
+                  system "make build-binary"
+                  bin.install "monday"
+
+                  output = Utils.popen_read("#{bin}/monday completion bash")
+                  (bash_completion/"monday").write output
+
+                  output = Utils.popen_read("#{bin}/monday completion zsh")
+                  (zsh_completion/"_monday").write output
+
+                  prefix.install_metafiles
+                end
+          test: 'assert_match("Monday - version", shell_output("#{bin}/monday version"))'
+
   upload-binaries:
     needs: release
     strategy:
