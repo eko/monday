@@ -125,16 +125,15 @@ jobs:
           - os: macos-latest
             goos: darwin
             goarch: amd64
-          # Waiting go 1.16 release to be able to build darwin/arm64
-          # - os: macos-latest
-          #   goos: darwin
-          #   goarch: arm64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.15
+          go-version: 1.17
 
       - name: Download go dependencies
         run: go get -t -v ./...

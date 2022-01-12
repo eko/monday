@@ -50,7 +50,7 @@ You can download the latest version of the binary built for your architecture he
     [Linux](https://github.com/eko/monday/releases/latest/download/monday-linux-amd64)
 ]
 * Architecture **arm** [
-    [Darwin](https://github.com/eko/monday/releases/latest/download/monday-darwin-arm) /
+    [Darwin](https://github.com/eko/monday/releases/latest/download/monday-darwin-arm64) /
     [Linux](https://github.com/eko/monday/releases/latest/download/monday-linux-arm)
 ]
 
