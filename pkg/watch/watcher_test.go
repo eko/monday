@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -56,6 +57,7 @@ func TestNewWatcher(t *testing.T) {
 
 func TestWatch(t *testing.T) {
 	// Given
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -72,7 +74,7 @@ func TestWatch(t *testing.T) {
 	runner.EXPECT().RunAll().Times(1)
 
 	forwarder := forward.NewMockForwarder(ctrl)
-	forwarder.EXPECT().ForwardAll().Times(1)
+	forwarder.EXPECT().ForwardAll(ctx).Times(1)
 
 	project := getProjectMock()
 
@@ -84,7 +86,7 @@ func TestWatch(t *testing.T) {
 	}, project)
 
 	// When - Then
-	watcher.Watch()
+	watcher.Watch(ctx)
 
 	// Wait 1 second to ensure the watch is effective
 	time.Sleep(1 * time.Second)
@@ -92,6 +94,7 @@ func TestWatch(t *testing.T) {
 
 func TestWatchWhenFileChange(t *testing.T) {
 	// Given
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -108,12 +111,12 @@ func TestWatchWhenFileChange(t *testing.T) {
 	runner.EXPECT().RunAll().Times(1)
 
 	forwarder := forward.NewMockForwarder(ctrl)
-	forwarder.EXPECT().ForwardAll().Times(1)
+	forwarder.EXPECT().ForwardAll(ctx).Times(1)
 
 	project := getProjectMock()
 
 	watcher := NewWatcher(setuper, builder, writer, runner, forwarder, &config.GlobalWatch{}, project)
-	watcher.Watch()
+	watcher.Watch(ctx)
 
 	// When
 	time.Sleep(time.Duration(1 * time.Second)) // Wait 1 second to be sure filesystem is watching

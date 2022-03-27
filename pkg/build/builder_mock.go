@@ -34,18 +34,6 @@ func (m *MockBuilder) EXPECT() *MockBuilderMockRecorder {
 	return m.recorder
 }
 
-// BuildAll mocks base method.
-func (m *MockBuilder) BuildAll() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "BuildAll")
-}
-
-// BuildAll indicates an expected call of BuildAll.
-func (mr *MockBuilderMockRecorder) BuildAll() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildAll", reflect.TypeOf((*MockBuilder)(nil).BuildAll))
-}
-
 // Build mocks base method.
 func (m *MockBuilder) Build(application *config.Application) {
 	m.ctrl.T.Helper()
@@ -56,4 +44,16 @@ func (m *MockBuilder) Build(application *config.Application) {
 func (mr *MockBuilderMockRecorder) Build(application interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Build", reflect.TypeOf((*MockBuilder)(nil).Build), application)
+}
+
+// BuildAll mocks base method.
+func (m *MockBuilder) BuildAll() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "BuildAll")
+}
+
+// BuildAll indicates an expected call of BuildAll.
+func (mr *MockBuilderMockRecorder) BuildAll() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildAll", reflect.TypeOf((*MockBuilder)(nil).BuildAll))
 }

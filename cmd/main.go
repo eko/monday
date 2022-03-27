@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -43,6 +44,7 @@ var (
 )
 
 func main() {
+	ctx := context.Background()
 	runtime.InitRuntimeEnvironment()
 
 	rootCmd := &cobra.Command{
@@ -57,20 +59,21 @@ func main() {
 				return
 			}
 
-			runProject(conf, selectProject(conf))
+			runProject(ctx, conf, selectProject(conf))
 
-			handleExitSignal()
+			handleExitSignal(ctx)
 		},
 	}
 
 	// UI-enable flag (for both root and run commands)
-	runCmd.Flags().Bool("ui", false, "Enable the terminal UI")
+	runCommand := runCmd(ctx)
+	runCommand.Flags().Bool("ui", false, "Enable the terminal UI")
 	rootCmd.Flags().Bool("ui", false, "Enable the terminal UI")
 
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(editCmd)
 	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(runCommand)
 	rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(versionCmd)
 
@@ -110,7 +113,7 @@ func selectProject(conf *config.Config) string {
 	return choice
 }
 
-func runProject(conf *config.Config, choice string) {
+func runProject(ctx context.Context, conf *config.Config, choice string) {
 	layout := ui.NewLayout(uiEnabled)
 	layout.Init()
 
@@ -138,12 +141,12 @@ func runProject(conf *config.Config, choice string) {
 	forwarder = forward.NewForwarder(layout.GetForwardsView(), proxyfier, project)
 
 	watcher = watch.NewWatcher(setuper, builder, writer, runner, forwarder, conf.Watch, project)
-	go watcher.Watch()
+	go watcher.Watch(ctx)
 
 	if uiEnabled {
 		defer layout.GetGui().Close()
 
-		if err := layout.GetGui().SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+		if err := layout.GetGui().SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit(ctx)); err != nil {
 			panic(err)
 		}
 
@@ -151,34 +154,36 @@ func runProject(conf *config.Config, choice string) {
 
 		if err := layout.GetGui().MainLoop(); err != nil && err != gocui.ErrQuit {
 			fmt.Println(err)
-			stopAll()
+			stopAll(ctx)
 		}
 	}
 }
 
 // Handle for an exit signal in order to quit application on a proper way (shutting down connections and servers).
-func handleExitSignal() {
+func handleExitSignal(ctx context.Context) {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, os.Kill)
 
 	<-stop
 
-	stopAll()
+	stopAll(ctx)
 }
 
-func stopAll() {
+func stopAll(ctx context.Context) {
 	fmt.Println("\n👋  Bye, closing your local applications and remote connections now")
 
 	watcher.Stop()
-	forwarder.Stop()
+	forwarder.Stop(ctx)
 	proxyfier.Stop()
 	runner.Stop()
 
 	os.Exit(0)
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
-	g.Close()
-	stopAll()
-	return gocui.ErrQuit
+func quit(ctx context.Context) func(*gocui.Gui, *gocui.View) error {
+	return func(g *gocui.Gui, v *gocui.View) error {
+		g.Close()
+		stopAll(ctx)
+		return gocui.ErrQuit
+	}
 }

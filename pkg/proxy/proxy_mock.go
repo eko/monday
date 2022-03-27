@@ -33,6 +33,18 @@ func (m *MockProxy) EXPECT() *MockProxyMockRecorder {
 	return m.recorder
 }
 
+// AddProxyForward mocks base method.
+func (m *MockProxy) AddProxyForward(name string, proxyForward *ProxyForward) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "AddProxyForward", name, proxyForward)
+}
+
+// AddProxyForward indicates an expected call of AddProxyForward.
+func (mr *MockProxyMockRecorder) AddProxyForward(name, proxyForward interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddProxyForward", reflect.TypeOf((*MockProxy)(nil).AddProxyForward), name, proxyForward)
+}
+
 // Listen mocks base method.
 func (m *MockProxy) Listen() error {
 	m.ctrl.T.Helper()
@@ -59,16 +71,4 @@ func (m *MockProxy) Stop() error {
 func (mr *MockProxyMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockProxy)(nil).Stop))
-}
-
-// AddProxyForward mocks base method.
-func (m *MockProxy) AddProxyForward(name string, proxyForward *ProxyForward) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AddProxyForward", name, proxyForward)
-}
-
-// AddProxyForward indicates an expected call of AddProxyForward.
-func (mr *MockProxyMockRecorder) AddProxyForward(name, proxyForward interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddProxyForward", reflect.TypeOf((*MockProxy)(nil).AddProxyForward), name, proxyForward)
 }

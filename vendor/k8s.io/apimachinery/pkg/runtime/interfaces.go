@@ -37,13 +37,54 @@ type GroupVersioner interface {
 	// Scheme.New(target) and then perform a conversion between the current Go type and the destination Go type.
 	// Sophisticated implementations may use additional information about the input kinds to pick a destination kind.
 	KindForGroupVersionKinds(kinds []schema.GroupVersionKind) (target schema.GroupVersionKind, ok bool)
+	// Identifier returns string representation of the object.
+	// Identifiers of two different encoders should be equal only if for every input
+	// kinds they return the same result.
+	Identifier() string
 }
+
+// Identifier represents an identifier.
+// Identitier of two different objects should be equal if and only if for every
+// input the output they produce is exactly the same.
+type Identifier string
 
 // Encoder writes objects to a serialized form
 type Encoder interface {
 	// Encode writes an object to a stream. Implementations may return errors if the versions are
 	// incompatible, or if no conversion is defined.
 	Encode(obj Object, w io.Writer) error
+	// Identifier returns an identifier of the encoder.
+	// Identifiers of two different encoders should be equal if and only if for every input
+	// object it will be encoded to the same representation by both of them.
+	//
+	// Identifier is intended for use with CacheableObject#CacheEncode method. In order to
+	// correctly handle CacheableObject, Encode() method should look similar to below, where
+	// doEncode() is the encoding logic of implemented encoder:
+	//   func (e *MyEncoder) Encode(obj Object, w io.Writer) error {
+	//     if co, ok := obj.(CacheableObject); ok {
+	//       return co.CacheEncode(e.Identifier(), e.doEncode, w)
+	//     }
+	//     return e.doEncode(obj, w)
+	//   }
+	Identifier() Identifier
+}
+
+// MemoryAllocator is responsible for allocating memory.
+// By encapsulating memory allocation into its own interface, we can reuse the memory
+// across many operations in places we know it can significantly improve the performance.
+type MemoryAllocator interface {
+	// Allocate reserves memory for n bytes.
+	// Note that implementations of this method are not required to zero the returned array.
+	// It is the caller's responsibility to clean the memory if needed.
+	Allocate(n uint64) []byte
+}
+
+// EncoderWithAllocator  serializes objects in a way that allows callers to manage any additional memory allocations.
+type EncoderWithAllocator interface {
+	Encoder
+	// EncodeWithAllocator writes an object to a stream as Encode does.
+	// In addition, it allows for providing a memory allocator for efficient memory usage during object serialization
+	EncodeWithAllocator(obj Object, w io.Writer, memAlloc MemoryAllocator) error
 }
 
 // Decoder attempts to load an object from data.
@@ -102,6 +143,9 @@ type SerializerInfo struct {
 	// PrettySerializer, if set, can serialize this object in a form biased towards
 	// readability.
 	PrettySerializer Serializer
+	// StrictSerializer, if set, deserializes this object strictly,
+	// erring on unknown fields.
+	StrictSerializer Serializer
 	// StreamSerializer, if set, describes the streaming serialization format
 	// for this media type.
 	StreamSerializer *StreamSerializerInfo
@@ -127,9 +171,31 @@ type NegotiatedSerializer interface {
 	// EncoderForVersion returns an encoder that ensures objects being written to the provided
 	// serializer are in the provided group version.
 	EncoderForVersion(serializer Encoder, gv GroupVersioner) Encoder
-	// DecoderForVersion returns a decoder that ensures objects being read by the provided
+	// DecoderToVersion returns a decoder that ensures objects being read by the provided
 	// serializer are in the provided group version by default.
 	DecoderToVersion(serializer Decoder, gv GroupVersioner) Decoder
+}
+
+// ClientNegotiator handles turning an HTTP content type into the appropriate encoder.
+// Use NewClientNegotiator or NewVersionedClientNegotiator to create this interface from
+// a NegotiatedSerializer.
+type ClientNegotiator interface {
+	// Encoder returns the appropriate encoder for the provided contentType (e.g. application/json)
+	// and any optional mediaType parameters (e.g. pretty=1), or an error. If no serializer is found
+	// a NegotiateError will be returned. The current client implementations consider params to be
+	// optional modifiers to the contentType and will ignore unrecognized parameters.
+	Encoder(contentType string, params map[string]string) (Encoder, error)
+	// Decoder returns the appropriate decoder for the provided contentType (e.g. application/json)
+	// and any optional mediaType parameters (e.g. pretty=1), or an error. If no serializer is found
+	// a NegotiateError will be returned. The current client implementations consider params to be
+	// optional modifiers to the contentType and will ignore unrecognized parameters.
+	Decoder(contentType string, params map[string]string) (Decoder, error)
+	// StreamDecoder returns the appropriate stream decoder for the provided contentType (e.g.
+	// application/json) and any optional mediaType parameters (e.g. pretty=1), or an error. If no
+	// serializer is found a NegotiateError will be returned. The Serializer and Framer will always
+	// be returned if a Decoder is returned. The current client implementations consider params to be
+	// optional modifiers to the contentType and will ignore unrecognized parameters.
+	StreamDecoder(contentType string, params map[string]string) (Decoder, Serializer, Framer, error)
 }
 
 // StorageSerializer is an interface used for obtaining encoders, decoders, and serializers
@@ -159,6 +225,12 @@ type NestedObjectEncoder interface {
 
 // NestedObjectDecoder is an optional interface that objects may implement to be given
 // an opportunity to decode any nested Objects / RawExtensions during serialization.
+// It is possible for DecodeNestedObjects to return a non-nil error but for the decoding
+// to have succeeded in the case of strict decoding errors (e.g. unknown/duplicate fields).
+// As such it is important for callers of DecodeNestedObjects to check to confirm whether
+// an error is a runtime.StrictDecodingError before short circuiting.
+// Similarly, implementations of DecodeNestedObjects should ensure that a runtime.StrictDecodingError
+// is only returned when the rest of decoding has succeeded.
 type NestedObjectDecoder interface {
 	DecodeNestedObjects(d Decoder) error
 }
@@ -236,14 +308,11 @@ type ResourceVersioner interface {
 	ResourceVersion(obj Object) (string, error)
 }
 
-// SelfLinker provides methods for setting and retrieving the SelfLink field of an API object.
-type SelfLinker interface {
-	SetSelfLink(obj Object, selfLink string) error
-	SelfLink(obj Object) (string, error)
-
-	// Knowing Name is sometimes necessary to use a SelfLinker.
+// Namer provides methods for retrieving name and namespace of an API object.
+type Namer interface {
+	// Name returns the name of a given object.
 	Name(obj Object) (string, error)
-	// Knowing Namespace is sometimes necessary to use a SelfLinker
+	// Namespace returns the name of a given object.
 	Namespace(obj Object) (string, error)
 }
 
@@ -254,6 +323,27 @@ type SelfLinker interface {
 type Object interface {
 	GetObjectKind() schema.ObjectKind
 	DeepCopyObject() Object
+}
+
+// CacheableObject allows an object to cache its different serializations
+// to avoid performing the same serialization multiple times.
+type CacheableObject interface {
+	// CacheEncode writes an object to a stream. The <encode> function will
+	// be used in case of cache miss. The <encode> function takes ownership
+	// of the object.
+	// If CacheableObject is a wrapper, then deep-copy of the wrapped object
+	// should be passed to <encode> function.
+	// CacheEncode assumes that for two different calls with the same <id>,
+	// <encode> function will also be the same.
+	CacheEncode(id Identifier, encode func(Object, io.Writer) error, w io.Writer) error
+	// GetObject returns a deep-copy of an object to be encoded - the caller of
+	// GetObject() is the owner of returned object. The reason for making a copy
+	// is to avoid bugs, where caller modifies the object and forgets to copy it,
+	// thus modifying the object for everyone.
+	// The object returned by GetObject should be the same as the one that is supposed
+	// to be passed to <encode> function in CacheEncode method.
+	// If CacheableObject is a wrapper, the copy of wrapped object should be returned.
+	GetObject() Object
 }
 
 // Unstructured objects store values as map[string]interface{}, with only values that can be serialized

@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"context"
 	"os/exec"
 	"strings"
 	"testing"
@@ -113,6 +114,7 @@ func TestGetStopChannel(t *testing.T) {
 
 func TestForwardLocal(t *testing.T) {
 	// Given
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -128,7 +130,7 @@ func TestForwardLocal(t *testing.T) {
 	forwarder, err := NewForwarder(view, config.ForwarderSSH, values, "8080", "8081")
 
 	// When
-	err = forwarder.Forward()
+	err = forwarder.Forward(ctx)
 
 	// Then
 	assert.Nil(t, err)
@@ -141,6 +143,7 @@ func TestForwardLocal(t *testing.T) {
 
 func TestForwardLocalWithForwardHostname(t *testing.T) {
 	// Given
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -155,7 +158,7 @@ func TestForwardLocalWithForwardHostname(t *testing.T) {
 	forwarder, err := NewForwarder(view, config.ForwarderSSH, values, "8080", "8081")
 
 	// When
-	err = forwarder.Forward()
+	err = forwarder.Forward(ctx)
 
 	// Then
 	assert.Nil(t, err)
@@ -168,6 +171,7 @@ func TestForwardLocalWithForwardHostname(t *testing.T) {
 
 func TestForwardRemote(t *testing.T) {
 	// Given
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -182,7 +186,7 @@ func TestForwardRemote(t *testing.T) {
 	forwarder, err := NewForwarder(view, config.ForwarderSSHRemote, values, "8080", "8081")
 
 	// When
-	err = forwarder.Forward()
+	err = forwarder.Forward(ctx)
 
 	// Then
 	assert.Nil(t, err)

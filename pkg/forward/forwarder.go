@@ -1,6 +1,7 @@
 package forward
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -16,14 +17,14 @@ import (
 
 // Forwarder represents all kinds of forwarders (Kubernetes, others...)
 type Forwarder interface {
-	ForwardAll()
-	Stop()
+	ForwardAll(ctx context.Context)
+	Stop(ctx context.Context)
 }
 
 type ForwarderType interface {
 	GetForwardType() string
-	Forward() error
-	Stop() error
+	Forward(ctx context.Context) error
+	Stop(ctx context.Context) error
 	GetReadyChannel() chan struct{}
 	GetStopChannel() chan struct{}
 }
@@ -46,11 +47,11 @@ func NewForwarder(view ui.View, proxy proxy.Proxy, project *config.Project) *for
 }
 
 // ForwardAll runs all applications forwarders in separated goroutines
-func (f *forwarder) ForwardAll() {
+func (f *forwarder) ForwardAll(ctx context.Context) {
 	var wg sync.WaitGroup
 	for _, forward := range f.forwards {
 		wg.Add(1)
-		go f.forward(forward, &wg)
+		go f.forward(ctx, forward, &wg)
 	}
 
 	wg.Wait()
@@ -66,10 +67,10 @@ func (f *forwarder) ForwardAll() {
 }
 
 // Stop stops all currently active forwarders
-func (f *forwarder) Stop() {
+func (f *forwarder) Stop(ctx context.Context) {
 	f.forwarders.Range(func(key, value interface{}) bool {
 		for _, forwarder := range value.([]ForwarderType) {
-			forwarder.Stop()
+			forwarder.Stop(ctx)
 		}
 
 		return true
@@ -88,7 +89,7 @@ func (f *forwarder) addForwarder(name string, forwarder ForwarderType) {
 	f.forwarders.Store(name, forwarders)
 }
 
-func (f *forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
+func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	if err := f.checkForwardEnvironment(forward); err != nil {
@@ -208,7 +209,7 @@ func (f *forwarder) forward(forward *config.Forward, wg *sync.WaitGroup) {
 		for _, forwarder := range forwarders.([]ForwarderType) {
 			go func(forwarder ForwarderType) {
 				for {
-					err := forwarder.Forward()
+					err := forwarder.Forward(ctx)
 					if err != nil {
 						time.Sleep(1 * time.Second)
 						f.view.Writef("%v\n👓  Forwarder: lost port-forward connection trying to reconnect...\n", err)

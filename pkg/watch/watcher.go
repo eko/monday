@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -19,7 +20,7 @@ var (
 )
 
 type Watcher interface {
-	Watch()
+	Watch(ctx context.Context)
 	Stop() error
 }
 
@@ -63,13 +64,13 @@ func NewWatcher(
 
 // Watch runs both local applications and forwarded ones and ensure they keep running.
 // It also relaunch them in case of file changes.
-func (w *watcher) Watch() {
+func (w *watcher) Watch(ctx context.Context) {
 	w.setuper.SetupAll()
 	w.writer.WriteAll()
 	w.builder.BuildAll()
 
 	go w.runner.RunAll()
-	go w.forwarder.ForwardAll()
+	go w.forwarder.ForwardAll(ctx)
 
 	for _, application := range w.project.Applications {
 		if !application.Watch {

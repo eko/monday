@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -110,7 +111,7 @@ func (f *Forwarder) GetStopChannel() chan struct{} {
 }
 
 // Forward method executes the local or remote port-forward depending on the given type
-func (f *Forwarder) Forward() error {
+func (f *Forwarder) Forward(ctx context.Context) error {
 	selector := f.getSelector()
 
 	if selector == "" {
@@ -119,13 +120,13 @@ func (f *Forwarder) Forward() error {
 
 	switch f.forwardType {
 	case config.ForwarderKubernetes:
-		err := f.forwardLocal(selector)
+		err := f.forwardLocal(ctx, selector)
 		if err != nil {
 			return err
 		}
 
 	case config.ForwarderKubernetesRemote:
-		err := f.forwardRemote(selector)
+		err := f.forwardRemote(ctx, selector)
 		if err != nil {
 			return err
 		}
@@ -135,7 +136,7 @@ func (f *Forwarder) Forward() error {
 }
 
 // Stop stops the current forwarder
-func (f *Forwarder) Stop() error {
+func (f *Forwarder) Stop(ctx context.Context) error {
 	// Close port-forwards currently active connections
 	for _, portForwarder := range f.portForwarders {
 		portForwarder.Close()
@@ -147,7 +148,7 @@ func (f *Forwarder) Stop() error {
 	for _, backup := range f.deployments {
 		selector := f.getSelector()
 
-		deployments, err := deploymentsClient.List(metav1.ListOptions{LabelSelector: selector})
+		deployments, err := deploymentsClient.List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			continue
 		}
@@ -162,7 +163,7 @@ func (f *Forwarder) Stop() error {
 		deployment.Spec.Template.Spec.Containers[0].Image = backup.OldImage
 		deployment.Spec.Template.Spec.Containers[0].Ports = backup.OldPorts
 
-		_, err = deploymentsClient.Update(&deployment)
+		_, err = deploymentsClient.Update(ctx, &deployment, metav1.UpdateOptions{})
 		if err != nil {
 			f.view.Writef("❌  An error has occured while stopping/resetting a deployment: %v\n", err)
 		}
@@ -171,8 +172,9 @@ func (f *Forwarder) Stop() error {
 	return nil
 }
 
-func (f *Forwarder) forwardLocal(selector string) error {
+func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 	pods, err := f.clientSet.CoreV1().Pods(f.namespace).List(
+		ctx,
 		metav1.ListOptions{LabelSelector: selector},
 	)
 	if err != nil {
@@ -219,10 +221,11 @@ func (f *Forwarder) forwardLocal(selector string) error {
 	return nil
 }
 
-func (f *Forwarder) forwardRemote(selector string) error {
+func (f *Forwarder) forwardRemote(ctx context.Context, selector string) error {
 	deploymentsClient := f.clientSet.AppsV1().Deployments(f.namespace)
 
 	deployments, err := deploymentsClient.List(
+		ctx,
 		metav1.ListOptions{LabelSelector: selector},
 	)
 	if err != nil {
@@ -270,7 +273,7 @@ func (f *Forwarder) forwardRemote(selector string) error {
 	deployment.Spec.Template.Spec.Containers[0] = container
 	deployment.Spec.Template.Spec.ReadinessGates = []apiv1.PodReadinessGate{}
 
-	_, err = deploymentsClient.Update(&deployment)
+	_, err = deploymentsClient.Update(ctx, &deployment, metav1.UpdateOptions{})
 	if err != nil {
 		f.view.Write(err.Error())
 	}
@@ -278,7 +281,7 @@ func (f *Forwarder) forwardRemote(selector string) error {
 	time.Sleep(time.Duration(5 * time.Second))
 
 	// Deployment has been updated with proxy, now forward ports locally
-	f.forwardLocal(selector)
+	f.forwardLocal(ctx, selector)
 
 	return nil
 }

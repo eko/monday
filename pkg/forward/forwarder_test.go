@@ -1,6 +1,7 @@
 package forward
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -21,7 +22,7 @@ func TestNewForwarder(t *testing.T) {
 	project := &config.Project{
 		Name: "My project name",
 		Forwards: []*config.Forward{
-			&config.Forward{
+			{
 				Name: "test-kubernetes-forward",
 				Type: "kubernetes",
 				Values: config.ForwardValues{
@@ -49,6 +50,7 @@ func TestNewForwarder(t *testing.T) {
 
 func TestForwardAll(t *testing.T) {
 	// Given
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -60,7 +62,7 @@ func TestForwardAll(t *testing.T) {
 	project := &config.Project{
 		Name: "My project name",
 		Forwards: []*config.Forward{
-			&config.Forward{
+			{
 				Name: "test-ssh-forward",
 				Type: "ssh",
 				Values: config.ForwardValues{
@@ -77,7 +79,7 @@ func TestForwardAll(t *testing.T) {
 	forwarder := NewForwarder(view, proxyfier, project)
 
 	// When
-	forwarder.ForwardAll()
+	forwarder.ForwardAll(ctx)
 
 	// Then
 	assert.Len(t, forwarder.forwards, 1)
@@ -93,6 +95,7 @@ func TestForwardAll(t *testing.T) {
 
 func TestForwardRemoteSSH(t *testing.T) {
 	// Given
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -101,7 +104,7 @@ func TestForwardRemoteSSH(t *testing.T) {
 	project := &config.Project{
 		Name: "My project name",
 		Forwards: []*config.Forward{
-			&config.Forward{
+			{
 				Name: "test-ssh-forward",
 				Type: config.ForwarderSSHRemote,
 				Values: config.ForwardValues{
@@ -118,7 +121,7 @@ func TestForwardRemoteSSH(t *testing.T) {
 	forwarder := NewForwarder(view, proxy, project)
 
 	// When
-	forwarder.ForwardAll()
+	forwarder.ForwardAll(ctx)
 
 	// Then
 	assert.Len(t, forwarder.forwards, 1)
