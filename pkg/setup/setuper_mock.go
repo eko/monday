@@ -34,18 +34,6 @@ func (m *MockSetuper) EXPECT() *MockSetuperMockRecorder {
 	return m.recorder
 }
 
-// SetupAll mocks base method.
-func (m *MockSetuper) SetupAll() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetupAll")
-}
-
-// SetupAll indicates an expected call of SetupAll.
-func (mr *MockSetuperMockRecorder) SetupAll() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupAll", reflect.TypeOf((*MockSetuper)(nil).SetupAll))
-}
-
 // Setup mocks base method.
 func (m *MockSetuper) Setup(application *config.Application) {
 	m.ctrl.T.Helper()
@@ -56,4 +44,16 @@ func (m *MockSetuper) Setup(application *config.Application) {
 func (mr *MockSetuperMockRecorder) Setup(application interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Setup", reflect.TypeOf((*MockSetuper)(nil).Setup), application)
+}
+
+// SetupAll mocks base method.
+func (m *MockSetuper) SetupAll() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetupAll")
+}
+
+// SetupAll indicates an expected call of SetupAll.
+func (mr *MockSetuperMockRecorder) SetupAll() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetupAll", reflect.TypeOf((*MockSetuper)(nil).SetupAll))
 }

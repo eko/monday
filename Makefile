@@ -37,14 +37,11 @@ mocks: ## Generate mocks for tests
 	mockgen -source=pkg/write/writer.go -destination=pkg/write/writer_mock.go -package=write
 
 	# Kubernetes AppsV1
-	mockery -name=Interface -dir=vendor/k8s.io/client-go/kubernetes/ -output internal/tests/mocks/kubernetes/client
-	mockery -name=AppsV1Interface -dir=vendor/k8s.io/client-go/kubernetes/typed/apps/v1/ -output internal/tests/mocks/kubernetes/client
-	mockery -name=DeploymentsGetter -dir=vendor/k8s.io/client-go/kubernetes/typed/apps/v1/ -output internal/tests/mocks/kubernetes/client
-	mockery -name=DeploymentInterface -dir=vendor/k8s.io/client-go/kubernetes/typed/apps/v1/ -output internal/tests/mocks/kubernetes/client
+	mockery --name=Interface --dir=vendor/k8s.io/client-go/kubernetes/ --output=internal/test/mocks/kubernetes/client
+	mockery --name=AppsV1Interface --dir=vendor/k8s.io/client-go/kubernetes/typed/apps/v1/ --output=internal/test/mocks/kubernetes/client
+	mockery --name=DeploymentsGetter --dir=vendor/k8s.io/client-go/kubernetes/typed/apps/v1/ --output=internal/test/mocks/kubernetes/client
+	mockery --name=DeploymentInterface --dir=vendor/k8s.io/client-go/kubernetes/typed/apps/v1/ --output=internal/test/mocks/kubernetes/client
 
 	# Kubernetes CoreV1
-	mockery -name=CoreV1Interface -dir=vendor/k8s.io/client-go/kubernetes/typed/core/v1/ -output internal/tests/mocks/kubernetes/client
-	mockery -name=PodInterface -dir=vendor/k8s.io/client-go/kubernetes/typed/core/v1/ -output internal/tests/mocks/kubernetes/client
-
-	# Kubernetes REST Client
-	mockery -name=Interface -dir=vendor/k8s.io/client-go/rest/ -output internal/tests/mocks/kubernetes/rest
+	mockery --name=CoreV1Interface --dir=vendor/k8s.io/client-go/kubernetes/typed/core/v1/ --output=internal/test/mocks/kubernetes/client
+	mockery --name=PodInterface --dir=vendor/k8s.io/client-go/kubernetes/typed/core/v1/ --output=internal/test/mocks/kubernetes/client

@@ -5,6 +5,7 @@
 package watch
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -33,18 +34,6 @@ func (m *MockWatcher) EXPECT() *MockWatcherMockRecorder {
 	return m.recorder
 }
 
-// Watch mocks base method.
-func (m *MockWatcher) Watch() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Watch")
-}
-
-// Watch indicates an expected call of Watch.
-func (mr *MockWatcherMockRecorder) Watch() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockWatcher)(nil).Watch))
-}
-
 // Stop mocks base method.
 func (m *MockWatcher) Stop() error {
 	m.ctrl.T.Helper()
@@ -57,4 +46,16 @@ func (m *MockWatcher) Stop() error {
 func (mr *MockWatcherMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockWatcher)(nil).Stop))
+}
+
+// Watch mocks base method.
+func (m *MockWatcher) Watch(ctx context.Context) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Watch", ctx)
+}
+
+// Watch indicates an expected call of Watch.
+func (mr *MockWatcherMockRecorder) Watch(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockWatcher)(nil).Watch), ctx)
 }

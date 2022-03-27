@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
@@ -55,7 +56,7 @@ func (f *Forwarder) GetStopChannel() chan struct{} {
 	return f.readyChannel
 }
 
-func (f *Forwarder) Forward() error {
+func (f *Forwarder) Forward(_ context.Context) error {
 	if f.remote == "" {
 		return fmt.Errorf("Please provide a 'remote' attribute specifing the host you want to SSH on")
 	}
@@ -100,7 +101,7 @@ func (f *Forwarder) Forward() error {
 }
 
 // Stop stops the current forwarder
-func (f *Forwarder) Stop() error {
+func (f *Forwarder) Stop(_ context.Context) error {
 	if f.cmd == nil {
 		return nil
 	}

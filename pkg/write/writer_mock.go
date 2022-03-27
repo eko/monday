@@ -34,18 +34,6 @@ func (m *MockWriter) EXPECT() *MockWriterMockRecorder {
 	return m.recorder
 }
 
-// WriteAll mocks base method.
-func (m *MockWriter) WriteAll() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "WriteAll")
-}
-
-// WriteAll indicates an expected call of WriteAll.
-func (mr *MockWriterMockRecorder) WriteAll() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteAll", reflect.TypeOf((*MockWriter)(nil).WriteAll))
-}
-
 // Write mocks base method.
 func (m *MockWriter) Write(application *config.Application) {
 	m.ctrl.T.Helper()
@@ -56,4 +44,16 @@ func (m *MockWriter) Write(application *config.Application) {
 func (mr *MockWriterMockRecorder) Write(application interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockWriter)(nil).Write), application)
+}
+
+// WriteAll mocks base method.
+func (m *MockWriter) WriteAll() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "WriteAll")
+}
+
+// WriteAll indicates an expected call of WriteAll.
+func (mr *MockWriterMockRecorder) WriteAll() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteAll", reflect.TypeOf((*MockWriter)(nil).WriteAll))
 }

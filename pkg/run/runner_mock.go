@@ -34,16 +34,16 @@ func (m *MockRunner) EXPECT() *MockRunnerMockRecorder {
 	return m.recorder
 }
 
-// RunAll mocks base method.
-func (m *MockRunner) RunAll() {
+// Restart mocks base method.
+func (m *MockRunner) Restart(application *config.Application) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RunAll")
+	m.ctrl.Call(m, "Restart", application)
 }
 
-// RunAll indicates an expected call of RunAll.
-func (mr *MockRunnerMockRecorder) RunAll() *gomock.Call {
+// Restart indicates an expected call of Restart.
+func (mr *MockRunnerMockRecorder) Restart(application interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunAll", reflect.TypeOf((*MockRunner)(nil).RunAll))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Restart", reflect.TypeOf((*MockRunner)(nil).Restart), application)
 }
 
 // Run mocks base method.
@@ -58,16 +58,16 @@ func (mr *MockRunnerMockRecorder) Run(application interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockRunner)(nil).Run), application)
 }
 
-// Restart mocks base method.
-func (m *MockRunner) Restart(application *config.Application) {
+// RunAll mocks base method.
+func (m *MockRunner) RunAll() {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Restart", application)
+	m.ctrl.Call(m, "RunAll")
 }
 
-// Restart indicates an expected call of Restart.
-func (mr *MockRunnerMockRecorder) Restart(application interface{}) *gomock.Call {
+// RunAll indicates an expected call of RunAll.
+func (mr *MockRunnerMockRecorder) RunAll() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Restart", reflect.TypeOf((*MockRunner)(nil).Restart), application)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunAll", reflect.TypeOf((*MockRunner)(nil).RunAll))
 }
 
 // Stop mocks base method.

@@ -5,6 +5,7 @@
 package forward
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -34,27 +35,27 @@ func (m *MockForwarder) EXPECT() *MockForwarderMockRecorder {
 }
 
 // ForwardAll mocks base method.
-func (m *MockForwarder) ForwardAll() {
+func (m *MockForwarder) ForwardAll(ctx context.Context) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ForwardAll")
+	m.ctrl.Call(m, "ForwardAll", ctx)
 }
 
 // ForwardAll indicates an expected call of ForwardAll.
-func (mr *MockForwarderMockRecorder) ForwardAll() *gomock.Call {
+func (mr *MockForwarderMockRecorder) ForwardAll(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForwardAll", reflect.TypeOf((*MockForwarder)(nil).ForwardAll))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForwardAll", reflect.TypeOf((*MockForwarder)(nil).ForwardAll), ctx)
 }
 
 // Stop mocks base method.
-func (m *MockForwarder) Stop() {
+func (m *MockForwarder) Stop(ctx context.Context) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Stop")
+	m.ctrl.Call(m, "Stop", ctx)
 }
 
 // Stop indicates an expected call of Stop.
-func (mr *MockForwarderMockRecorder) Stop() *gomock.Call {
+func (mr *MockForwarderMockRecorder) Stop(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockForwarder)(nil).Stop))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockForwarder)(nil).Stop), ctx)
 }
 
 // MockForwarderType is a mock of ForwarderType interface.
@@ -80,6 +81,20 @@ func (m *MockForwarderType) EXPECT() *MockForwarderTypeMockRecorder {
 	return m.recorder
 }
 
+// Forward mocks base method.
+func (m *MockForwarderType) Forward(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Forward", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Forward indicates an expected call of Forward.
+func (mr *MockForwarderTypeMockRecorder) Forward(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Forward", reflect.TypeOf((*MockForwarderType)(nil).Forward), ctx)
+}
+
 // GetForwardType mocks base method.
 func (m *MockForwarderType) GetForwardType() string {
 	m.ctrl.T.Helper()
@@ -92,34 +107,6 @@ func (m *MockForwarderType) GetForwardType() string {
 func (mr *MockForwarderTypeMockRecorder) GetForwardType() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetForwardType", reflect.TypeOf((*MockForwarderType)(nil).GetForwardType))
-}
-
-// Forward mocks base method.
-func (m *MockForwarderType) Forward() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Forward")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Forward indicates an expected call of Forward.
-func (mr *MockForwarderTypeMockRecorder) Forward() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Forward", reflect.TypeOf((*MockForwarderType)(nil).Forward))
-}
-
-// Stop mocks base method.
-func (m *MockForwarderType) Stop() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stop")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Stop indicates an expected call of Stop.
-func (mr *MockForwarderTypeMockRecorder) Stop() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockForwarderType)(nil).Stop))
 }
 
 // GetReadyChannel mocks base method.
@@ -148,4 +135,18 @@ func (m *MockForwarderType) GetStopChannel() chan struct{} {
 func (mr *MockForwarderTypeMockRecorder) GetStopChannel() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStopChannel", reflect.TypeOf((*MockForwarderType)(nil).GetStopChannel))
+}
+
+// Stop mocks base method.
+func (m *MockForwarderType) Stop(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Stop", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Stop indicates an expected call of Stop.
+func (mr *MockForwarderTypeMockRecorder) Stop(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockForwarderType)(nil).Stop), ctx)
 }

@@ -1,16 +1,15 @@
 package kubernetes
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"testing"
-	"time"
 
 	clientmocks "github.com/eko/monday/internal/test/mocks/kubernetes/client"
-	restmocks "github.com/eko/monday/internal/test/mocks/kubernetes/rest"
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/ui"
 	"github.com/golang/mock/gomock"
@@ -19,6 +18,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/flowcontrol"
 )
@@ -178,6 +178,7 @@ func TestGetStopChannel(t *testing.T) {
 
 func TestForwardTypeLocal(t *testing.T) {
 	// Given
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -195,7 +196,7 @@ func TestForwardTypeLocal(t *testing.T) {
 
 	// Mock Kubernetes Go client calls for retrieving deployment
 	deploymentInterface := &clientmocks.DeploymentInterface{}
-	deploymentInterface.On("List", metav1.ListOptions{LabelSelector: "app=my-test-app"}).
+	deploymentInterface.On("List", ctx, metav1.ListOptions{LabelSelector: "app=my-test-app"}).
 		Return(&appsv1.DeploymentList{
 			Items: []appsv1.Deployment{},
 		})
@@ -210,10 +211,10 @@ func TestForwardTypeLocal(t *testing.T) {
 
 	// Mock Kubernetes Go client calls for retrieving pods
 	podInterface := &clientmocks.PodInterface{}
-	podInterface.On("List", metav1.ListOptions{LabelSelector: "app=my-test-app"}).
+	podInterface.On("List", ctx, metav1.ListOptions{LabelSelector: "app=my-test-app"}).
 		Return(&corev1.PodList{
 			Items: []corev1.Pod{
-				corev1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-test-app-bd4sk",
 					},
@@ -234,17 +235,14 @@ func TestForwardTypeLocal(t *testing.T) {
 
 	url, _ := url.Parse(testServer.URL)
 	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(2.0, 1)
-	restClient := RESTClient{}
-	request := restclient.NewRequest(restClient, "POST", url, "/1.0", restclient.ContentConfig{}, restclient.Serializers{}, &restclient.NoBackoff{}, rateLimiter, time.Duration(10*time.Second))
-
-	restClientMock := &restmocks.Interface{}
-	restClientMock.On("Post").Return(request)
+	httpClient := &http.Client{}
+	restClientMock, _ := rest.NewRESTClient(url, "/1.0", restclient.ClientContentConfig{}, rateLimiter, httpClient)
 
 	forwarder.clientSet = clientSetMock
 	forwarder.restClient = restClientMock
 
 	// When
-	err = forwarder.Forward()
+	err = forwarder.Forward(ctx)
 
 	// Then
 	assert.Contains(t, err.Error(), "ok, port forward is asked")
@@ -252,6 +250,7 @@ func TestForwardTypeLocal(t *testing.T) {
 
 func TestForwardTypeRemote(t *testing.T) {
 	// Given
+	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -272,7 +271,7 @@ func TestForwardTypeRemote(t *testing.T) {
 	containerMock := corev1.Container{
 		Image: "acme.tld/my-remote-app",
 		Ports: []corev1.ContainerPort{
-			corev1.ContainerPort{
+			{
 				Name:          "http",
 				HostPort:      8080,
 				ContainerPort: 8080,
@@ -295,14 +294,16 @@ func TestForwardTypeRemote(t *testing.T) {
 
 	// Mock Kubernetes Go client calls for retrieving deployment
 	deploymentInterface := &clientmocks.DeploymentInterface{}
-	deploymentInterface.On("List", metav1.ListOptions{LabelSelector: "app=my-remote-app"}).
+	deploymentInterface.On("List", ctx, metav1.ListOptions{LabelSelector: "app=my-remote-app"}).
 		Return(&appsv1.DeploymentList{
 			Items: []appsv1.Deployment{
 				deploymentMock,
 			},
 		}, nil)
 
-	deploymentInterface.On("Update", mock.AnythingOfType("*v1.Deployment")).Return(nil, nil)
+	deploymentInterface.
+		On("Update", ctx, mock.AnythingOfType("*v1.Deployment"), metav1.UpdateOptions{}).
+		Return(nil, nil)
 
 	appsV1Interface := &clientmocks.AppsV1Interface{}
 	appsV1Interface.On("Deployments", "backend").
@@ -311,10 +312,10 @@ func TestForwardTypeRemote(t *testing.T) {
 	// Local forward then...
 	// Mock Kubernetes Go client calls for retrieving pods
 	podInterface := &clientmocks.PodInterface{}
-	podInterface.On("List", metav1.ListOptions{LabelSelector: "app=my-remote-app"}).
+	podInterface.On("List", ctx, metav1.ListOptions{LabelSelector: "app=my-remote-app"}).
 		Return(&corev1.PodList{
 			Items: []corev1.Pod{
-				corev1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "my-test-app-bd4sk",
 					},
@@ -333,8 +334,8 @@ func TestForwardTypeRemote(t *testing.T) {
 
 	url, _ := url.Parse(testServer.URL)
 	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(2.0, 1)
-	restClient := RESTClient{}
-	request := restclient.NewRequest(restClient, "POST", url, "/1.0", restclient.ContentConfig{}, restclient.Serializers{}, &restclient.NoBackoff{}, rateLimiter, time.Duration(10*time.Second))
+	httpClient := &http.Client{}
+	restClientMock, _ := rest.NewRESTClient(url, "/1.0", restclient.ClientContentConfig{}, rateLimiter, httpClient)
 
 	// ClientSet and ClientRest
 	clientSetMock := &clientmocks.Interface{}
@@ -343,15 +344,12 @@ func TestForwardTypeRemote(t *testing.T) {
 	clientSetMock.On("CoreV1").
 		Return(coreV1Interface)
 
-	restClientMock := &restmocks.Interface{}
-	restClientMock.On("Post").Return(request)
-
 	// Replace mocked properties
 	forwarder.clientSet = clientSetMock
 	forwarder.restClient = restClientMock
 
 	// When
-	err = forwarder.Forward()
+	err = forwarder.Forward(ctx)
 
 	// Then
 	assert.Nil(t, err)
