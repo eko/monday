@@ -37,7 +37,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/date"
 	"github.com/Azure/go-autorest/logger"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/form3tech-oss/jwt-go"
 )
 
 const (
@@ -676,6 +676,8 @@ const (
 
 func (m msiType) String() string {
 	switch m {
+	case msiTypeUnavailable:
+		return "unavailable"
 	case msiTypeAppServiceV20170901:
 		return "AppServiceV20170901"
 	case msiTypeCloudShell:
@@ -697,9 +699,13 @@ func getMSIType() (msiType, string, error) {
 		}
 		// if ONLY the env var MSI_ENDPOINT is set the msiType is CloudShell
 		return msiTypeCloudShell, endpointEnvVar, nil
+	} else if msiAvailableHook(context.Background(), sender()) {
+		// if MSI_ENDPOINT is NOT set AND the IMDS endpoint is available the msiType is IMDS. This will timeout after 500 milliseconds
+		return msiTypeIMDS, msiEndpoint, nil
+	} else {
+		// if MSI_ENDPOINT is NOT set and IMDS endpoint is not available Managed Identity is not available
+		return msiTypeUnavailable, "", errors.New("MSI not available")
 	}
-	// if MSI_ENDPOINT is NOT set assume the msiType is IMDS
-	return msiTypeIMDS, msiEndpoint, nil
 }
 
 // GetMSIVMEndpoint gets the MSI endpoint on Virtual Machines.
@@ -794,13 +800,13 @@ func newServicePrincipalTokenFromMSI(msiEndpoint, resource, userAssignedID, iden
 	}
 	msiType, endpoint, err := getMSIType()
 	if err != nil {
-		logger.Instance.Writef(logger.LogError, "Error determining managed identity environment: %v\n", err)
+		logger.Instance.Writef(logger.LogError, "Error determining managed identity environment: %v", err)
 		return nil, err
 	}
-	logger.Instance.Writef(logger.LogInfo, "Managed identity environment is %s, endpoint is %s\n", msiType, endpoint)
+	logger.Instance.Writef(logger.LogInfo, "Managed identity environment is %s, endpoint is %s", msiType, endpoint)
 	if msiEndpoint != "" {
 		endpoint = msiEndpoint
-		logger.Instance.Writef(logger.LogInfo, "Managed identity custom endpoint is %s\n", endpoint)
+		logger.Instance.Writef(logger.LogInfo, "Managed identity custom endpoint is %s", endpoint)
 	}
 	msiEndpointURL, err := url.Parse(endpoint)
 	if err != nil {
@@ -1316,13 +1322,15 @@ func NewMultiTenantServicePrincipalTokenFromCertificate(multiTenantCfg MultiTena
 }
 
 // MSIAvailable returns true if the MSI endpoint is available for authentication.
-func MSIAvailable(ctx context.Context, s Sender) bool {
-	if s == nil {
-		s = sender()
-	}
-	resp, err := getMSIEndpoint(ctx, s)
+func MSIAvailable(ctx context.Context, sender Sender) bool {
+	resp, err := getMSIEndpoint(ctx, sender)
 	if err == nil {
 		resp.Body.Close()
 	}
 	return err == nil
+}
+
+// used for testing purposes
+var msiAvailableHook = func(ctx context.Context, sender Sender) bool {
+	return MSIAvailable(ctx, sender)
 }
