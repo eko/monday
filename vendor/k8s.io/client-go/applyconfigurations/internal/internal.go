@@ -6844,9 +6844,6 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         scalar: numeric
       default: 0
-    - name: minDomains
-      type:
-        scalar: numeric
     - name: topologyKey
       type:
         scalar: string

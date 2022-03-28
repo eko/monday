@@ -234,7 +234,6 @@ type decodeState struct {
 
 	savedStrictErrors []error
 	seenStrictErrors  map[string]struct{}
-	strictFieldStack  []string
 
 	caseSensitive bool
 
@@ -262,8 +261,6 @@ func (d *decodeState) init(data []byte) *decodeState {
 		// Reuse the allocated space for the FieldStack slice.
 		d.errorContext.FieldStack = d.errorContext.FieldStack[:0]
 	}
-	// Reuse the allocated space for the strict FieldStack slice.
-	d.strictFieldStack = d.strictFieldStack[:0]
 	return d
 }
 
@@ -558,12 +555,6 @@ func (d *decodeState) array(v reflect.Value) error {
 		break
 	}
 
-	origStrictFieldStackLen := len(d.strictFieldStack)
-	defer func() {
-		// Reset to original length and reuse the allocated space for the strict FieldStack slice.
-		d.strictFieldStack = d.strictFieldStack[:origStrictFieldStackLen]
-	}()
-
 	i := 0
 	for {
 		// Look ahead for ] - can only happen on first iteration.
@@ -589,7 +580,6 @@ func (d *decodeState) array(v reflect.Value) error {
 			}
 		}
 
-		d.appendStrictFieldStackIndex(i)
 		if i < v.Len() {
 			// Decode into element.
 			if err := d.value(v.Index(i)); err != nil {
@@ -601,8 +591,6 @@ func (d *decodeState) array(v reflect.Value) error {
 				return err
 			}
 		}
-		// Reset to original length and reuse the allocated space for the strict FieldStack slice.
-		d.strictFieldStack = d.strictFieldStack[:origStrictFieldStackLen]
 		i++
 
 		// Next token must be , or ].
@@ -695,7 +683,7 @@ func (d *decodeState) object(v reflect.Value) error {
 					seenKeys = map[string]struct{}{}
 				}
 				if _, seen := seenKeys[fieldName]; seen {
-					d.saveStrictError(d.newFieldError("duplicate field", fieldName))
+					d.saveStrictError(fmt.Errorf("duplicate field %q", fieldName))
 				} else {
 					seenKeys[fieldName] = struct{}{}
 				}
@@ -711,7 +699,7 @@ func (d *decodeState) object(v reflect.Value) error {
 				var seenKeys uint64
 				checkDuplicateField = func(fieldNameIndex int, fieldName string) {
 					if seenKeys&(1<<fieldNameIndex) != 0 {
-						d.saveStrictError(d.newFieldError("duplicate field", fieldName))
+						d.saveStrictError(fmt.Errorf("duplicate field %q", fieldName))
 					} else {
 						seenKeys = seenKeys | (1 << fieldNameIndex)
 					}
@@ -724,7 +712,7 @@ func (d *decodeState) object(v reflect.Value) error {
 						seenIndexes = make([]bool, len(fields.list))
 					}
 					if seenIndexes[fieldNameIndex] {
-						d.saveStrictError(d.newFieldError("duplicate field", fieldName))
+						d.saveStrictError(fmt.Errorf("duplicate field %q", fieldName))
 					} else {
 						seenIndexes[fieldNameIndex] = true
 					}
@@ -744,7 +732,6 @@ func (d *decodeState) object(v reflect.Value) error {
 	if d.errorContext != nil {
 		origErrorContext = *d.errorContext
 	}
-	origStrictFieldStackLen := len(d.strictFieldStack)
 
 	for {
 		// Read opening " of string key or closing }.
@@ -781,7 +768,6 @@ func (d *decodeState) object(v reflect.Value) error {
 			if checkDuplicateField != nil {
 				checkDuplicateField(0, string(key))
 			}
-			d.appendStrictFieldStackKey(string(key))
 		} else {
 			var f *field
 			if i, ok := fields.nameIndex[string(key)]; ok {
@@ -834,9 +820,8 @@ func (d *decodeState) object(v reflect.Value) error {
 				}
 				d.errorContext.FieldStack = append(d.errorContext.FieldStack, f.name)
 				d.errorContext.Struct = t
-				d.appendStrictFieldStackKey(f.name)
 			} else if d.disallowUnknownFields {
-				d.saveStrictError(d.newFieldError("unknown field", string(key)))
+				d.saveStrictError(fmt.Errorf("unknown field %q", key))
 			}
 		}
 
@@ -920,8 +905,6 @@ func (d *decodeState) object(v reflect.Value) error {
 			d.errorContext.FieldStack = d.errorContext.FieldStack[:len(origErrorContext.FieldStack)]
 			d.errorContext.Struct = origErrorContext.Struct
 		}
-		// Reset to original length and reuse the allocated space for the strict FieldStack slice.
-		d.strictFieldStack = d.strictFieldStack[:origStrictFieldStackLen]
 		if d.opcode == scanEndObject {
 			break
 		}
@@ -1158,12 +1141,6 @@ func (d *decodeState) valueInterface() (val interface{}) {
 
 // arrayInterface is like array but returns []interface{}.
 func (d *decodeState) arrayInterface() []interface{} {
-	origStrictFieldStackLen := len(d.strictFieldStack)
-	defer func() {
-		// Reset to original length and reuse the allocated space for the strict FieldStack slice.
-		d.strictFieldStack = d.strictFieldStack[:origStrictFieldStackLen]
-	}()
-
 	var v = make([]interface{}, 0)
 	for {
 		// Look ahead for ] - can only happen on first iteration.
@@ -1172,10 +1149,7 @@ func (d *decodeState) arrayInterface() []interface{} {
 			break
 		}
 
-		d.appendStrictFieldStackIndex(len(v))
 		v = append(v, d.valueInterface())
-		// Reset to original length and reuse the allocated space for the strict FieldStack slice.
-		d.strictFieldStack = d.strictFieldStack[:origStrictFieldStackLen]
 
 		// Next token must be , or ].
 		if d.opcode == scanSkipSpace {
@@ -1193,12 +1167,6 @@ func (d *decodeState) arrayInterface() []interface{} {
 
 // objectInterface is like object but returns map[string]interface{}.
 func (d *decodeState) objectInterface() map[string]interface{} {
-	origStrictFieldStackLen := len(d.strictFieldStack)
-	defer func() {
-		// Reset to original length and reuse the allocated space for the strict FieldStack slice.
-		d.strictFieldStack = d.strictFieldStack[:origStrictFieldStackLen]
-	}()
-
 	m := make(map[string]interface{})
 	for {
 		// Read opening " of string key or closing }.
@@ -1231,15 +1199,12 @@ func (d *decodeState) objectInterface() map[string]interface{} {
 
 		if d.disallowDuplicateFields {
 			if _, exists := m[key]; exists {
-				d.saveStrictError(d.newFieldError("duplicate field", key))
+				d.saveStrictError(fmt.Errorf("duplicate field %q", key))
 			}
 		}
 
 		// Read value.
-		d.appendStrictFieldStackKey(key)
 		m[key] = d.valueInterface()
-		// Reset to original length and reuse the allocated space for the strict FieldStack slice.
-		d.strictFieldStack = d.strictFieldStack[:origStrictFieldStackLen]
 
 		// Next token must be , or }.
 		if d.opcode == scanSkipSpace {

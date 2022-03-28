@@ -63,10 +63,14 @@ func (l *Streamer) Write(p []byte) (n int, err error) {
 
 func (l *Streamer) Close() {
 	l.Flush()
-	l.buf = bytes.NewBuffer([]byte(""))
+	l.buf = nil
 }
 
 func (l *Streamer) Flush() error {
+	if l.buf == nil {
+		return nil
+	}
+
 	var p []byte
 	if _, err := l.buf.Read(p); err != nil {
 		return err
@@ -78,6 +82,10 @@ func (l *Streamer) Flush() error {
 
 func (l *Streamer) output() (err error) {
 	for {
+		if l.buf == nil {
+			break
+		}
+
 		line, err := l.buf.ReadString('\n')
 		if err == io.EOF {
 			break
