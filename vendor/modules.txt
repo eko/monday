@@ -209,7 +209,7 @@ gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
 gopkg.in/yaml.v3
-# k8s.io/api v0.23.5
+# k8s.io/api v0.23.6
 ## explicit; go 1.16
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
@@ -256,7 +256,7 @@ k8s.io/api/scheduling/v1beta1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apimachinery v0.23.5
+# k8s.io/apimachinery v0.23.6
 ## explicit; go 1.16
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/api/meta
@@ -296,7 +296,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/client-go v0.23.5
+# k8s.io/client-go v0.23.6
 ## explicit; go 1.16
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1
