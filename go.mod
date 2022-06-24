@@ -8,7 +8,7 @@ require (
 	github.com/manifoldco/promptui v0.9.0
 	github.com/radovskyb/watcher v1.0.7
 	github.com/spf13/cobra v1.4.0
-	github.com/stretchr/testify v1.7.4
+	github.com/stretchr/testify v1.7.5
 	github.com/txn2/txeh v1.3.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.24.1
