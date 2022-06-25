@@ -199,6 +199,43 @@ func (c *Call) On(methodName string, arguments ...interface{}) *Call {
 	return c.Parent.On(methodName, arguments...)
 }
 
+// Unset removes a mock handler from being called.
+//    test.On("func", mock.Anything).Unset()
+func (c *Call) Unset() *Call {
+	var unlockOnce sync.Once
+
+	for _, arg := range c.Arguments {
+		if v := reflect.ValueOf(arg); v.Kind() == reflect.Func {
+			panic(fmt.Sprintf("cannot use Func in expectations. Use mock.AnythingOfType(\"%T\")", arg))
+		}
+	}
+
+	c.lock()
+	defer unlockOnce.Do(c.unlock)
+
+	foundMatchingCall := false
+
+	for i, call := range c.Parent.ExpectedCalls {
+		if call.Method == c.Method {
+			_, diffCount := call.Arguments.Diff(c.Arguments)
+			if diffCount == 0 {
+				foundMatchingCall = true
+				// Remove from ExpectedCalls
+				c.Parent.ExpectedCalls = append(c.Parent.ExpectedCalls[:i], c.Parent.ExpectedCalls[i+1:]...)
+			}
+		}
+	}
+
+	if !foundMatchingCall {
+		unlockOnce.Do(c.unlock)
+		c.Parent.fail("\n\nmock: Could not find expected call\n-----------------------------\n\n%s\n\n",
+			callString(c.Method, c.Arguments, true),
+		)
+	}
+
+	return c
+}
+
 // Mock is the workhorse used to track activity on another object.
 // For an example of its usage, refer to the "Example Usage" section at the top
 // of this document.
@@ -218,7 +255,7 @@ type Mock struct {
 	// this data completely allowing you to do whatever you like with it.
 	testData objx.Map
 
-	mutex *sync.Mutex
+	mutex sync.Mutex
 }
 
 // String provides a %v format string for Mock.
@@ -245,10 +282,6 @@ func (m *Mock) TestData() objx.Map {
 
 // Test sets the test struct variable of the mock object
 func (m *Mock) Test(t TestingT) {
-	if m.mutex == nil {
-		m.mutex = &sync.Mutex{}
-	}
-
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	m.test = t
@@ -278,9 +311,6 @@ func (m *Mock) On(methodName string, arguments ...interface{}) *Call {
 			panic(fmt.Sprintf("cannot use Func in expectations. Use mock.AnythingOfType(\"%T\")", arg))
 		}
 	}
-
-	// Since we start mocks with the .On() function, m.mutex should be reset
-	m.mutex = &sync.Mutex{}
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -489,9 +519,9 @@ func AssertExpectationsForObjects(t TestingT, testObjects ...interface{}) bool {
 		h.Helper()
 	}
 	for _, obj := range testObjects {
-		if m, ok := obj.(Mock); ok {
+		if m, ok := obj.(*Mock); ok {
 			t.Logf("Deprecated mock.AssertExpectationsForObjects(myMock.Mock) use mock.AssertExpectationsForObjects(myMock)")
-			obj = &m
+			obj = m
 		}
 		m := obj.(assertExpectationser)
 		if !m.AssertExpectations(t) {
@@ -507,9 +537,6 @@ func AssertExpectationsForObjects(t TestingT, testObjects ...interface{}) bool {
 func (m *Mock) AssertExpectations(t TestingT) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
-	}
-	if m.mutex == nil {
-		m.mutex = &sync.Mutex{}
 	}
 
 	m.mutex.Lock()
@@ -821,7 +848,16 @@ func (args Arguments) Diff(objects []interface{}) (string, int) {
 		}
 
 		if matcher, ok := expected.(argumentMatcher); ok {
-			if matcher.Matches(actual) {
+			var matches bool
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						actualFmt = fmt.Sprintf("panic in argument matcher: %v", r)
+					}
+				}()
+				matches = matcher.Matches(actual)
+			}()
+			if matches {
 				output = fmt.Sprintf("%s\t%d: PASS:  %s matched by %s\n", output, i, actualFmt, matcher)
 			} else {
 				differences++
