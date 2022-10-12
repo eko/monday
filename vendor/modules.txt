@@ -78,8 +78,8 @@ github.com/google/gofuzz
 # github.com/imdario/mergo v0.3.6
 ## explicit
 github.com/imdario/mergo
-# github.com/inconshreveable/mousetrap v1.0.0
-## explicit
+# github.com/inconshreveable/mousetrap v1.0.1
+## explicit; go 1.18
 github.com/inconshreveable/mousetrap
 # github.com/josharian/intern v1.0.0
 ## explicit; go 1.5
@@ -125,7 +125,7 @@ github.com/pmezard/go-difflib/difflib
 # github.com/radovskyb/watcher v1.0.7
 ## explicit
 github.com/radovskyb/watcher
-# github.com/spf13/cobra v1.5.0
+# github.com/spf13/cobra v1.6.0
 ## explicit; go 1.15
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5

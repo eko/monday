@@ -7,7 +7,7 @@ require (
 	github.com/jroimartin/gocui v0.5.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/radovskyb/watcher v1.0.7
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.0
 	github.com/stretchr/testify v1.8.0
 	github.com/txn2/txeh v1.3.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -39,7 +39,7 @@ require (
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/imdario/mergo v0.3.6 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
