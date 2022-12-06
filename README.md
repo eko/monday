@@ -6,8 +6,6 @@
 
 Your new microservice development environment friend. This CLI tool allows you to define a configuration to work with both local applications (Go, NodeJS, Rust or others) and forward some other applications over Kubernetes in case you don't want to run them locally.
 
-The Monday GUI (available for macOS and Linux) application is now also available here: [https://github.com/eko/monday-app](https://github.com/eko/monday-app)
-
 [<img src="https://github.com/eko/monday/blob/master/misc/schema.jpg?raw=true" />](https://youtu.be/6hyCkqHYFQ8)
 
 ## What Monday can do for you?
