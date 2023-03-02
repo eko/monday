@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/eko/monday/internal/wait"
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/forward/kubernetes"
 	"github.com/eko/monday/pkg/forward/ssh"
@@ -207,11 +208,17 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 
 	if forwarders, ok := f.forwarders.Load(forward.Name); ok {
 		for _, forwarder := range forwarders.([]ForwarderType) {
+			backoff := wait.Backoff{
+				Min:    100 * time.Millisecond,
+				Max:    10 * time.Second,
+				Factor: 2,
+			}
+
 			go func(forwarder ForwarderType) {
 				for {
 					err := forwarder.Forward(ctx)
 					if err != nil {
-						time.Sleep(1 * time.Second)
+						time.Sleep(backoff.Duration())
 						f.view.Writef("%v\n👓  Forwarder: lost port-forward connection trying to reconnect...\n", err)
 					}
 				}
