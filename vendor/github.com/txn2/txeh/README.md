@@ -35,10 +35,10 @@ The txeh CLI application allows command line or scripted access to /etc/hosts fi
 | |___  _____| |__
 | __\ \/ / _ \ '_ \
 | |_ >  <  __/ | | |
- \__/_/\_\___|_| |_| v1.1.0
+ \__/_/\_\___|_| |_| v1.5.0
 
 Add, remove and re-associate hostname entries in your /etc/hosts file.
-Read more including useage as a Go library at https://github.com/txn2/txeh
+Read more including usage as a Go library at https://github.com/txn2/txeh
 
 Usage:
   txeh [flags]
@@ -46,9 +46,13 @@ Usage:
 
 Available Commands:
   add         Add hostnames to /etc/hosts
+  completion  Generate the autocompletion script for the specified shell
   help        Help about any command
+  list        List hostnames or IP addresses
   remove      Remove a hostname or ip address
+  show        Show hostnames in /etc/hosts
   version     Print the version number of txeh
+
 
 Flags:
   -d, --dryrun         dry run, output to stdout (ignores quiet)
@@ -93,7 +97,7 @@ sudo txeh add 127.1.27.100 dev.example.com -q -d > hosts.test
 # default to the specified read path.
 txeh add 127.1.27.100 dev2.example.com -q -r ./hosts.test
 
-# specify a seperate read and write oath
+# specify a separate read and write oath
 txeh add 127.1.27.100 dev3.example.com -r ./hosts.test -w ./hosts.test2
 
 ```

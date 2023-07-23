@@ -2,8 +2,8 @@ package txeh
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"regexp"
 	"runtime"
 	"strings"
@@ -22,13 +22,11 @@ const (
 	IPFamilyV6
 )
 
-// HostsConfig
 type HostsConfig struct {
 	ReadFilePath  string
 	WriteFilePath string
 }
 
-// Hosts
 type Hosts struct {
 	sync.Mutex
 	*HostsConfig
@@ -42,10 +40,8 @@ type AddressLocations map[string]int
 // to an original line number
 type HostLocations map[string]int
 
-// HostFileLines
 type HostFileLines []HostFileLine
 
-// HostFileLine
 type HostFileLine struct {
 	OriginalLineNum int
 	LineType        int
@@ -53,7 +49,7 @@ type HostFileLine struct {
 	Parts           []string
 	Hostnames       []string
 	Raw             string
-	Trimed          string
+	Trimmed         string
 	Comment         string
 }
 
@@ -105,7 +101,7 @@ func (h *Hosts) SaveAs(fileName string) error {
 	h.Lock()
 	defer h.Unlock()
 
-	err := ioutil.WriteFile(fileName, hfData, 0644)
+	err := os.WriteFile(fileName, hfData, 0644)
 	if err != nil {
 		return err
 	}
@@ -175,7 +171,7 @@ func (h *Hosts) RemoveHost(host string) {
 	}
 }
 
-// RemoveHost the first hostname entry found and returns true if successful
+// RemoveFirstHost the first hostname entry found and returns true if successful
 func (h *Hosts) RemoveFirstHost(host string) bool {
 	h.Lock()
 	defer h.Unlock()
@@ -228,7 +224,7 @@ func (h *Hosts) AddHost(addressRaw string, hostRaw string) {
 
 		// if the hostname is at a different address, go and remove it from the address
 		for hidx, hst := range h.hostFileLines[hflIdx].Hostnames {
-			//for localhost we can match more than one host
+			// for localhost, we can match more than one host
 			if isLocalhost(address) {
 				break
 			}
@@ -271,7 +267,54 @@ func (h *Hosts) AddHost(addressRaw string, hostRaw string) {
 	h.Unlock()
 }
 
-// HostAddressLookup returns true is the host is found, a string
+// ListHostsByIP returns a list of hostnames associated with a given IP address
+func (h *Hosts) ListHostsByIP(address string) []string {
+	var hosts []string
+
+	for _, hsl := range h.hostFileLines {
+		if hsl.Address == address {
+			hosts = append(hosts, hsl.Hostnames...)
+		}
+	}
+
+	return hosts
+}
+
+// ListAddressesByHost returns a list of IPs associated with a given hostname
+func (h *Hosts) ListAddressesByHost(hostname string, exact bool) [][]string {
+	var addresses [][]string
+
+	for _, hsl := range h.hostFileLines {
+		for _, hst := range hsl.Hostnames {
+			if hst == hostname {
+				addresses = append(addresses, []string{hsl.Address, hst})
+			}
+			if exact == false && hst != hostname && strings.Contains(hst, hostname) {
+				addresses = append(addresses, []string{hsl.Address, hst})
+			}
+		}
+	}
+
+	return addresses
+}
+
+// ListHostsByCIDR returns a list of IPs and hostnames associated with a given CIDR
+func (h *Hosts) ListHostsByCIDR(cidr string) [][]string {
+	var ipHosts [][]string
+
+	_, subnet, _ := net.ParseCIDR(cidr)
+	for _, hsl := range h.hostFileLines {
+		if subnet.Contains(net.ParseIP(hsl.Address)) {
+			for _, hst := range hsl.Hostnames {
+				ipHosts = append(ipHosts, []string{hsl.Address, hst})
+			}
+		}
+	}
+
+	return ipHosts
+}
+
+// HostAddressLookup returns true if the host is found, a string
 // containing the address and the index of the hfl
 func (h *Hosts) HostAddressLookup(host string, ipFamily IPFamily) (bool, string, int) {
 	h.Lock()
@@ -295,7 +338,6 @@ func (h *Hosts) HostAddressLookup(host string, ipFamily IPFamily) (bool, string,
 	return false, "", 0
 }
 
-// RenderHostsFile
 func (h *Hosts) RenderHostsFile() string {
 	h.Lock()
 	defer h.Unlock()
@@ -309,7 +351,6 @@ func (h *Hosts) RenderHostsFile() string {
 	return hf
 }
 
-// GetHostFileLines
 func (h *Hosts) GetHostFileLines() *HostFileLines {
 	h.Lock()
 	defer h.Unlock()
@@ -317,9 +358,8 @@ func (h *Hosts) GetHostFileLines() *HostFileLines {
 	return &h.hostFileLines
 }
 
-// ParseHosts
 func ParseHosts(path string) ([]HostFileLine, error) {
-	input, err := ioutil.ReadFile(path)
+	input, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -332,33 +372,33 @@ func ParseHosts(path string) ([]HostFileLine, error) {
 
 	hostFileLines := make([]HostFileLine, len(dataLines))
 
-	// trim leading an trailing whitespace
+	// trim leading and trailing whitespace
 	for i, l := range dataLines {
 		curLine := &hostFileLines[i]
 		curLine.OriginalLineNum = i
 		curLine.Raw = l
 
 		// trim line
-		curLine.Trimed = strings.TrimSpace(l)
+		curLine.Trimmed = strings.TrimSpace(l)
 
 		// check for comment
-		if strings.HasPrefix(curLine.Trimed, "#") {
+		if strings.HasPrefix(curLine.Trimmed, "#") {
 			curLine.LineType = COMMENT
 			continue
 		}
 
-		if curLine.Trimed == "" {
+		if curLine.Trimmed == "" {
 			curLine.LineType = EMPTY
 			continue
 		}
 
-		curLineSplit := strings.SplitN(curLine.Trimed, "#", 2)
+		curLineSplit := strings.SplitN(curLine.Trimmed, "#", 2)
 		if len(curLineSplit) > 1 {
 			curLine.Comment = curLineSplit[1]
 		}
-		curLine.Trimed = curLineSplit[0]
+		curLine.Trimmed = curLineSplit[0]
 
-		curLine.Parts = strings.Fields(curLine.Trimed)
+		curLine.Parts = strings.Fields(curLine.Trimmed)
 
 		if len(curLine.Parts) > 1 {
 			curLine.LineType = ADDRESS
