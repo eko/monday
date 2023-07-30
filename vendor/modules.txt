@@ -124,8 +124,8 @@ github.com/stretchr/objx
 ## explicit; go 1.20
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
-# github.com/txn2/txeh v1.4.0
-## explicit; go 1.19
+# github.com/txn2/txeh v1.5.3
+## explicit; go 1.20
 github.com/txn2/txeh
 # golang.org/x/net v0.8.0
 ## explicit; go 1.17
