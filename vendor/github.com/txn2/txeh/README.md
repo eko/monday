@@ -3,7 +3,6 @@
 
 # Etc Hosts Management Utility & Go Library
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/txn2/txeh)](https://goreportcard.com/report/github.com/txn2/txeh)
 [![GoDoc](https://godoc.org/github.com/txn2/irsync/txeh?status.svg)](https://godoc.org/github.com/txn2/txeh)
 
 ### /etc/hosts Management
@@ -20,9 +19,21 @@ A computer's [/etc/hosts] file is a powerful utility for developers and system a
 
 MacOS [homebrew](https://brew.sh) users can `brew install txn2/tap/txeh`, otherwise see [releases](https://github.com/txn2/txeh/releases) for packages and binaries for a number of distros and architectures including Windows, Linux and Arm based systems.
 
-Complie and run from source (dependencies are vendored):
+#### Install with go install
+
+When installing with Go please use the latest stable Go release. At least go1.16 or greater is required.
+
+To install use: `go install github.com/txn2/txeh/txeh@master`
+
+If you are building from a local source clone, use `go install ./txeh` from the top-level directory of the clone.
+
+go install will typically put the txeh binary inside the bin directory under go env GOPATH, see Go’s [Compile and install packages and dependencies](https://golang.org/cmd/go/#hdr-Compile_and_install_packages_and_dependencies) for more on this. You may need to add that directory to your $PATH if you encounter the error `txeh: command not found` after installation, you can find a guide for adding a directory to your PATH at https://gist.github.com/nex3/c395b2f8fd4b02068be37c961301caa7#file-path-md.
+
+#### Compile and run from source
+
+dependencies are vendored:
 ```
-go run ./util/txeh.go
+go run ./txeh/txeh.go
 ```
 
 ### Use
@@ -70,7 +81,7 @@ sudo txeh add 127.0.0.1 test test.two
 # remove the hostname "test"
 sudo txeh remove host test
 
-# remove multiple hostnames 
+# remove multiple hostnames
 sudo txeh remove host test test2 test.two
 
 # remove an IP address and all the hosts that point to it
@@ -130,27 +141,27 @@ func main() {
     hosts.AddHost("127.100.100.100", "test")
     hosts.AddHost("127.100.100.101", "logstash")
     hosts.AddHosts("127.100.100.102", []string{"a", "b", "c"})
-    
+
     hosts.RemoveHosts([]string{"example", "example.machine", "example.machine.example.com"})
     hosts.RemoveHosts(strings.Fields("example2 example.machine2 example.machine.example.com2"))
 
-    
+
     hosts.RemoveAddress("127.1.27.1")
-    
+
     removeList := []string{
         "127.1.27.15",
         "127.1.27.14",
         "127.1.27.13",
     }
-    
+
     hosts.RemoveAddresses(removeList)
-    
+
     hfData := hosts.RenderHostsFile()
 
     // if you like to see what the outcome will
     // look like
     fmt.Println(hfData)
-    
+
     hosts.Save()
     // or hosts.SaveAs("./test.hosts")
 }
@@ -161,7 +172,7 @@ func main() {
 
 Build test release:
 ```bash
-goreleaser --skip-publish --rm-dist --skip-validate
+goreleaser --skip-publish --clean --skip-validate
 ```
 
 Build and release:

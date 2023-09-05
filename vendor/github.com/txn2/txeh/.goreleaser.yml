@@ -3,7 +3,7 @@ builds:
   - id: txeh
     # Path to main.go file.
     # Default is `main.go`
-    main: ./util/txeh.go
+    main: ./txeh/txeh.go
     binary: txeh
 
     env:
@@ -29,7 +29,7 @@ builds:
     - "6"
     - "7"
 
-    ldflags: "-s -w -X github.com/txn2/txeh/util/cmd.Version={{.Version}}"
+    ldflags: "-s -w -X github.com/txn2/txeh/txeh/cmd.Version={{.Version}}"
 
 checksum:
   name_template: '{{ .ProjectName }}_checksums.txt'

@@ -111,7 +111,7 @@ func (h *Hosts) Save() error {
 // SaveAs saves rendered hosts file to the filename specified
 func (h *Hosts) SaveAs(fileName string) error {
 	if h.RawText != nil {
-		return errors.New("can not call Save or SaveAs with RawText. Use RenderHostsFile to return a string")
+		return errors.New("cannot call Save or SaveAs with RawText. Use RenderHostsFile to return a string")
 	}
 	hfData := []byte(h.RenderHostsFile())
 
@@ -128,6 +128,9 @@ func (h *Hosts) SaveAs(fileName string) error {
 
 // Reload hosts file
 func (h *Hosts) Reload() error {
+	if h.RawText != nil {
+		return errors.New("cannot call Reload with RawText")
+	}
 	h.Lock()
 	defer h.Unlock()
 
@@ -157,7 +160,7 @@ func (h *Hosts) RemoveAddress(address string) {
 	}
 }
 
-// RemoveFirstAddress removed the first entry (line) found with the provided address.
+// RemoveFirstAddress removes the first entry (line) found with the provided address.
 func (h *Hosts) RemoveFirstAddress(address string) bool {
 	h.Lock()
 	defer h.Unlock()
@@ -170,6 +173,39 @@ func (h *Hosts) RemoveFirstAddress(address string) bool {
 	}
 
 	return false
+}
+
+// RemoveCIDRs Remove CIDR Range (Classless inter-domain routing)
+// examples:
+//
+//	127.1.0.0/16  = 127.1.0.0  -> 127.1.255.255
+//	127.1.27.0/24 = 127.1.27.0 -> 127.1.27.255
+func (h *Hosts) RemoveCIDRs(cidrs []string) error {
+	addresses := make([]string, 0)
+
+	// loop through all the CIDR ranges (we probably have less ranges than IPs)
+	for _, cidr := range cidrs {
+
+		_, ipnet, err := net.ParseCIDR(cidr)
+		if err != nil {
+			return err
+		}
+
+		hfLines := h.GetHostFileLines()
+
+		for _, hfl := range *hfLines {
+			ip := net.ParseIP(hfl.Address)
+			if ip != nil {
+				if ipnet.Contains(ip) {
+					addresses = append(addresses, hfl.Address)
+				}
+			}
+		}
+	}
+
+	h.RemoveAddresses(addresses)
+
+	return nil
 }
 
 // RemoveHosts removes all hostname entries of the provided host slice
@@ -287,6 +323,9 @@ func (h *Hosts) AddHost(addressRaw string, hostRaw string) {
 
 // ListHostsByIP returns a list of hostnames associated with a given IP address
 func (h *Hosts) ListHostsByIP(address string) []string {
+	h.Lock()
+	defer h.Unlock()
+
 	var hosts []string
 
 	for _, hsl := range h.hostFileLines {
@@ -300,6 +339,9 @@ func (h *Hosts) ListHostsByIP(address string) []string {
 
 // ListAddressesByHost returns a list of IPs associated with a given hostname
 func (h *Hosts) ListAddressesByHost(hostname string, exact bool) [][]string {
+	h.Lock()
+	defer h.Unlock()
+
 	var addresses [][]string
 
 	for _, hsl := range h.hostFileLines {
@@ -318,6 +360,9 @@ func (h *Hosts) ListAddressesByHost(hostname string, exact bool) [][]string {
 
 // ListHostsByCIDR returns a list of IPs and hostnames associated with a given CIDR
 func (h *Hosts) ListHostsByCIDR(cidr string) [][]string {
+	h.Lock()
+	defer h.Unlock()
+
 	var ipHosts [][]string
 
 	_, subnet, _ := net.ParseCIDR(cidr)
@@ -338,10 +383,12 @@ func (h *Hosts) HostAddressLookup(host string, ipFamily IPFamily) (bool, string,
 	h.Lock()
 	defer h.Unlock()
 
+	host = strings.ToLower(strings.TrimSpace(host))
+
 	for i, hfl := range h.hostFileLines {
 		for _, hn := range hfl.Hostnames {
 			ipAddr := net.ParseIP(hfl.Address)
-			if ipAddr == nil || hn != strings.ToLower(host) {
+			if ipAddr == nil || hn != host {
 				continue
 			}
 			if ipFamily == IPFamilyV4 && ipAddr.To4() != nil {
