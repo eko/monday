@@ -9,7 +9,7 @@ require (
 	github.com/radovskyb/watcher v1.0.7
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
-	github.com/txn2/txeh v1.5.3
+	github.com/txn2/txeh v1.5.5
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.26.3
 	k8s.io/apimachinery v0.28.0
