@@ -93,6 +93,15 @@ func (p *proxy) Stop() error {
 		}
 	}
 
+	for _, proxyForwards := range p.ProxyForwards {
+		for _, pf := range proxyForwards {
+			err := p.hostfile.RemoveHost(pf.GetHostname())
+			if err != nil {
+				p.view.Writef("❌  An error has occured while trying to remove host from file for application '%s' (ip: %s): %v\n", pf.Name, pf.LocalIP, err)
+			}
+		}
+	}
+
 	return nil
 }
 
