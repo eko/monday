@@ -76,7 +76,7 @@ import (
 
 	rbacv1beta1 "k8s.io/client-go/kubernetes/typed/rbac/v1beta1"
 
-	resourcev1alpha1 "k8s.io/client-go/kubernetes/typed/resource/v1alpha1"
+	resourcev1alpha2 "k8s.io/client-go/kubernetes/typed/resource/v1alpha2"
 
 	schedulingv1 "k8s.io/client-go/kubernetes/typed/scheduling/v1"
 
@@ -817,15 +817,15 @@ func (_m *Interface) RbacV1beta1() rbacv1beta1.RbacV1beta1Interface {
 }
 
 // ResourceV1alpha1 provides a mock function with given fields:
-func (_m *Interface) ResourceV1alpha1() resourcev1alpha1.ResourceV1alpha1Interface {
+func (_m *Interface) ResourceV1alpha1() resourcev1alpha2.ResourceV1alpha2Interface {
 	ret := _m.Called()
 
-	var r0 resourcev1alpha1.ResourceV1alpha1Interface
-	if rf, ok := ret.Get(0).(func() resourcev1alpha1.ResourceV1alpha1Interface); ok {
+	var r0 resourcev1alpha2.ResourceV1alpha2Interface
+	if rf, ok := ret.Get(0).(func() resourcev1alpha2.ResourceV1alpha2Interface); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(resourcev1alpha1.ResourceV1alpha1Interface)
+			r0 = ret.Get(0).(resourcev1alpha2.ResourceV1alpha2Interface)
 		}
 	}
 
