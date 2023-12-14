@@ -160,7 +160,7 @@ func (s *Updater) Update(liveObject, newObject *typed.TypedValue, version fieldp
 		ignored = fieldpath.NewSet()
 	}
 	managers[manager] = fieldpath.NewVersionedSet(
-		managers[manager].Set().Union(compare.Modified).Union(compare.Added).Difference(compare.Removed).RecursiveDifference(ignored),
+		managers[manager].Set().Difference(compare.Removed).Union(compare.Modified).Union(compare.Added).RecursiveDifference(ignored),
 		version,
 		false,
 	)
