@@ -190,12 +190,18 @@ func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 	}
 
 	var	runningPod apiv1.Pod
+	foundRunningPod := false
 
 	for _, pod := range pods.Items {
 		if isPodRunning(&pod) {
 			runningPod = pod
+			foundRunningPod = true
 			break
 		}
+	}
+
+	if !foundRunningPod {
+		return fmt.Errorf("No runnning pod available for selector '%s'", selector)
 	}
 	
 	request := f.restClient.Post().Resource("pods").Namespace(f.namespace).Name(runningPod.Name).SubResource("portforward")
