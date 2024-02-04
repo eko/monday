@@ -172,6 +172,10 @@ func (f *Forwarder) Stop(ctx context.Context) error {
 	return nil
 }
 
+func isPodRunning(pod *apiv1.Pod) bool {
+	return pod.Status.Phase == apiv1.PodRunning
+}
+
 func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 	pods, err := f.clientSet.CoreV1().Pods(f.namespace).List(
 		ctx,
@@ -185,9 +189,22 @@ func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 		return fmt.Errorf("No pod available for selector '%s': %v", selector, err)
 	}
 
-	pod := pods.Items[0]
+	var	runningPod apiv1.Pod
+	foundRunningPod := false
 
-	request := f.restClient.Post().Resource("pods").Namespace(f.namespace).Name(pod.Name).SubResource("portforward")
+	for _, pod := range pods.Items {
+		if isPodRunning(&pod) {
+			runningPod = pod
+			foundRunningPod = true
+			break
+		}
+	}
+
+	if !foundRunningPod {
+		return fmt.Errorf("No runnning pod available for selector '%s'", selector)
+	}
+	
+	request := f.restClient.Post().Resource("pods").Namespace(f.namespace).Name(runningPod.Name).SubResource("portforward")
 
 	url := url.URL{
 		Scheme:   request.URL().Scheme,
@@ -203,8 +220,8 @@ func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", &url)
 
-	stdoutStream := log.NewStreamer(log.StdOut, pod.Name, f.view)
-	stderrStream := log.NewStreamer(log.StdErr, pod.Name, f.view)
+	stdoutStream := log.NewStreamer(log.StdOut, runningPod.Name, f.view)
+	stderrStream := log.NewStreamer(log.StdErr, runningPod.Name, f.view)
 
 	fw, err := portforward.New(dialer, f.ports, f.stopChannel, f.readyChannel, stdoutStream, stderrStream)
 	if err != nil {
