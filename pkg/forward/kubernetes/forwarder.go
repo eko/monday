@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -39,6 +40,9 @@ const (
 
 var (
 	defaultKubeConfigPath = fmt.Sprintf("%s/%s", os.Getenv("HOME"), "/.kube/config")
+
+	// ErrNoSelectorLabel is returned when no selector label is provided in the configuration file.
+	ErrNoSelectorLabel = errors.New("please provide a selector of labels in order to use Kubernetes forwarding")
 )
 
 type DeploymentBackup struct {
@@ -112,10 +116,17 @@ func (f *Forwarder) GetStopChannel() chan struct{} {
 
 // Forward method executes the local or remote port-forward depending on the given type
 func (f *Forwarder) Forward(ctx context.Context) error {
+	defer func() {
+		if err := recover(); err != nil {
+			f.reset()
+			err = fmt.Errorf("panic occured while forwarding %q: %w", f.name, err.(error))
+		}
+	}()
+
 	selector := f.getSelector()
 
 	if selector == "" {
-		return fmt.Errorf("Please provide a selector of labels in order to use Kubernetes forwarding")
+		return ErrNoSelectorLabel
 	}
 
 	switch f.forwardType {
@@ -182,11 +193,11 @@ func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 		metav1.ListOptions{LabelSelector: selector},
 	)
 	if err != nil {
-		return fmt.Errorf("Unable to find pods for selector '%s': %v", selector, err)
+		return fmt.Errorf("Unable to find pods for selector '%s': %w", selector, err)
 	}
 
 	if len(pods.Items) < 1 {
-		return fmt.Errorf("No pod available for selector '%s': %v", selector, err)
+		return fmt.Errorf("No pod available for selector '%s': %w", selector, err)
 	}
 
 	var	runningPod apiv1.Pod
@@ -230,12 +241,7 @@ func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 
 	f.portForwarders[f.name] = fw
 
-	err = fw.ForwardPorts()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return fw.ForwardPorts()
 }
 
 func (f *Forwarder) forwardRemote(ctx context.Context, selector string) error {
@@ -298,9 +304,7 @@ func (f *Forwarder) forwardRemote(ctx context.Context, selector string) error {
 	time.Sleep(time.Duration(5 * time.Second))
 
 	// Deployment has been updated with proxy, now forward ports locally
-	f.forwardLocal(ctx, selector)
-
-	return nil
+	return f.forwardLocal(ctx, selector)
 }
 
 func (f *Forwarder) getSelector() string {
@@ -315,6 +319,13 @@ func (f *Forwarder) getSelector() string {
 	}
 
 	return selector
+}
+
+func (f *Forwarder) reset() {
+	f.portForwarders = make(map[string]*portforward.PortForwarder, 0)
+	f.deployments = make(map[string]*DeploymentBackup, 0)
+	f.stopChannel = make(chan struct{}, 1)
+	f.readyChannel = make(chan struct{})
 }
 
 func initializeClientConfig(context string, kubeConfigPath string) (*restclient.Config, error) {

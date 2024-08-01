@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -352,7 +353,7 @@ func TestForwardTypeRemote(t *testing.T) {
 	err = forwarder.Forward(ctx)
 
 	// Then
-	assert.Nil(t, err)
+	assert.Equal(t, errors.New("error upgrading connection: unable to upgrade connection: ok, port forward is asked"), err)
 
 	if deploy, ok := forwarder.deployments["test-remote-forward"]; ok {
 		assert.Equal(t, deploy.OldImage, "acme.tld/my-remote-app")
