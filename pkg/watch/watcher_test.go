@@ -12,7 +12,7 @@ import (
 	"github.com/eko/monday/pkg/run"
 	"github.com/eko/monday/pkg/setup"
 	"github.com/eko/monday/pkg/write"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	watcherlib "github.com/radovskyb/watcher"
 	"github.com/stretchr/testify/assert"
 )

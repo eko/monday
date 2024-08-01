@@ -13,9 +13,9 @@ import (
 	clientmocks "github.com/eko/monday/internal/test/mocks/kubernetes/client"
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/ui"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/mock/gomock"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -246,7 +246,7 @@ func TestForwardTypeLocal(t *testing.T) {
 	err = forwarder.Forward(ctx)
 
 	// Then
-	assert.Contains(t, err.Error(), "ok, port forward is asked")
+	assert.Contains(t, err.Error(), "No runnning pod available for selector 'app=my-test-app'")
 }
 
 func TestForwardTypeRemote(t *testing.T) {
@@ -353,7 +353,7 @@ func TestForwardTypeRemote(t *testing.T) {
 	err = forwarder.Forward(ctx)
 
 	// Then
-	assert.Equal(t, errors.New("error upgrading connection: unable to upgrade connection: ok, port forward is asked"), err)
+	assert.Equal(t, errors.New("No runnning pod available for selector 'app=my-remote-app'"), err)
 
 	if deploy, ok := forwarder.deployments["test-remote-forward"]; ok {
 		assert.Equal(t, deploy.OldImage, "acme.tld/my-remote-app")

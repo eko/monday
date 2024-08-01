@@ -8,8 +8,8 @@ import (
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/proxy"
 	"github.com/eko/monday/pkg/ui"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewForwarder(t *testing.T) {
@@ -58,6 +58,7 @@ func TestForwardAll(t *testing.T) {
 
 	proxyfier := proxy.NewMockProxy(ctrl)
 	proxyfier.EXPECT().AddProxyForward("test-ssh-forward", proxyForward)
+	proxyfier.EXPECT().Listen().Return(nil).AnyTimes()
 
 	project := &config.Project{
 		Name: "My project name",
@@ -100,6 +101,7 @@ func TestForwardRemoteSSH(t *testing.T) {
 	defer ctrl.Finish()
 
 	proxy := proxy.NewMockProxy(ctrl)
+	proxy.EXPECT().Listen().Return(nil).AnyTimes()
 
 	project := &config.Project{
 		Name: "My project name",

@@ -8,7 +8,7 @@ import (
 
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/ui"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 

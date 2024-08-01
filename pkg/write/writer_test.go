@@ -10,7 +10,7 @@ import (
 	"github.com/eko/monday/pkg/ui"
 	"github.com/eko/monday/pkg/write/content"
 	"github.com/eko/monday/pkg/write/copy"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
