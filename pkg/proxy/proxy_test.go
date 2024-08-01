@@ -1,3 +1,4 @@
+//go:build !ci
 // +build !ci
 
 package proxy
@@ -46,6 +47,7 @@ func TestAddProxyForward(t *testing.T) {
 
 	hostfileMock := hostfile.NewMockHostfile(ctrl)
 	hostfileMock.EXPECT().AddHost("127.0.1.1", "hostname.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("::127:0:1:1", "hostname.svc.local").Return(nil)
 
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9401")
@@ -84,8 +86,11 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 
 	hostfileMock := hostfile.NewMockHostfile(ctrl)
 	hostfileMock.EXPECT().AddHost("127.0.1.1", "hostname.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("::127:0:1:1", "hostname.svc.local").Return(nil)
 	hostfileMock.EXPECT().AddHost("127.0.1.2", "hostname2.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("::127:0:1:2", "hostname2.svc.local").Return(nil)
 	hostfileMock.EXPECT().AddHost("127.0.1.3", "hostname3.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("::127:0:1:3", "hostname3.svc.local").Return(nil)
 
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9401")
@@ -115,6 +120,7 @@ func TestListen(t *testing.T) {
 
 	hostfileMock := hostfile.NewMockHostfile(ctrl)
 	hostfileMock.EXPECT().AddHost("127.0.1.1", "hostname.svc.local").Return(nil)
+	hostfileMock.EXPECT().AddHost("::127:0:1:1", "hostname.svc.local").Return(nil)
 
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9401")

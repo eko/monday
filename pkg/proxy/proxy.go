@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"strconv"
 	"sync"
 
@@ -197,6 +198,17 @@ func (p *proxy) generateIP(pf *ProxyForward) error {
 	err = p.hostfile.AddHost(pf.LocalIP, pf.GetHostname())
 	if err != nil {
 		p.view.Writef("❌  An error has occured while trying to write host file for application '%s' (ip: %s): %v\n", pf.Name, pf.LocalIP, err)
+	}
+
+	// Also add a ::1 entry for IPv6 on macOS.
+	// This is to avoid a 5-second delay issue in Bonjour service.
+	// @see: https://superuser.com/questions/370559/10-second-delay-for-local-tld-in-mac-os-x-lion
+	switch runtime.GOOS {
+	case "darwin":
+		err = p.hostfile.AddHost(fmt.Sprintf("::%d:%d:%d:%d", a, b, c, d), pf.GetHostname())
+		if err != nil {
+			p.view.Writef("❌  An error has occured while trying to write host file for application '%s' (ip: %s): %v\n", pf.Name, pf.LocalIP, err)
+		}
 	}
 
 	return nil
