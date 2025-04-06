@@ -1,7 +1,7 @@
 module github.com/eko/monday
 
 go 1.22
-toolchain go1.23.7
+toolchain go1.24.1
 
 require (
 	github.com/jroimartin/gocui v0.5.0
@@ -10,7 +10,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/txn2/txeh v1.5.5
-	go.uber.org/mock v0.4.0
+	go.uber.org/mock v0.5.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.3
 	k8s.io/apimachinery v0.30.3
