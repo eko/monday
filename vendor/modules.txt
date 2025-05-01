@@ -120,8 +120,8 @@ github.com/txn2/txeh
 # github.com/x448/float16 v0.8.4
 ## explicit; go 1.11
 github.com/x448/float16
-# go.uber.org/mock v0.5.1
-## explicit; go 1.22
+# go.uber.org/mock v0.5.2
+## explicit; go 1.23
 go.uber.org/mock/gomock
 # golang.org/x/net v0.38.0
 ## explicit; go 1.23.0
