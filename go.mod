@@ -1,6 +1,7 @@
 module github.com/eko/monday
 
-go 1.22
+go 1.24.0
+
 toolchain go1.24.1
 
 require (
@@ -13,7 +14,7 @@ require (
 	go.uber.org/mock v0.5.2
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.3
-	k8s.io/apimachinery v0.33.0
+	k8s.io/apimachinery v0.33.1
 	k8s.io/client-go v0.30.3
 )
 
