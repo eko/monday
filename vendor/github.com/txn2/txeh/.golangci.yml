@@ -1,0 +1,207 @@
+version: "2"
+
+run:
+  timeout: 10m
+  modules-download-mode: readonly
+
+linters:
+  default: none
+  enable:
+    # ===== Bug Detection =====
+    - errcheck           # Check error returns are handled
+    - govet              # Official Go vet checks
+    - staticcheck        # Comprehensive static analysis
+    - ineffassign        # Detect ineffective assignments
+    - unused             # Find unused code
+    - bodyclose          # Ensure HTTP response bodies are closed
+    - noctx              # Check context usage in HTTP requests
+    - nilerr             # Check nil errors are returned properly
+    - nilnil             # Check for nil return with nil error
+    - contextcheck       # Check context propagation
+    - durationcheck      # Detect duration multiplication issues
+    - makezero           # Find slice append issues
+    - wastedassign       # Find wasted assignments
+    - copyloopvar        # Loop variable copying
+
+    # ===== Code Style =====
+    - misspell           # Spelling mistakes
+    - unconvert          # Unnecessary type conversions
+    - whitespace         # Whitespace issues
+    - godot              # Comment punctuation enforcement
+    - revive             # Comprehensive style/safety rules
+
+    # ===== Code Quality =====
+    - gocritic           # Comprehensive checks
+    - gocyclo            # Cyclomatic complexity
+    - gocognit           # Cognitive complexity
+    - nakedret           # Naked returns in long functions
+    - prealloc           # Slice preallocation suggestions
+    - predeclared        # Shadowing predeclared identifiers
+    - nestif             # Deeply nested ifs
+    - unparam            # Unused parameters
+    - errname            # Error naming conventions
+    - errorlint          # Error wrapping issues
+    - goconst            # Detect repeated string literals
+    - thelper            # Test helper validation
+    - modernize          # Go modernization suggestions
+
+    # ===== Security =====
+    - gosec              # Security scanning (OWASP)
+
+    # ===== Error Handling =====
+    - wrapcheck          # Ensure external package errors are wrapped
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+
+    gocyclo:
+      min-complexity: 10
+
+    gocognit:
+      min-complexity: 15
+
+    govet:
+      disable:
+        - fieldalignment
+        - shadow
+
+    misspell:
+      locale: US
+
+    nakedret:
+      max-func-lines: 30
+
+    nestif:
+      min-complexity: 5
+
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: true
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+        - opinionated
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+
+    errorlint:
+      errorf: true
+      errorf-multi: true
+      asserts: true
+      comparison: true
+
+    gosec:
+      excludes:
+        - G104
+      config:
+        G306: "0644"
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    wrapcheck:
+      ignore-sigs:
+        - ".Errorf("
+        - "errors.New("
+        - "errors.Unwrap("
+        - "errors.Join("
+        - ".Wrap("
+        - ".Wrapf("
+        - ".WithMessage("
+        - ".WithMessagef("
+        - ".WithStack("
+
+    revive:
+      rules:
+        # Style
+        - name: blank-imports
+        - name: context-as-argument
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+          arguments:
+            - "checkPrivateReceivers"
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: indent-error-flow
+        - name: superfluous-else
+        - name: modifies-parameter
+        - name: unreachable-code
+        - name: modifies-value-receiver
+        - name: constant-logical-expr
+        - name: bool-literal-in-expr
+        - name: redefines-builtin-id
+        - name: range-val-in-closure
+        - name: range-val-address
+        - name: waitgroup-by-value
+        - name: atomic
+        - name: call-to-gc
+        - name: duplicated-imports
+        - name: string-of-int
+        - name: defer
+          arguments:
+            - ["call-chain", "loop", "method-call", "recover", "immediate-recover", "return"]
+        - name: unconditional-recursion
+        - name: identical-branches
+        - name: unexported-naming
+        - name: unnecessary-stmt
+        - name: useless-break
+        - name: context-keys-type
+        - name: time-equal
+        - name: time-naming
+        - name: errorf
+        - name: empty-block
+        - name: get-return
+        - name: early-return
+        - name: unused-parameter
+          disabled: true
+        - name: confusing-naming
+        - name: confusing-results
+        - name: argument-limit
+          arguments:
+            - 5
+
+  exclusions:
+    generated: lax
+    warn-unused: true
+    rules:
+      # Allow longer functions in cmd/
+      - path: cmd/
+        linters:
+          - gocyclo
+          - gocognit
+          - wrapcheck
+
+      # Generated files
+      - path: generated
+        linters:
+          - all
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+    - gofumpt
+  exclusions:
+    generated: lax
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/txn2/txeh
+
+issues:
+  max-issues-per-linter: 50
+  max-same-issues: 10

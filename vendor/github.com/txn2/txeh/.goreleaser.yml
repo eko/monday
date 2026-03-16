@@ -1,94 +1,128 @@
-# Build customization
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+version: 2
+
+env:
+  - GO111MODULE=on
+
+before:
+  hooks:
+    - go mod download
+    - go mod verify
+
 builds:
   - id: txeh
-    # Path to main.go file.
-    # Default is `main.go`
     main: ./txeh/txeh.go
     binary: txeh
-
-    env:
-    - CGO_ENABLED=0
-
-    # GOOS list to build in.
-    # For more info refer to https://golang.org/doc/install/source#environment
-    # Defaults are darwin and linux
     goos:
-    - linux
-    - darwin
-    - windows
-
-    # GOARCH to build in.
-    # For more info refer to https://golang.org/doc/install/source#environment
-    # Defaults are 386 and amd64
+      - linux
+      - darwin
+      - windows
     goarch:
-    - amd64
-    - arm
-    - arm64
+      - "386"
+      - amd64
+      - arm
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: windows
+        goarch: arm
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+      - -tags=netgo
+      - -a
+      - -v
+    ldflags: -s -w -X github.com/txn2/txeh/txeh/cmd.Version={{.Version}}
 
-    goarm:
-    - "6"
-    - "7"
-
-    ldflags: "-s -w -X github.com/txn2/txeh/txeh/cmd.Version={{.Version}}"
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
 
 checksum:
   name_template: '{{ .ProjectName }}_checksums.txt'
 
-release:
-  github:
-    owner: txn2
-    name: txeh
-  name_template: "{{.ProjectName}}-v{{.Version}} {{.Env.USER}}"
+signs:
+  - cmd: cosign
+    args:
+      - sign-blob
+      - '--bundle=${signature}'
+      - '${artifact}'
+      - '--yes'
+    artifacts: checksum
+    output: true
+    signature: '${artifact}.bundle'
 
-  # You can disable this pipe in order to not upload any artifacts to
-  # GitHub.
-  # Defaults to false.
-  disable: false
+sboms:
+  - artifacts: archive
+
+changelog:
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Security
+      regexp: '^.*?sec(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
 
 nfpms:
-  - file_name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    homepage:  https://github.com/txn2/txeh
+  - id: default
+    file_name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    homepage: https://github.com/txn2/txeh
     description: Etc Hosts Management Utility.
-    maintainer: Craig Johnston <cjimti@gmail.com>
+    maintainer: Craig Johnston <cj@imti.co>
     license: Apache 2.0
-    vendor: https://github.com/txn2
+    vendor: txn2
     formats:
       - apk
       - deb
       - rpm
 
-
-archives:
-  - name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
-    format_overrides:
-      - goos: windows
-        format: zip
+release:
+  github:
+    owner: txn2
+    name: txeh
+  name_template: "{{.ProjectName}}-v{{.Version}}"
 
 brews:
   - name: txeh
-    tap:
+    repository:
       owner: txn2
       name: homebrew-tap
+      token: '{{ .Env.HOMEBREW_TAP_TOKEN }}'
     commit_author:
       name: Craig Johnston
-      email: cjimti@gmail.com
-    folder: Formula
+      email: cj@imti.co
+    directory: Formula
     homepage: https://github.com/txn2/txeh
     description: "Etc Hosts Management Utility."
-    skip_upload: false
-    test: |-
-      txeh version
-
-snapcrafts:
-  - name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
-    summary: Etc Hosts Management Utility.
-    description: |
-      Kubernetes bulk port forwarding utility.
-    grade: stable
-    confinement: classic
+    license: "Apache-2.0"
+    test: |
+      system "#{bin}/txeh version"
