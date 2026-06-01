@@ -1,16 +1,14 @@
 module github.com/eko/monday
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.24.7
 
 require (
 	github.com/jroimartin/gocui v0.5.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/radovskyb/watcher v1.0.7
-	github.com/spf13/cobra v1.9.1
+	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.10.0
-	github.com/txn2/txeh v1.5.5
+	github.com/txn2/txeh v1.8.1
 	go.uber.org/mock v0.5.2
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.3
@@ -46,7 +44,7 @@ require (
 	github.com/nsf/termbox-go v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/net v0.38.0 // indirect
