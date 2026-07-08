@@ -158,6 +158,7 @@ type model struct {
 	filtering   bool
 	filter      string
 	filterInput textinput.Model
+	showAbout   bool
 
 	width  int
 	height int
@@ -253,6 +254,16 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if m.filtering {
 			return m.updateFiltering(msg)
+		}
+
+		if m.showAbout {
+			if msg.String() == "ctrl+c" {
+				return m, tea.Quit
+			}
+
+			m.showAbout = false
+
+			return m, nil
 		}
 
 		return m.updateKeys(msg)
@@ -374,6 +385,9 @@ func (m *model) updateKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.fullscreen = !m.fullscreen
 		m.resizePanes()
 		m.refreshContents()
+
+	case "?":
+		m.showAbout = true
 
 	case "/":
 		m.filtering = true
@@ -639,6 +653,12 @@ func (m *model) refreshStatusTable(pane *pane) {
 
 	focused := m.panes[m.focus] == pane
 
+	filter := ""
+	if focused {
+		filter = m.filter
+	}
+	pane.table.setFilter(filter)
+
 	// The table gets the whole pane when the events log is hidden
 	maxLines := pane.baseHeight
 	if pane.showLog {
@@ -728,6 +748,15 @@ func (m *model) View() string {
 	}
 
 	sections := []string{m.headerView()}
+
+	if m.showAbout {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			m.headerView(),
+			m.aboutView(),
+			m.footerView(),
+		)
+	}
 
 	if m.fullscreen {
 		sections = append(sections, m.paneView(m.focus))
@@ -846,6 +875,10 @@ func (m *model) footerView() string {
 		return " " + m.filterInput.View()
 	}
 
+	if m.showAbout {
+		return footerDescStyle.Render(" press any key to close")
+	}
+
 	var keys [][2]string
 
 	if pane := m.focusedPane(); pane.table != nil {
@@ -856,6 +889,7 @@ func (m *model) footerView() string {
 			{"l", "logs"},
 			{"f", "fullscreen"},
 			{"/", "filter"},
+			{"?", "about"},
 			{"q", "quit"},
 		}
 
@@ -869,6 +903,7 @@ func (m *model) footerView() string {
 			{"a", "follow"},
 			{"f", "fullscreen"},
 			{"/", "filter"},
+			{"?", "about"},
 			{"q", "quit"},
 		}
 	}

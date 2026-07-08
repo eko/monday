@@ -204,6 +204,90 @@ func TestCombinedTableSelectionAndExpand(t *testing.T) {
 	assert.Equal(t, 0, table.selected)
 }
 
+func TestCombinedTableFilter(t *testing.T) {
+	// Given
+	table, forwards, proxies := newTestCombinedTable()
+
+	forwards.Register("cast-api-forward", "kubernetes", []string{"8080:8080"})
+	forwards.Register("kafka-broker-forward", "kubernetes", []string{"9092:9092"})
+	forwards.Register("postgres-forward", "kubernetes", []string{"5432:5432"})
+	proxies.Register("kafka-broker-forward", "kafka.svc.local", "127.0.1.2", "9092", "127.0.0.1", "9402")
+
+	// When: filtering by name
+	table.setFilter("kafka")
+	joined := strings.Join(table.tableLines(140, 20, true), "\n")
+
+	// Then: only the matching row is displayed
+	assert.Contains(t, joined, "kafka-broker-forward")
+	assert.NotContains(t, joined, "cast-api-forward")
+	assert.NotContains(t, joined, "postgres-forward")
+
+	// Selection and expansion follow the filtered rows
+	assert.Equal(t, 0, table.selected)
+	table.toggleSelected()
+	assert.True(t, table.expanded["kafka-broker-forward"])
+
+	// A hostname also matches
+	table.setFilter("kafka.svc.local")
+	joined = strings.Join(table.tableLines(140, 20, true), "\n")
+	assert.Contains(t, joined, "kafka-broker-forward")
+
+	// When: nothing matches
+	table.setFilter("unknown")
+	joined = strings.Join(table.tableLines(140, 20, true), "\n")
+
+	// Then
+	assert.Contains(t, joined, `no forward or hostname matching "unknown"`)
+
+	// The pane visibility is not impacted by the filter
+	assert.Equal(t, 3, table.tableCount())
+
+	// When: clearing the filter
+	table.setFilter("")
+	joined = strings.Join(table.tableLines(140, 20, true), "\n")
+
+	// Then: all rows are back
+	assert.Contains(t, joined, "cast-api-forward")
+	assert.Contains(t, joined, "postgres-forward")
+}
+
+func TestModelFilterAppliesToCombinedTable(t *testing.T) {
+	// Given
+	layout := NewLayout(true)
+	layout.Init()
+
+	layout.GetForwardStatuses().Register("cast-api-forward", "kubernetes", []string{"8080:8080"})
+	layout.GetForwardStatuses().Register("kafka-broker-forward", "kubernetes", []string{"9092:9092"})
+
+	model := newModel(
+		"my-project",
+		"",
+		[]*view{layout.logsView, layout.forwardsView},
+		layout.forwardStatuses,
+		layout.proxyStatuses,
+		&layout.dirty,
+	)
+	model.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
+
+	// When: typing "/kafka" then enter on the focused combined pane
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("kafka")})
+	model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+
+	rendered := model.View()
+
+	// Then: the table only shows the matching forward
+	assert.Contains(t, rendered, "kafka-broker-forward")
+	assert.NotContains(t, rendered, "cast-api-forward")
+
+	// When: clearing the filter with esc
+	model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	rendered = model.View()
+
+	// Then
+	assert.Contains(t, rendered, "cast-api-forward")
+}
+
 func TestCombinedTableWindowFollowsSelection(t *testing.T) {
 	// Given: more rows than the table can display
 	table, forwards, _ := newTestCombinedTable()

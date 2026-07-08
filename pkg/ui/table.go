@@ -33,6 +33,9 @@ type combinedTable struct {
 	selected int
 	offset   int
 	expanded map[string]bool
+
+	// filter narrows the displayed rows to the ones matching it
+	filter string
 }
 
 func newCombinedTable(
@@ -54,8 +57,63 @@ type combinedRow struct {
 	proxies []ProxyStatus
 }
 
-// rows builds the selectable rows: every forward first, then proxy-only entries
+// setFilter narrows the displayed rows to the ones matching the given filter
+func (t *combinedTable) setFilter(filter string) {
+	if t.filter == filter {
+		return
+	}
+
+	t.filter = filter
+	t.selected = 0
+	t.offset = 0
+}
+
+// rows returns the selectable rows matching the current filter
 func (t *combinedTable) rows() []combinedRow {
+	rows := t.allRows()
+
+	if t.filter == "" {
+		return rows
+	}
+
+	filtered := make([]combinedRow, 0, len(rows))
+	for _, row := range rows {
+		if row.matches(t.filter) {
+			filtered = append(filtered, row)
+		}
+	}
+
+	return filtered
+}
+
+// matches returns true when the row name, state, message or one of its proxy
+// hostnames contains the given filter, case-insensitively
+func (r combinedRow) matches(filter string) bool {
+	filter = strings.ToLower(filter)
+
+	if strings.Contains(strings.ToLower(r.id), filter) {
+		return true
+	}
+
+	if r.forward != nil {
+		if strings.Contains(strings.ToLower(string(r.forward.State)), filter) ||
+			strings.Contains(strings.ToLower(r.forward.Message), filter) {
+			return true
+		}
+	}
+
+	for _, proxyStatus := range r.proxies {
+		if strings.Contains(strings.ToLower(proxyStatus.Hostname), filter) ||
+			strings.Contains(strings.ToLower(string(proxyStatus.State)), filter) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// allRows builds the selectable rows: every forward first, then proxy-only entries
+func (t *combinedTable) allRows() []combinedRow {
 	forwards, _ := t.forwards.snapshot()
 	proxies, _ := t.proxies.snapshot()
 
@@ -103,8 +161,9 @@ func (t *combinedTable) rows() []combinedRow {
 	return rows
 }
 
+// tableCount ignores the filter on purpose: it drives the pane visibility
 func (t *combinedTable) tableCount() int {
-	return len(t.rows())
+	return len(t.allRows())
 }
 
 // moveSelection moves the selected row by the given delta, clamped to the rows
@@ -144,8 +203,19 @@ func (t *combinedTable) toggleSelected() {
 func (t *combinedTable) tableLines(width, maxLines int, focused bool) []string {
 	rows := t.rows()
 
-	if len(rows) == 0 || width < 10 || maxLines < 4 {
+	if width < 10 || maxLines < 4 {
 		return nil
+	}
+
+	if len(rows) == 0 {
+		if t.filter == "" {
+			return nil
+		}
+
+		return []string{
+			statusMetaStyle.Render(fmt.Sprintf(" no forward or hostname matching %q", t.filter)),
+			statusSeparatorStyle.Render(strings.Repeat("─", width)),
+		}
 	}
 
 	if t.selected >= len(rows) {
