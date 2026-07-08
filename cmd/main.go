@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 
 	"github.com/eko/monday/internal/runtime"
@@ -21,8 +20,7 @@ import (
 	"github.com/eko/monday/pkg/write"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-
-	"github.com/jroimartin/gocui"
+	"golang.org/x/term"
 )
 
 const (
@@ -40,8 +38,31 @@ var (
 	runner    run.Runner
 	watcher   watch.Watcher
 
-	uiEnabled = len(os.Getenv("MONDAY_ENABLE_UI")) > 0
+	uiEnabled bool
 )
+
+// resolveUIEnabled returns whether the terminal UI must be enabled: it is the
+// default in an interactive terminal, and can be disabled with the --no-ui
+// flag or the MONDAY_NO_UI environment variable (e.g. for CI or piped output)
+func resolveUIEnabled(cmd *cobra.Command) bool {
+	if noUI, _ := cmd.Flags().GetBool("no-ui"); noUI {
+		return false
+	}
+
+	if len(os.Getenv("MONDAY_NO_UI")) > 0 {
+		return false
+	}
+
+	if forceUI, _ := cmd.Flags().GetBool("ui"); forceUI {
+		return true
+	}
+
+	if len(os.Getenv("MONDAY_ENABLE_UI")) > 0 {
+		return true
+	}
+
+	return term.IsTerminal(int(os.Stdout.Fd()))
+}
 
 func main() {
 	ctx := context.Background()
@@ -49,9 +70,7 @@ func main() {
 
 	rootCmd := &cobra.Command{
 		Run: func(cmd *cobra.Command, args []string) {
-			if !uiEnabled {
-				uiEnabled, _ = strconv.ParseBool(cmd.Flag("ui").Value.String())
-			}
+			uiEnabled = resolveUIEnabled(cmd)
 
 			conf, err := config.Load()
 			if err != nil {
@@ -59,20 +78,30 @@ func main() {
 				return
 			}
 
+			printBanner()
+
 			runProject(ctx, conf, selectProject(conf))
 
 			handleExitSignal(ctx)
 		},
 	}
 
-	// UI-enable flag (for both root and run commands)
+	// Terminal UI flags (for both root and run commands)
 	runCommand := runCmd(ctx)
-	runCommand.Flags().Bool("ui", false, "Enable the terminal UI")
-	rootCmd.Flags().Bool("ui", false, "Enable the terminal UI")
+
+	for _, command := range []*cobra.Command{rootCmd, runCommand} {
+		command.Flags().Bool("no-ui", false, "Disable the terminal UI (plain text output)")
+		command.Flags().Bool("ui", false, "Enable the terminal UI")
+
+		if err := command.Flags().MarkDeprecated("ui", "the terminal UI is now enabled by default, use --no-ui to disable it"); err != nil {
+			panic(err)
+		}
+	}
 
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(editCmd)
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(runCommand)
 	rootCmd.AddCommand(upgradeCmd)
 	rootCmd.AddCommand(versionCmd)
@@ -90,12 +119,19 @@ func selectProject(conf *config.Config) string {
 		Label: "Which project do you want to work on?",
 		Items: projects,
 		Size:  20,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }} (type to filter)",
+			Active:   "▸ {{ . | cyan | bold }}",
+			Inactive: "  {{ . }}",
+			Selected: `⚡ Launching {{ . | cyan | bold }}...`,
+		},
 		Searcher: func(input string, index int) bool {
 			return strings.Contains(
 				strings.Replace(strings.ToLower(projects[index]), " ", "", -1),
 				strings.Replace(strings.ToLower(input), " ", "", -1),
 			)
 		},
+		StartInSearchMode: true,
 	}
 
 	_, choice, err := prompt.Run()
@@ -116,6 +152,8 @@ func selectProject(conf *config.Config) string {
 func runProject(ctx context.Context, conf *config.Config, choice string) {
 	layout := ui.NewLayout(uiEnabled)
 	layout.Init()
+	layout.SetProject(choice)
+	layout.SetVersion(Version)
 
 	// Retrieve selected project configuration by its name
 	project, err := conf.GetProjectByName(choice)
@@ -133,29 +171,22 @@ func runProject(ctx context.Context, conf *config.Config, choice string) {
 		panic(err)
 	}
 
-	proxyfier = proxy.NewProxy(layout.GetProxyView(), hostfile)
+	proxyfier = proxy.NewProxy(layout.GetProxyView(), layout.GetProxyStatuses(), hostfile)
 	setuper = setup.NewSetuper(layout.GetLogsView(), project, conf.Setup)
 	builder = build.NewBuilder(layout.GetLogsView(), project, conf.Build)
 	writer = write.NewWriter(layout.GetLogsView(), project)
 	runner = run.NewRunner(layout.GetLogsView(), proxyfier, project, conf.Run)
-	forwarder = forward.NewForwarder(layout.GetForwardsView(), proxyfier, project)
+	forwarder = forward.NewForwarder(layout.GetForwardsView(), layout.GetForwardStatuses(), proxyfier, project)
 
 	watcher = watch.NewWatcher(setuper, builder, writer, runner, forwarder, conf.Watch, project)
 	go watcher.Watch(ctx)
 
 	if uiEnabled {
-		defer layout.GetGui().Close()
-
-		if err := layout.GetGui().SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit(ctx)); err != nil {
-			panic(err)
+		if err := layout.Run(); err != nil {
+			fmt.Printf("❌  An error has occured while running the terminal UI: %v\n", err)
 		}
 
-		layout.GetStatusView().Writef(" ⇢  %s | Commands: ←/→: select view | ↑/↓: scroll up/down | a: toggle autoscroll | f: toggle fullscreen", choice)
-
-		if err := layout.GetGui().MainLoop(); err != nil && err != gocui.ErrQuit {
-			fmt.Println(err)
-			stopAll(ctx)
-		}
+		stopAll(ctx)
 	}
 }
 
@@ -178,12 +209,4 @@ func stopAll(ctx context.Context) {
 	runner.Stop()
 
 	os.Exit(0)
-}
-
-func quit(ctx context.Context) func(*gocui.Gui, *gocui.View) error {
-	return func(g *gocui.Gui, v *gocui.View) error {
-		g.Close()
-		stopAll(ctx)
-		return gocui.ErrQuit
-	}
 }

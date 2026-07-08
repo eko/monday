@@ -36,9 +36,10 @@ func TestNewForwarder(t *testing.T) {
 	}
 
 	view := ui.NewMockView(ctrl)
+	statuses := ui.NewStatuses(nil)
 
 	// When
-	f := NewForwarder(view, proxyfier, project)
+	f := NewForwarder(view, statuses, proxyfier, project)
 
 	// Then
 	assert.IsType(t, new(forwarder), f)
@@ -75,9 +76,12 @@ func TestForwardAll(t *testing.T) {
 	}
 
 	view := ui.NewMockView(ctrl)
-	view.EXPECT().Writef("📡  Forwarding '%s' over %s...\n", "test-ssh-forward", "ssh")
+	view.EXPECT().Writef("📡  Forwarding '%s' over %s (%s)...\n", "test-ssh-forward", "ssh", "8080:8080")
 
-	forwarder := NewForwarder(view, proxyfier, project)
+	// The background retry loop may report a lost connection before the test ends
+	view.EXPECT().Writef(gomock.Any(), gomock.Any()).AnyTimes()
+
+	forwarder := NewForwarder(view, ui.NewStatuses(nil), proxyfier, project)
 
 	// When
 	forwarder.ForwardAll(ctx)
@@ -118,9 +122,12 @@ func TestForwardRemoteSSH(t *testing.T) {
 	}
 
 	view := ui.NewMockView(ctrl)
-	view.EXPECT().Writef("📡  Forwarding '%s' over %s...\n", "test-ssh-forward", "ssh-remote")
+	view.EXPECT().Writef("📡  Forwarding '%s' over %s (%s)...\n", "test-ssh-forward", "ssh-remote", "8080:8080")
 
-	forwarder := NewForwarder(view, proxy, project)
+	// The background retry loop may report a lost connection before the test ends
+	view.EXPECT().Writef(gomock.Any(), gomock.Any()).AnyTimes()
+
+	forwarder := NewForwarder(view, ui.NewStatuses(nil), proxy, project)
 
 	// When
 	forwarder.ForwardAll(ctx)

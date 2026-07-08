@@ -171,15 +171,15 @@ $ monday init
 Once your configuration file is ready, you can simply run Monday:
 
 ```bash
-$ monday [--ui]
+$ monday [--no-ui]
 ```
 
-Note the `--ui` option that will allow you to enable the user interface (you can also define a `MONDAY_ENABLE_UI` environment variable to enable it).
+The terminal UI is enabled by default when running in an interactive terminal: it displays the live state of each forwarded application, scrollable logs with filtering, and per-application colors. Use the `--no-ui` option (or define a `MONDAY_NO_UI` environment variable) to get plain text output instead — this is also done automatically when the output is piped or when running in CI.
 
 Or, you can run a specific project directly by running:
 
 ```bash
-$ monday run [--ui] <project name>
+$ monday run [--no-ui] <project name>
 ```
 
 When you want to edit your configuration again, simply run this command to open it in your favorite editor:

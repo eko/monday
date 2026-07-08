@@ -363,6 +363,98 @@ func TestForwardTypeRemote(t *testing.T) {
 	}
 }
 
+func TestSelectPod(t *testing.T) {
+	now := metav1.Now()
+
+	readyPod := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "ready-pod"},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			Conditions: []corev1.PodCondition{
+				{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+			},
+		},
+	}
+
+	runningNotReadyPod := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "running-not-ready-pod"},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			Conditions: []corev1.PodCondition{
+				{Type: corev1.PodReady, Status: corev1.ConditionFalse},
+			},
+		},
+	}
+
+	terminatingPod := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "terminating-pod", DeletionTimestamp: &now},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			Conditions: []corev1.PodCondition{
+				{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+			},
+		},
+	}
+
+	pendingPod := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "pending-pod"},
+		Status:     corev1.PodStatus{Phase: corev1.PodPending},
+	}
+
+	testCases := []struct {
+		name         string
+		pods         []corev1.Pod
+		expectedPod  string
+		expectedBool bool
+	}{
+		{
+			name:         "no pod",
+			pods:         []corev1.Pod{},
+			expectedBool: false,
+		},
+		{
+			name:         "only pending pod",
+			pods:         []corev1.Pod{pendingPod},
+			expectedBool: false,
+		},
+		{
+			name:         "prefers ready pod over running one",
+			pods:         []corev1.Pod{runningNotReadyPod, readyPod},
+			expectedPod:  "ready-pod",
+			expectedBool: true,
+		},
+		{
+			name:         "skips terminating pod",
+			pods:         []corev1.Pod{terminatingPod, readyPod},
+			expectedPod:  "ready-pod",
+			expectedBool: true,
+		},
+		{
+			name:         "falls back on running pod when none is ready",
+			pods:         []corev1.Pod{pendingPod, runningNotReadyPod},
+			expectedPod:  "running-not-ready-pod",
+			expectedBool: true,
+		},
+		{
+			name:         "only terminating pod",
+			pods:         []corev1.Pod{terminatingPod},
+			expectedBool: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			pod, found := selectPod(testCase.pods)
+
+			assert.Equal(t, testCase.expectedBool, found)
+
+			if testCase.expectedBool {
+				assert.Equal(t, testCase.expectedPod, pod.Name)
+			}
+		})
+	}
+}
+
 // Initializes a Kubernetes configuration for test environment
 func initKubeConfig(t *testing.T) {
 	directoryKubeConfig := "/tmp/.kube"

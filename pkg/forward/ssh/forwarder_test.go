@@ -8,8 +8,8 @@ import (
 
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/ui"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewForwarder(t *testing.T) {
@@ -138,7 +138,7 @@ func TestForwardLocal(t *testing.T) {
 	assert.IsType(t, new(exec.Cmd), forwarder.cmd)
 
 	runCommand := strings.Replace(strings.Join(forwarder.cmd.Args, " "), "echo <ssh>", "ssh", -1)
-	assert.Equal(t, "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -N -L 8080:myforwardhostname.svc.local:8081 root@acme.tld", runCommand)
+	assert.Equal(t, "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oServerAliveInterval=10 -oServerAliveCountMax=3 -oExitOnForwardFailure=yes -oConnectTimeout=10 -N -L 8080:myforwardhostname.svc.local:8081 root@acme.tld", runCommand)
 }
 
 func TestForwardLocalWithForwardHostname(t *testing.T) {
@@ -166,7 +166,7 @@ func TestForwardLocalWithForwardHostname(t *testing.T) {
 	assert.IsType(t, new(exec.Cmd), forwarder.cmd)
 
 	runCommand := strings.Replace(strings.Join(forwarder.cmd.Args, " "), "echo <ssh>", "ssh", -1)
-	assert.Equal(t, "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -N -L 8080:127.0.0.1:8081 root@acme.tld", runCommand)
+	assert.Equal(t, "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oServerAliveInterval=10 -oServerAliveCountMax=3 -oExitOnForwardFailure=yes -oConnectTimeout=10 -N -L 8080:127.0.0.1:8081 root@acme.tld", runCommand)
 }
 
 func TestForwardRemote(t *testing.T) {
@@ -194,7 +194,7 @@ func TestForwardRemote(t *testing.T) {
 	assert.IsType(t, new(exec.Cmd), forwarder.cmd)
 
 	runCommand := strings.Replace(strings.Join(forwarder.cmd.Args, " "), "echo <ssh>", "ssh", -1)
-	assert.Equal(t, "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -N -R 8080:127.0.0.1:8081 root@acme.tld", runCommand)
+	assert.Equal(t, "ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no -oServerAliveInterval=10 -oServerAliveCountMax=3 -oExitOnForwardFailure=yes -oConnectTimeout=10 -N -R 8080:127.0.0.1:8081 root@acme.tld", runCommand)
 }
 
 func mockExecCommand(command string, args ...string) *exec.Cmd {

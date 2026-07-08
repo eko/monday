@@ -5,12 +5,17 @@ package proxy
 
 import (
 	"fmt"
+	"io"
+	"net"
+	"strconv"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/eko/monday/pkg/hostfile"
 	"github.com/eko/monday/pkg/ui"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewProxy(t *testing.T) {
@@ -23,7 +28,7 @@ func TestNewProxy(t *testing.T) {
 	view := ui.NewMockView(ctrl)
 
 	// When
-	p := NewProxy(view, hostfileMock)
+	p := NewProxy(view, ui.NewProxyStatuses(), hostfileMock)
 
 	// Then
 	assert.IsType(t, new(proxy), p)
@@ -52,7 +57,7 @@ func TestAddProxyForward(t *testing.T) {
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9401")
 
-	proxy := NewProxy(view, hostfileMock)
+	proxy := NewProxy(view, ui.NewProxyStatuses(), hostfileMock)
 
 	// When
 	proxy.AddProxyForward("test", pf)
@@ -98,7 +103,7 @@ func TestAddProxyForwardWhenMultiple(t *testing.T) {
 	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname2.svc.local", "127.0.1.2", "9403")
 	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname3.svc.local", "127.0.1.3", "9404")
 
-	proxy := NewProxy(view, hostfileMock)
+	proxy := NewProxy(view, ui.NewProxyStatuses(), hostfileMock)
 
 	// When
 	for _, testCase := range testCases {
@@ -126,7 +131,7 @@ func TestListen(t *testing.T) {
 	view.EXPECT().Writef("✅  Successfully mapped hostname '%s' with IP '%s' and port %s\n", "hostname.svc.local", "127.0.1.1", "9401")
 	view.EXPECT().Writef("🔌  Proxifying %s locally (%s:%s) <-> forwarding to %s:%s\n", "hostname.svc.local", "127.0.1.1", "8080", "127.0.0.1", "9401")
 
-	proxy := NewProxy(view, hostfileMock)
+	proxy := NewProxy(view, ui.NewProxyStatuses(), hostfileMock)
 	proxy.AddProxyForward("test", pf)
 
 	// When
@@ -142,6 +147,137 @@ func TestListen(t *testing.T) {
 	assert.Equal(t, proxy.lastIpByteB, byte(0))
 	assert.Equal(t, proxy.lastIpByteC, byte(1))
 	assert.Equal(t, proxy.lastIpByteD, byte(1))
+}
+
+// TestListenConcurrentWithAddProxyForward is a regression test for a
+// "concurrent map read and map write" crash: the runner registers proxy
+// forwards while the forwarder concurrently starts listening
+func TestListenConcurrentWithAddProxyForward(t *testing.T) {
+	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	hostfileMock := hostfile.NewMockHostfile(ctrl)
+	hostfileMock.EXPECT().AddHost(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef(gomock.Any(), gomock.Any()).AnyTimes()
+
+	proxy := NewProxy(view, ui.NewProxyStatuses(), hostfileMock)
+
+	// When: adding forwards while listening concurrently
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+
+			// Same hostname on purpose: the attributed IP is cached so no
+			// network interface alias is created during tests
+			pf := NewProxyForward("concurrent-app", "concurrent.svc.local", "", "", "")
+			proxy.AddProxyForward("concurrent-app", pf)
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			assert.Nil(t, proxy.Listen())
+		}()
+	}
+
+	wg.Wait()
+
+	// Then
+	assert.Len(t, proxy.ProxyForwards["concurrent-app"], 20)
+}
+
+// TestProxifyConnectionCountsLiveTraffic verifies that bytes flowing through a
+// proxied connection are metered while the connection is still open, so
+// long-lived connections (databases, brokers...) display live traffic
+func TestProxifyConnectionCountsLiveTraffic(t *testing.T) {
+	// Given: a real TCP echo server as the forwarded target
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	target, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer target.Close()
+
+	go func() {
+		conn, err := target.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		buffer := make([]byte, 1024)
+		for {
+			n, err := conn.Read(buffer)
+			if err != nil {
+				return
+			}
+			if _, err := conn.Write(buffer[:n]); err != nil {
+				return
+			}
+		}
+	}()
+
+	targetPort := strconv.Itoa(target.Addr().(*net.TCPAddr).Port)
+
+	// Reserve a local port for the proxy listener
+	reservation, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	localPort := strconv.Itoa(reservation.Addr().(*net.TCPAddr).Port)
+	reservation.Close()
+
+	view := ui.NewMockView(ctrl)
+	view.EXPECT().Writef(gomock.Any(), gomock.Any()).AnyTimes()
+
+	hostfileMock := hostfile.NewMockHostfile(ctrl)
+
+	statuses := ui.NewProxyStatuses()
+	statuses.Register("traffic-test", "traffic.svc.local", "127.0.0.1", localPort, "127.0.0.1", targetPort)
+
+	proxy := NewProxy(view, statuses, hostfileMock)
+
+	// Register the forward directly with a resolved local IP, bypassing the
+	// network interface aliasing that requires root privileges
+	pf := NewProxyForward("traffic-test", "traffic.svc.local", "127.0.0.1", localPort, targetPort)
+	pf.SetLocalIP("127.0.0.1")
+	proxy.ProxyForwards["traffic-test"] = []*ProxyForward{pf}
+
+	assert.Nil(t, proxy.Listen())
+
+	// When: sending and receiving data over a connection kept open
+	client, err := net.Dial("tcp", net.JoinHostPort("127.0.0.1", localPort))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	message := []byte("hello, monday!")
+	if _, err := client.Write(message); err != nil {
+		t.Fatal(err)
+	}
+
+	echo := make([]byte, len(message))
+	if _, err := io.ReadFull(client, echo); err != nil {
+		t.Fatal(err)
+	}
+
+	// Then: traffic is visible before the connection is closed
+	assert.Eventually(t, func() bool {
+		snapshot := statuses.Snapshot()
+
+		return snapshot[0].ActiveConnections == 1 &&
+			snapshot[0].BytesSent >= int64(len(message)) &&
+			snapshot[0].BytesReceived >= int64(len(message))
+	}, 2*time.Second, 10*time.Millisecond)
 }
 
 func TestGetNextIPAddress(t *testing.T) {

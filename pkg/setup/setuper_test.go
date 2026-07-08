@@ -6,8 +6,8 @@ import (
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/log"
 	"github.com/eko/monday/pkg/ui"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewSetuper(t *testing.T) {
@@ -38,8 +38,8 @@ func TestSetupAll(t *testing.T) {
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("⚙️  Setuping application '%s'...\n", "test-app")
 	view.EXPECT().Writef("👉  Running commands:\n%s\n\n", "echo Starting test command setup...\necho ...and a second setup command to confirm it works")
-	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " Starting test command setup...\n")
-	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " ...and a second setup command to confirm it works\n")
+	view.EXPECT().Write(log.Prefix(log.StdOut, "test-app") + "Starting test command setup...\n")
+	view.EXPECT().Write(log.Prefix(log.StdOut, "test-app") + "...and a second setup command to confirm it works\n")
 	view.EXPECT().Write("\n✅  Setup of application complete!\n\n")
 
 	project := &config.Project{

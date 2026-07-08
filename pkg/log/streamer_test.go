@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/eko/monday/pkg/ui"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewStreamer(t *testing.T) {

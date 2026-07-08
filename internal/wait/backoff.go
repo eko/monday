@@ -28,6 +28,12 @@ func (b *Backoff) Duration() time.Duration {
 	return d
 }
 
+// Reset restarts the backoff from its minimum duration, to be used once the
+// observed operation is considered healthy again
+func (b *Backoff) Reset() {
+	atomic.StoreUint64(&b.attempt, 0)
+}
+
 func (b *Backoff) ForAttempt(attempt float64) time.Duration {
 	min := b.Min
 	if min <= 0 {

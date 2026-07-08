@@ -16,6 +16,10 @@ import (
 	"github.com/eko/monday/pkg/ui"
 )
 
+// stableConnectionDuration is the minimum uptime after which a connection is
+// considered stable again, resetting the reconnection backoff
+const stableConnectionDuration = 15 * time.Second
+
 // Forwarder represents all kinds of forwarders (Kubernetes, others...)
 type Forwarder interface {
 	ForwardAll(ctx context.Context)
@@ -30,18 +34,39 @@ type ForwarderType interface {
 	GetStopChannel() chan struct{}
 }
 
+// StatusNotifier receives the latest state of each forwarded application
+type StatusNotifier interface {
+	Register(
+		name string,
+		forwardType string,
+		ports []string,
+	)
+	Set(
+		name string,
+		state ui.ForwardState,
+		message string,
+	)
+}
+
 // forwarder is the struct that manage running local applications
 type forwarder struct {
 	view       ui.View
+	statuses   StatusNotifier
 	proxy      proxy.Proxy
 	forwards   []*config.Forward
 	forwarders sync.Map
 }
 
 // NewForwarder instanciates a Forwarder struct from configuration data
-func NewForwarder(view ui.View, proxy proxy.Proxy, project *config.Project) *forwarder {
+func NewForwarder(
+	view ui.View,
+	statuses StatusNotifier,
+	proxy proxy.Proxy,
+	project *config.Project,
+) *forwarder {
 	return &forwarder{
 		view:     view,
+		statuses: statuses,
 		proxy:    proxy,
 		forwards: project.Forwards,
 	}
@@ -78,6 +103,13 @@ func (f *forwarder) Stop(ctx context.Context) {
 	})
 }
 
+// stateCallback returns the state transitions callback bound to a forward name
+func (f *forwarder) stateCallback(name string) func(state ui.ForwardState, message string) {
+	return func(state ui.ForwardState, message string) {
+		f.statuses.Set(name, state, message)
+	}
+}
+
 func (f *forwarder) addForwarder(name string, forwarder ForwarderType) {
 	var forwarders = make([]ForwarderType, 0)
 
@@ -98,7 +130,9 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 		return
 	}
 
-	f.view.Writef("📡  Forwarding '%s' over %s...\n", forward.Name, forward.Type)
+	f.view.Writef("📡  Forwarding '%s' over %s (%s)...\n", forward.Name, forward.Type, strings.Join(forward.Values.Ports, ", "))
+
+	f.statuses.Register(forward.Name, forward.Type, forward.Values.Ports)
 
 	values := forward.Values
 
@@ -150,6 +184,7 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 			return
 		}
 
+		forwarder.OnStateChange(f.stateCallback(forward.Name))
 		f.addForwarder(forward.Name, forwarder)
 
 	// Kubernetes remote forward: open both a SSH remote-forward connection and a Kubernetes port-forward, use proxy
@@ -161,6 +196,7 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 			return
 		}
 
+		forwarder.OnStateChange(f.stateCallback(forward.Name))
 		f.addForwarder(forward.Name, forwarder)
 
 		// Then, ssh remote-forward for all specified ports to pod's container
@@ -176,6 +212,7 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 					return
 				}
 
+				forwarder.OnStateChange(f.stateCallback(forward.Name))
 				f.addForwarder(forward.Name, forwarder)
 			}
 		}
@@ -189,6 +226,7 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 				return
 			}
 
+			forwarder.OnStateChange(f.stateCallback(forward.Name))
 			f.addForwarder(forward.Name, forwarder)
 		}
 
@@ -202,6 +240,7 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 				return
 			}
 
+			forwarder.OnStateChange(f.stateCallback(forward.Name))
 			f.addForwarder(forward.Name, forwarder)
 		}
 	}
@@ -209,17 +248,39 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 	if forwarders, ok := f.forwarders.Load(forward.Name); ok {
 		for _, forwarder := range forwarders.([]ForwarderType) {
 			backoff := wait.Backoff{
-				Min:    100 * time.Millisecond,
+				Min:    250 * time.Millisecond,
 				Max:    10 * time.Second,
 				Factor: 2,
+				Jitter: true,
 			}
 
 			go func(forwarder ForwarderType) {
 				for {
+					f.statuses.Set(forward.Name, ui.StateConnecting, "establishing connection...")
+
+					startedAt := time.Now()
+
 					err := forwarder.Forward(ctx)
-					if err != nil {
-						time.Sleep(backoff.Duration())
-						f.view.Writef("%v\n👓  Forwarder: lost port-forward connection trying to reconnect...\n", err)
+					if err == nil || ctx.Err() != nil {
+						// Forwarder returned without error: it has been intentionally stopped
+						f.statuses.Set(forward.Name, ui.StateStopped, "forward has been stopped")
+						return
+					}
+
+					// The connection stayed up long enough to consider the previous
+					// failure resolved: restart the backoff from its minimum delay
+					if time.Since(startedAt) >= stableConnectionDuration {
+						backoff.Reset()
+					}
+
+					delay := backoff.Duration()
+					f.statuses.Set(forward.Name, ui.StateReconnecting, fmt.Sprintf("%v", err))
+					f.view.Writef("👓  Forwarder: lost connection for '%s': %v. Reconnecting in %s...\n", forward.Name, err, delay.Round(time.Millisecond))
+
+					select {
+					case <-ctx.Done():
+						return
+					case <-time.After(delay):
 					}
 				}
 			}(forwarder)

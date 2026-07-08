@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"sync"
 
 	"github.com/eko/monday/pkg/ui"
 
@@ -18,9 +19,14 @@ type Forwarder struct {
 	localPort       string
 	forwardPort     string
 	args            []string
+	mux             sync.Mutex
 	cmd             *exec.Cmd
+	stopped         bool
 	stopChannel     chan struct{}
 	readyChannel    chan struct{}
+
+	// onStateChange, when set, receives the forward state transitions
+	onStateChange func(state ui.ForwardState, message string)
 }
 
 var (
@@ -46,14 +52,25 @@ func (f *Forwarder) GetForwardType() string {
 	return f.forwardType
 }
 
-// GetReadyChannel returns the Kubernetes go client channel for ready event
+// OnStateChange registers a callback receiving the forward state transitions
+func (f *Forwarder) OnStateChange(callback func(state ui.ForwardState, message string)) {
+	f.onStateChange = callback
+}
+
+func (f *Forwarder) reportState(state ui.ForwardState, message string) {
+	if f.onStateChange != nil {
+		f.onStateChange(state, message)
+	}
+}
+
+// GetReadyChannel returns the channel signaled when the SSH tunnel is started
 func (f *Forwarder) GetReadyChannel() chan struct{} {
 	return f.readyChannel
 }
 
-// GetStopChannel returns the Kubernetes go client channel for stop event
+// GetStopChannel returns the channel signaled when the SSH tunnel is stopped
 func (f *Forwarder) GetStopChannel() chan struct{} {
-	return f.readyChannel
+	return f.stopChannel
 }
 
 func (f *Forwarder) Forward(_ context.Context) error {
@@ -81,19 +98,46 @@ func (f *Forwarder) Forward(_ context.Context) error {
 	arguments := append([]string{
 		"-oUserKnownHostsFile=/dev/null",
 		"-oStrictHostKeyChecking=no",
+		"-oServerAliveInterval=10",
+		"-oServerAliveCountMax=3",
+		"-oExitOnForwardFailure=yes",
+		"-oConnectTimeout=10",
 		"-N",
 		forwardOption,
 		mapping,
 		host,
 	}, f.args...)
 
-	f.cmd = execCommand("ssh", arguments...)
+	f.mux.Lock()
+	if f.stopped {
+		f.mux.Unlock()
+		return nil
+	}
 
-	if err := f.cmd.Start(); err != nil {
+	cmd := execCommand("ssh", arguments...)
+	f.cmd = cmd
+	f.mux.Unlock()
+
+	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("Cannot run the SSH command for port-forwarding '%s' on host '%s': %v", mapping, host, err)
 	}
 
-	if err := f.cmd.Wait(); err != nil {
+	select {
+	case f.readyChannel <- struct{}{}:
+	default:
+	}
+
+	f.reportState(ui.StateReady, fmt.Sprintf("tunnel '%s' established on '%s'", mapping, host))
+
+	if err := cmd.Wait(); err != nil {
+		f.mux.Lock()
+		stopped := f.stopped
+		f.mux.Unlock()
+
+		if stopped {
+			return nil
+		}
+
 		return fmt.Errorf("SSH forwarding of '%s' on host '%s' returned an error: %v", mapping, host, err)
 	}
 
@@ -102,14 +146,14 @@ func (f *Forwarder) Forward(_ context.Context) error {
 
 // Stop stops the current forwarder
 func (f *Forwarder) Stop(_ context.Context) error {
-	if f.cmd == nil {
+	f.mux.Lock()
+	defer f.mux.Unlock()
+
+	f.stopped = true
+
+	if f.cmd == nil || f.cmd.Process == nil {
 		return nil
 	}
 
-	err := f.cmd.Process.Kill()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return f.cmd.Process.Kill()
 }

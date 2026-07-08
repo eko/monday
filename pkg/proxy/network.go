@@ -117,9 +117,9 @@ func isAlreadyAssigned(ip net.IP, addrs []net.Addr) bool {
 }
 
 func canDial(ip, port string) bool {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", ip, port))
+	conn, err := net.Dial("tcp", net.JoinHostPort(ip, port))
 	if conn != nil {
-		conn.Close()
+		_ = conn.Close()
 	}
 	if err != nil {
 		return false

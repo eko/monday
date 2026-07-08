@@ -9,8 +9,8 @@ import (
 	"github.com/eko/monday/pkg/log"
 	"github.com/eko/monday/pkg/proxy"
 	"github.com/eko/monday/pkg/ui"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewRunner(t *testing.T) {
@@ -42,7 +42,7 @@ func TestRunAll(t *testing.T) {
 
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("🏁  Running local app '%s' (%s)...\n", "test-app", "/")
-	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " OK Arguments Seems -to=work\n")
+	view.EXPECT().Write(log.Prefix(log.StdOut, "test-app") + "OK Arguments Seems -to=work\n")
 
 	proxyfier := proxy.NewMockProxy(ctrl)
 
@@ -79,7 +79,7 @@ func TestStop(t *testing.T) {
 
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("🏁  Running local app '%s' (%s)...\n", "test-app", "/")
-	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " OK Arguments Seems -to=work\n")
+	view.EXPECT().Write(log.Prefix(log.StdOut, "test-app") + "OK Arguments Seems -to=work\n")
 
 	proxyfier := proxy.NewMockProxy(ctrl)
 

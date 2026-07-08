@@ -6,8 +6,8 @@ import (
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/log"
 	"github.com/eko/monday/pkg/ui"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewBuilder(t *testing.T) {
@@ -39,8 +39,8 @@ func TestBuildAll(t *testing.T) {
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("⚙️   Building application '%s' via %s...\n", "test-app", "command")
 	view.EXPECT().Writef("👉  Running commands:\n%s\n", "echo 'ok it works'\necho yes it's ok")
-	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " 'ok it works'\n")
-	view.EXPECT().Write(log.ColorGreen + "test-app" + log.ColorWhite + " yes it's ok\n")
+	view.EXPECT().Write(log.Prefix(log.StdOut, "test-app") + "'ok it works'\n")
+	view.EXPECT().Write(log.Prefix(log.StdOut, "test-app") + "yes it's ok\n")
 	view.EXPECT().Writef("\n✅  Build of application '%s' complete!\n\n", "test-app")
 
 	project := getMockedProjectWithApplication()
