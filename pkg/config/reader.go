@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -54,7 +53,7 @@ func Load() (*Config, error) {
 	// Check for multiple config files
 	var conf Config
 
-	file, err := ioutil.ReadFile(Filepath)
+	file, err := os.ReadFile(Filepath)
 	if err != nil {
 		log.Printf("Error while reading config file: #%v", err)
 	}
@@ -100,7 +99,7 @@ func createConfigFromMultiple(matches []string) error {
 
 	added := 0
 	for _, match := range matches {
-		file, err := ioutil.ReadFile(match)
+		file, err := os.ReadFile(match)
 		if err != nil {
 			continue
 		}

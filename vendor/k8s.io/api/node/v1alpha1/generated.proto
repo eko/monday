@@ -34,7 +34,7 @@ option go_package = "k8s.io/api/node/v1alpha1";
 message Overhead {
   // podFixed represents the fixed resource overhead associated with running a pod.
   // +optional
-  map<string, k8s.io.apimachinery.pkg.api.resource.Quantity> podFixed = 1;
+  map<string, .k8s.io.apimachinery.pkg.api.resource.Quantity> podFixed = 1;
 }
 
 // RuntimeClass defines a class of container runtime supported in the cluster.
@@ -47,10 +47,11 @@ message Overhead {
 message RuntimeClass {
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // spec represents specification of the RuntimeClass
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+  // +required
   optional RuntimeClassSpec spec = 2;
 }
 
@@ -59,7 +60,7 @@ message RuntimeClassList {
   // Standard list metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is a list of schema objects.
   repeated RuntimeClass items = 2;
@@ -80,6 +81,10 @@ message RuntimeClassSpec {
   // in a pod.
   // The runtimeHandler must be lowercase, conform to the DNS Label (RFC 1123)
   // requirements, and is immutable.
+  // +required
+  // +k8s:alpha(since: "1.36")=+k8s:format="k8s-short-name"
+  // +k8s:alpha(since: "1.36")=+k8s:immutable
+  // +k8s:alpha(since: "1.36")=+k8s:required
   optional string runtimeHandler = 1;
 
   // overhead represents the resource overhead associated with running a pod for a
@@ -113,6 +118,6 @@ message Scheduling {
   // tolerated by the pod and the RuntimeClass.
   // +optional
   // +listType=atomic
-  repeated k8s.io.api.core.v1.Toleration tolerations = 2;
+  repeated .k8s.io.api.core.v1.Toleration tolerations = 2;
 }
 

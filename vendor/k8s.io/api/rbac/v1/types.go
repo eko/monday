@@ -49,6 +49,8 @@ const (
 type PolicyRule struct {
 	// Verbs is a list of Verbs that apply to ALL the ResourceKinds contained in this rule. '*' represents all verbs.
 	// +listType=atomic
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
 	Verbs []string `json:"verbs" protobuf:"bytes,1,rep,name=verbs"`
 
 	// APIGroups is the name of the APIGroup that contains the resources.  If multiple API groups are specified, any action requested against one of
@@ -79,13 +81,16 @@ type PolicyRule struct {
 type Subject struct {
 	// Kind of object being referenced. Values defined by this API group are "User", "Group", and "ServiceAccount".
 	// If the Authorizer does not recognized the kind value, the Authorizer should report an error.
+	// +required
 	Kind string `json:"kind" protobuf:"bytes,1,opt,name=kind"`
 	// APIGroup holds the API group of the referenced subject.
 	// Defaults to "" for ServiceAccount subjects.
 	// Defaults to "rbac.authorization.k8s.io" for User and Group subjects.
 	// +optional
-	APIGroup string `json:"apiGroup,omitempty" protobuf:"bytes,2,opt.name=apiGroup"`
+	APIGroup string `json:"apiGroup,omitempty" protobuf:"bytes,2,opt,name=apiGroup"`
 	// Name of the object being referenced.
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
 	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
 	// Namespace of the referenced object.  If the object kind is non-namespace, such as "User" or "Group", and this value is not empty
 	// the Authorizer should report an error.
@@ -97,15 +102,20 @@ type Subject struct {
 // +structType=atomic
 type RoleRef struct {
 	// APIGroup is the group for the resource being referenced
+	// +optional
 	APIGroup string `json:"apiGroup" protobuf:"bytes,1,opt,name=apiGroup"`
 	// Kind is the type of resource being referenced
+	// +required
 	Kind string `json:"kind" protobuf:"bytes,2,opt,name=kind"`
 	// Name is the name of resource being referenced
+	// +required
+	// +k8s:alpha(since: "1.36")=+k8s:required
 	Name string `json:"name" protobuf:"bytes,3,opt,name=name"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.8
 
 // Role is a namespaced, logical grouping of PolicyRules that can be referenced as a unit by a RoleBinding.
 type Role struct {
@@ -117,11 +127,13 @@ type Role struct {
 	// Rules holds all the PolicyRules for this Role
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.36")=+k8s:optional
 	Rules []PolicyRule `json:"rules" protobuf:"bytes,2,rep,name=rules"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.8
 
 // RoleBinding references a role, but does not contain it.  It can reference a Role in the same namespace or a ClusterRole in the global namespace.
 // It adds who information via Subjects and namespace information by which namespace it exists in.  RoleBindings in a given
@@ -135,15 +147,18 @@ type RoleBinding struct {
 	// Subjects holds references to the objects the role applies to.
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.36")=+k8s:optional
 	Subjects []Subject `json:"subjects,omitempty" protobuf:"bytes,2,rep,name=subjects"`
 
 	// RoleRef can reference a Role in the current namespace or a ClusterRole in the global namespace.
 	// If the RoleRef cannot be resolved, the Authorizer must return an error.
 	// This field is immutable.
+	// +required
 	RoleRef RoleRef `json:"roleRef" protobuf:"bytes,3,opt,name=roleRef"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.8
 
 // RoleBindingList is a collection of RoleBindings
 type RoleBindingList struct {
@@ -157,6 +172,7 @@ type RoleBindingList struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.8
 
 // RoleList is a collection of Roles
 type RoleList struct {
@@ -172,6 +188,7 @@ type RoleList struct {
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.8
 
 // ClusterRole is a cluster level, logical grouping of PolicyRules that can be referenced as a unit by a RoleBinding or ClusterRoleBinding.
 type ClusterRole struct {
@@ -183,6 +200,7 @@ type ClusterRole struct {
 	// Rules holds all the PolicyRules for this ClusterRole
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.36")=+k8s:optional
 	Rules []PolicyRule `json:"rules" protobuf:"bytes,2,rep,name=rules"`
 
 	// AggregationRule is an optional field that describes how to build the Rules for this ClusterRole.
@@ -204,6 +222,7 @@ type AggregationRule struct {
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.8
 
 // ClusterRoleBinding references a ClusterRole, but not contain it.  It can reference a ClusterRole in the global namespace,
 // and adds who information via Subject.
@@ -216,15 +235,18 @@ type ClusterRoleBinding struct {
 	// Subjects holds references to the objects the role applies to.
 	// +optional
 	// +listType=atomic
+	// +k8s:alpha(since: "1.36")=+k8s:optional
 	Subjects []Subject `json:"subjects,omitempty" protobuf:"bytes,2,rep,name=subjects"`
 
 	// RoleRef can only reference a ClusterRole in the global namespace.
 	// If the RoleRef cannot be resolved, the Authorizer must return an error.
 	// This field is immutable.
+	// +required
 	RoleRef RoleRef `json:"roleRef" protobuf:"bytes,3,opt,name=roleRef"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.8
 
 // ClusterRoleBindingList is a collection of ClusterRoleBindings
 type ClusterRoleBindingList struct {
@@ -238,6 +260,7 @@ type ClusterRoleBindingList struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.8
 
 // ClusterRoleList is a collection of ClusterRoles
 type ClusterRoleList struct {

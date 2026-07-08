@@ -1,2 +1,37 @@
-.idea
-dist
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+coverage.out
+coverage.html
+
+# Secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+secrets.yaml
+secrets.yml
+
+# Project-specific
+.claude
+RELEASE_*
+NOTES_*
+
+# MkDocs build output
+site/
+
+# Python (MkDocs dependencies)
+__pycache__/
+*.pyc
+venv/
+.venv/

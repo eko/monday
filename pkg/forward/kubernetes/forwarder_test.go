@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,25 +9,17 @@ import (
 	"os"
 	"testing"
 
-	clientmocks "github.com/eko/monday/internal/test/mocks/kubernetes/client"
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/ui"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"go.uber.org/mock/gomock"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/kubernetes/fake"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/flowcontrol"
 )
-
-type RESTClient http.Client
-
-func (r RESTClient) Do(request *http.Request) (*http.Response, error) {
-	return &http.Response{}, nil
-}
 
 func TestNewForwarder(t *testing.T) {
 	// Given
@@ -177,6 +168,22 @@ func TestGetStopChannel(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+// newRestClientMock returns a REST client pointing to a local test server
+func newRestClientMock(t *testing.T) restclient.Interface {
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.WriteHeader(http.StatusOK)
+		_, _ = res.Write([]byte("ok, port forward is asked"))
+	}))
+	t.Cleanup(testServer.Close)
+
+	url, _ := url.Parse(testServer.URL)
+	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(2.0, 1)
+	httpClient := &http.Client{}
+	restClientMock, _ := restclient.NewRESTClient(url, "/1.0", restclient.ClientContentConfig{}, rateLimiter, httpClient)
+
+	return restClientMock
+}
+
 func TestForwardTypeLocal(t *testing.T) {
 	// Given
 	ctx := context.Background()
@@ -195,52 +202,17 @@ func TestForwardTypeLocal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Mock Kubernetes Go client calls for retrieving deployment
-	deploymentInterface := &clientmocks.DeploymentInterface{}
-	deploymentInterface.On("List", ctx, metav1.ListOptions{LabelSelector: "app=my-test-app"}).
-		Return(&appsv1.DeploymentList{
-			Items: []appsv1.Deployment{},
-		})
+	// A pod matching the selector exists but is not running
+	clientSet := fake.NewClientset(&corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-test-app-bd4sk",
+			Namespace: "backend",
+			Labels:    map[string]string{"app": "my-test-app"},
+		},
+	})
 
-	appsV1Interface := &clientmocks.AppsV1Interface{}
-	appsV1Interface.On("Deployments", "backend").
-		Return(deploymentInterface)
-
-	clientSetMock := &clientmocks.Interface{}
-	clientSetMock.On("AppsV1").
-		Return(appsV1Interface)
-
-	// Mock Kubernetes Go client calls for retrieving pods
-	podInterface := &clientmocks.PodInterface{}
-	podInterface.On("List", ctx, metav1.ListOptions{LabelSelector: "app=my-test-app"}).
-		Return(&corev1.PodList{
-			Items: []corev1.Pod{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-test-app-bd4sk",
-					},
-				},
-			},
-		}, nil)
-
-	coreV1Interface := &clientmocks.CoreV1Interface{}
-	coreV1Interface.On("Pods", "backend").Return(podInterface)
-
-	clientSetMock.On("CoreV1").Return(coreV1Interface)
-
-	// Mock Kubernetes Rest client
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.WriteHeader(http.StatusOK)
-		res.Write([]byte("ok, port forward is asked"))
-	}))
-
-	url, _ := url.Parse(testServer.URL)
-	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(2.0, 1)
-	httpClient := &http.Client{}
-	restClientMock, _ := rest.NewRESTClient(url, "/1.0", restclient.ClientContentConfig{}, rateLimiter, httpClient)
-
-	forwarder.clientSet = clientSetMock
-	forwarder.restClient = restClientMock
+	forwarder.clientSet = clientSet
+	forwarder.restClient = newRestClientMock(t)
 
 	// When
 	err = forwarder.Forward(ctx)
@@ -268,99 +240,61 @@ func TestForwardTypeRemote(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Define deployment & container mock
-	containerMock := corev1.Container{
-		Image: "acme.tld/my-remote-app",
-		Ports: []corev1.ContainerPort{
-			{
-				Name:          "http",
-				HostPort:      8080,
-				ContainerPort: 8080,
-			},
-		},
-	}
-
-	deploymentMock := appsv1.Deployment{
+	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "my-remote-app-deployment",
+			Name:      "my-remote-app-deployment",
+			Namespace: "backend",
+			Labels:    map[string]string{"app": "my-remote-app"},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{containerMock},
+					Containers: []corev1.Container{
+						{
+							Image: "acme.tld/my-remote-app",
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "http",
+									HostPort:      8080,
+									ContainerPort: 8080,
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 	}
 
-	// Mock Kubernetes Go client calls for retrieving deployment
-	deploymentInterface := &clientmocks.DeploymentInterface{}
-	deploymentInterface.On("List", ctx, metav1.ListOptions{LabelSelector: "app=my-remote-app"}).
-		Return(&appsv1.DeploymentList{
-			Items: []appsv1.Deployment{
-				deploymentMock,
-			},
-		}, nil)
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-remote-app-bd4sk",
+			Namespace: "backend",
+			Labels:    map[string]string{"app": "my-remote-app"},
+		},
+	}
 
-	deploymentInterface.
-		On("Update", ctx, mock.AnythingOfType("*v1.Deployment"), metav1.UpdateOptions{}).
-		Return(nil, nil)
+	clientSet := fake.NewClientset(deployment, pod)
 
-	appsV1Interface := &clientmocks.AppsV1Interface{}
-	appsV1Interface.On("Deployments", "backend").
-		Return(deploymentInterface)
-
-	// Local forward then...
-	// Mock Kubernetes Go client calls for retrieving pods
-	podInterface := &clientmocks.PodInterface{}
-	podInterface.On("List", ctx, metav1.ListOptions{LabelSelector: "app=my-remote-app"}).
-		Return(&corev1.PodList{
-			Items: []corev1.Pod{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "my-test-app-bd4sk",
-					},
-				},
-			},
-		}, nil)
-
-	coreV1Interface := &clientmocks.CoreV1Interface{}
-	coreV1Interface.On("Pods", "backend").Return(podInterface)
-
-	// Mock Kubernetes Rest client
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.WriteHeader(http.StatusOK)
-		res.Write([]byte("ok, port forward is asked"))
-	}))
-
-	url, _ := url.Parse(testServer.URL)
-	rateLimiter := flowcontrol.NewTokenBucketRateLimiter(2.0, 1)
-	httpClient := &http.Client{}
-	restClientMock, _ := rest.NewRESTClient(url, "/1.0", restclient.ClientContentConfig{}, rateLimiter, httpClient)
-
-	// ClientSet and ClientRest
-	clientSetMock := &clientmocks.Interface{}
-	clientSetMock.On("AppsV1").
-		Return(appsV1Interface)
-	clientSetMock.On("CoreV1").
-		Return(coreV1Interface)
-
-	// Replace mocked properties
-	forwarder.clientSet = clientSetMock
-	forwarder.restClient = restClientMock
+	forwarder.clientSet = clientSet
+	forwarder.restClient = newRestClientMock(t)
 
 	// When
 	err = forwarder.Forward(ctx)
 
-	// Then
-	assert.Equal(t, errors.New("No runnning pod available for selector 'app=my-remote-app'"), err)
+	// Then: no running pod is available so the local forward part fails...
+	assert.Contains(t, err.Error(), "No runnning pod available for selector 'app=my-remote-app'")
 
-	if deploy, ok := forwarder.deployments["test-remote-forward"]; ok {
-		assert.Equal(t, deploy.OldImage, "acme.tld/my-remote-app")
-		assert.Equal(t, deploy.Deployment.Spec.Template.Spec.Containers[0].Image, "ekofr/monday-proxy")
+	// ...but the deployment has been backed up and patched with the proxy image
+	if backup, ok := forwarder.deployments["test-remote-forward"]; ok {
+		assert.Equal(t, "acme.tld/my-remote-app", backup.OldImage)
 	} else {
 		t.Fatal("Cannot retrieve backuped deployment image when doing remote-forward")
 	}
+
+	patched, err := clientSet.AppsV1().Deployments("backend").Get(ctx, "my-remote-app-deployment", metav1.GetOptions{})
+	assert.Nil(t, err)
+	assert.Equal(t, ProxyDockerImage, patched.Spec.Template.Spec.Containers[0].Image)
 }
 
 func TestSelectPod(t *testing.T) {

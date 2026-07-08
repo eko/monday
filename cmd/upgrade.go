@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime"
@@ -33,7 +32,7 @@ var upgradeCmd = &cobra.Command{
 			return
 		}
 
-		data, _ := ioutil.ReadAll(response.Body)
+		data, _ := io.ReadAll(response.Body)
 
 		githubResponse := &GithubAPIResponse{}
 		json.Unmarshal(data, githubResponse)

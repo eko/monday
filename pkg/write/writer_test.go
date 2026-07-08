@@ -2,7 +2,6 @@ package write
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -106,7 +105,7 @@ Name: test-app
 }
 
 func assertFileContent(t *testing.T, filepath, expected string) {
-	data, err := ioutil.ReadFile(filepath)
+	data, err := os.ReadFile(filepath)
 	if err != nil {
 		t.Fatal(fmt.Sprintf("Cannot read file '%s': %v", filepath, err))
 	}
