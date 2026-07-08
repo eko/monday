@@ -18,6 +18,7 @@ type Layout struct {
 
 	forwardStatuses *Statuses
 	proxyStatuses   *ProxyStatuses
+	actions         Actions
 
 	program atomic.Pointer[tea.Program]
 	dirty   atomic.Bool
@@ -103,6 +104,12 @@ func (l *Layout) GetProxyStatuses() *ProxyStatuses {
 	return l.proxyStatuses
 }
 
+// SetActions registers the operations the terminal UI can trigger on the
+// selected forward row
+func (l *Layout) SetActions(actions Actions) {
+	l.actions = actions
+}
+
 // Run starts the terminal UI and blocks until the user quits, it is a no-op
 // when the terminal UI is disabled
 func (l *Layout) Run() error {
@@ -118,6 +125,7 @@ func (l *Layout) Run() error {
 		l.proxyStatuses,
 		&l.dirty,
 	)
+	model.actions = l.actions
 
 	program := tea.NewProgram(
 		model,

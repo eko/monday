@@ -180,7 +180,12 @@ func runProject(ctx context.Context, conf *config.Config, choice string) {
 	builder = build.NewBuilder(layout.GetLogsView(), project, conf.Build)
 	writer = write.NewWriter(layout.GetLogsView(), project)
 	runner = run.NewRunner(layout.GetLogsView(), proxyfier, project, conf.Run)
-	forwarder = forward.NewForwarder(layout.GetForwardsView(), layout.GetForwardStatuses(), proxyfier, project)
+
+	fwd := forward.NewForwarder(layout.GetForwardsView(), layout.GetForwardStatuses(), proxyfier, project)
+	fwd.SetLogsView(layout.GetLogsView())
+	forwarder = fwd
+
+	layout.SetActions(fwd)
 
 	watcher = watch.NewWatcher(setuper, builder, writer, runner, forwarder, conf.Watch, project)
 	go watcher.Watch(ctx)

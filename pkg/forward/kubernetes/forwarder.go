@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,6 +45,10 @@ const (
 	// be alive and ready. When it is not anymore (e.g. redeployment), the port-forward
 	// is closed so it can reconnect to a fresh pod
 	podMonitorInterval = 2 * time.Second
+
+	// podLogsTailLines is the number of recent log lines displayed when starting
+	// to stream the logs of a pod
+	podLogsTailLines = 50
 )
 
 var (
@@ -143,6 +148,20 @@ func (f *Forwarder) GetStopChannel() chan struct{} {
 	defer f.mux.Unlock()
 
 	return f.stopChannel
+}
+
+// Reconnect closes the currently active port-forward connection so a fresh one
+// is established by the connection loop
+func (f *Forwarder) Reconnect() error {
+	f.mux.Lock()
+	defer f.mux.Unlock()
+
+	if f.stopChannel != nil {
+		close(f.stopChannel)
+		f.stopChannel = nil
+	}
+
+	return nil
 }
 
 // Forward method executes the local or remote port-forward depending on the given type
@@ -349,6 +368,44 @@ func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 	}
 
 	return fmt.Errorf("connection to pod '%s' has been closed", runningPod.Name)
+}
+
+// StreamPodLogs streams the logs of the pod currently targeted by this forward
+// into the given writer, following new lines until the context is canceled or
+// the pod goes away
+func (f *Forwarder) StreamPodLogs(ctx context.Context, out io.Writer) error {
+	selector := f.getSelector()
+	if selector == "" {
+		return ErrNoSelectorLabel
+	}
+
+	pods, err := f.clientSet.CoreV1().Pods(f.namespace).List(
+		ctx,
+		metav1.ListOptions{LabelSelector: selector},
+	)
+	if err != nil {
+		return fmt.Errorf("unable to find pods for selector '%s': %w", selector, err)
+	}
+
+	pod, found := selectPod(pods.Items)
+	if !found {
+		return fmt.Errorf("no running pod available for selector '%s'", selector)
+	}
+
+	tailLines := int64(podLogsTailLines)
+
+	stream, err := f.clientSet.CoreV1().Pods(f.namespace).GetLogs(pod.Name, &apiv1.PodLogOptions{
+		Follow:    true,
+		TailLines: &tailLines,
+	}).Stream(ctx)
+	if err != nil {
+		return fmt.Errorf("unable to stream logs of pod '%s': %w", pod.Name, err)
+	}
+	defer stream.Close()
+
+	_, err = io.Copy(out, stream)
+
+	return err
 }
 
 // monitorPod watches the forwarded pod and closes the current port-forward when the

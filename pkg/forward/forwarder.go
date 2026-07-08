@@ -47,15 +47,29 @@ type StatusNotifier interface {
 		state ui.ForwardState,
 		message string,
 	)
+	SetLogsStreaming(
+		name string,
+		streaming bool,
+	)
 }
 
 // forwarder is the struct that manage running local applications
 type forwarder struct {
 	view       ui.View
+	logsView   ui.View
 	statuses   StatusNotifier
 	proxy      proxy.Proxy
 	forwards   []*config.Forward
 	forwarders sync.Map
+
+	// pauses holds the pause control of each forward name
+	pauses sync.Map
+	// reconnecters holds the functions closing the active connections of each forward name
+	reconnecters sync.Map
+	// logStreamers holds the pod logs source of each forward name
+	logStreamers sync.Map
+	// logStreams holds the cancel function of each active pod logs stream
+	logStreams sync.Map
 }
 
 // NewForwarder instanciates a Forwarder struct from configuration data
@@ -95,6 +109,8 @@ func (f *forwarder) ForwardAll(ctx context.Context) {
 
 // Stop stops all currently active forwarders
 func (f *forwarder) Stop(ctx context.Context) {
+	f.stopLogStreams()
+
 	f.forwarders.Range(func(key, value interface{}) bool {
 		for _, forwarder := range value.([]ForwarderType) {
 			forwarder.Stop(ctx)
@@ -187,6 +203,8 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 		}
 
 		forwarder.OnStateChange(f.stateCallback(forward.Name))
+		f.registerReconnecter(forward.Name, forwarder.Reconnect)
+		f.registerLogStreamer(forward.Name, forwarder)
 		f.addForwarder(forward.Name, forwarder)
 
 	// Kubernetes remote forward: open both a SSH remote-forward connection and a Kubernetes port-forward, use proxy
@@ -199,6 +217,8 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 		}
 
 		forwarder.OnStateChange(f.stateCallback(forward.Name))
+		f.registerReconnecter(forward.Name, forwarder.Reconnect)
+		f.registerLogStreamer(forward.Name, forwarder)
 		f.addForwarder(forward.Name, forwarder)
 
 		// Then, ssh remote-forward for all specified ports to pod's container
@@ -215,6 +235,7 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 				}
 
 				forwarder.OnStateChange(f.stateCallback(forward.Name))
+				f.registerReconnecter(forward.Name, forwarder.Reconnect)
 				f.addForwarder(forward.Name, forwarder)
 			}
 		}
@@ -229,6 +250,7 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 			}
 
 			forwarder.OnStateChange(f.stateCallback(forward.Name))
+			f.registerReconnecter(forward.Name, forwarder.Reconnect)
 			f.addForwarder(forward.Name, forwarder)
 		}
 
@@ -243,6 +265,7 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 			}
 
 			forwarder.OnStateChange(f.stateCallback(forward.Name))
+			f.registerReconnecter(forward.Name, forwarder.Reconnect)
 			f.addForwarder(forward.Name, forwarder)
 		}
 	}
@@ -260,6 +283,20 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 				defer helper.RecoverAndLog(f.view, fmt.Sprintf("forward '%s' connection loop", forward.Name))
 
 				for {
+					// When paused by the user, wait for a resume before reconnecting
+					if control := f.pauseControlFor(forward.Name); control.isPaused() {
+						f.statuses.Set(forward.Name, ui.StatePaused, "paused, press 'p' to resume")
+
+						select {
+						case <-ctx.Done():
+							return
+						case <-control.resumeChannel():
+						}
+
+						backoff.Reset()
+						continue
+					}
+
 					f.statuses.Set(forward.Name, ui.StateConnecting, "establishing connection...")
 
 					startedAt := time.Now()
@@ -269,6 +306,11 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 						// Forwarder returned without error: it has been intentionally stopped
 						f.statuses.Set(forward.Name, ui.StateStopped, "forward has been stopped")
 						return
+					}
+
+					// The connection has been closed by a user pause: wait silently
+					if f.pauseControlFor(forward.Name).isPaused() {
+						continue
 					}
 
 					// The connection stayed up long enough to consider the previous

@@ -170,6 +170,21 @@ func (t *combinedTable) tableCount() int {
 	return len(t.allRows())
 }
 
+// selectedRow returns the currently selected row
+func (t *combinedTable) selectedRow() (combinedRow, bool) {
+	rows := t.rows()
+
+	if len(rows) == 0 {
+		return combinedRow{}, false
+	}
+
+	if t.selected >= len(rows) {
+		t.selected = len(rows) - 1
+	}
+
+	return rows[t.selected], true
+}
+
 // moveSelection moves the selected row by the given delta, clamped to the rows
 func (t *combinedTable) moveSelection(delta int) {
 	count := len(t.rows())
@@ -416,6 +431,11 @@ func (t *combinedTable) renderMainLine(row combinedRow, nameWidth, width int, se
 			details += " · "
 		}
 		details += shortDuration(time.Since(forward.UpdatedAt))
+
+		// Identify the rows for which pod logs are being streamed
+		if forward.LogsStreaming {
+			details = "📜 logs · " + details
+		}
 
 		if selected {
 			return t.renderSelectedLine(chevron, stateIcons[forward.State], row.id, string(forward.State), plainSparkline, fmt.Sprintf("↻%-3d", forward.Reconnects), details, nameWidth, width)

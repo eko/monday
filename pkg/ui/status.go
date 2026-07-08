@@ -18,6 +18,7 @@ const (
 	StateReconnecting ForwardState = "reconnecting"
 	StateError        ForwardState = "error"
 	StateStopped      ForwardState = "stopped"
+	StatePaused       ForwardState = "paused"
 )
 
 var stateIcons = map[ForwardState]string{
@@ -27,6 +28,7 @@ var stateIcons = map[ForwardState]string{
 	StateReconnecting: "◍",
 	StateError:        "✕",
 	StateStopped:      "○",
+	StatePaused:       "∥",
 }
 
 var stateStdoutIcons = map[ForwardState]string{
@@ -36,6 +38,7 @@ var stateStdoutIcons = map[ForwardState]string{
 	StateReconnecting: "🔁",
 	StateError:        "❌",
 	StateStopped:      "⏹",
+	StatePaused:       "⏸",
 }
 
 // ForwardStatus holds the latest known state of a forwarded application
@@ -49,6 +52,9 @@ type ForwardStatus struct {
 
 	// Reconnects counts how many times the connection has been lost
 	Reconnects int
+
+	// LogsStreaming indicates the pod logs of this forward are being streamed
+	LogsStreaming bool
 
 	// History holds periodic state samples, rendered as a mini graph
 	History []ForwardState
@@ -140,6 +146,28 @@ func (s *Statuses) Set(name string, state ForwardState, message string) {
 	}
 }
 
+// SetLogsStreaming records whether the pod logs of a forward are being streamed
+func (s *Statuses) SetLogsStreaming(name string, streaming bool) {
+	s.mux.Lock()
+
+	status, ok := s.items[name]
+	if !ok {
+		s.mux.Unlock()
+		return
+	}
+
+	status.LogsStreaming = streaming
+	s.version++
+
+	notify := s.notify
+
+	s.mux.Unlock()
+
+	if notify != nil {
+		notify()
+	}
+}
+
 // setNotify registers the callback nudging the terminal UI on status change
 func (s *Statuses) setNotify(notify func()) {
 	s.mux.Lock()
@@ -161,6 +189,12 @@ func (s *Statuses) Sample(maxHistory int) {
 			status.History = append([]ForwardState(nil), status.History[overflow:]...)
 		}
 	}
+}
+
+// Snapshot returns a copy of the current statuses, in registration order
+func (s *Statuses) Snapshot() []ForwardStatus {
+	statuses, _ := s.snapshot()
+	return statuses
 }
 
 // snapshot returns a copy of the current statuses, in registration order,

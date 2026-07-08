@@ -90,6 +90,7 @@ var (
 		StateReconnecting: lipgloss.NewStyle().Foreground(colorWarn),
 		StateError:        lipgloss.NewStyle().Foreground(colorError),
 		StateStopped:      lipgloss.NewStyle().Foreground(colorMuted),
+		StatePaused:       lipgloss.NewStyle().Foreground(colorMuted),
 	}
 
 	statusNameStyle = lipgloss.NewStyle().Bold(true).Foreground(colorTitle)
@@ -106,6 +107,7 @@ var (
 		StateReconnecting: "▄",
 		StateError:        "▂",
 		StateStopped:      "▁",
+		StatePaused:       "▁",
 	}
 )
 
@@ -152,6 +154,7 @@ type model struct {
 	visible []int
 
 	statuses  *Statuses
+	actions   Actions
 	tickCount int
 
 	fullscreen  bool
@@ -369,6 +372,9 @@ func (m *model) updateKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			m.refreshContents()
 		}
+
+	case "r", "p", "c", "o", "L":
+		m.handleAction(msg.String())
 
 	case "k":
 		m.scrollFocused(-scrollStep)
@@ -777,6 +783,11 @@ func (m *model) headerHeight() int {
 }
 
 func (m *model) footerHeight() int {
+	// The combined table pane displays a second footer line with its actions
+	if !m.filtering && !m.showAbout && len(m.panes) > 0 && m.focusedPane().table != nil {
+		return 2
+	}
+
 	return 1
 }
 
@@ -917,36 +928,46 @@ func (m *model) footerView() string {
 		return footerDescStyle.Render(" press any key to close")
 	}
 
-	var keys [][2]string
-
 	if pane := m.focusedPane(); pane.table != nil {
-		keys = [][2]string{
+		navigation := [][2]string{
 			{"tab", "switch"},
 			{"↑/↓", "select"},
 			{"⌃/🌐↑↓", "jump"},
 			{"⏎/␣", "details"},
-			{"l", "logs"},
-			{"f", "fullscreen"},
 			{"/", "filter"},
 			{"?", "about"},
 			{"q", "quit"},
+		}
+
+		actions := [][2]string{
+			{"r", "reconnect"},
+			{"p", "pause"},
+			{"c", "copy"},
+			{"o", "open"},
+			{"L", "pod logs"},
+			{"l", "events"},
+			{"f", "fullscreen"},
 		}
 
 		if pane.showLog {
-			keys = append(keys[:5:5], append([][2]string{{"j/k", "scroll"}, {"a", "follow"}}, keys[5:]...)...)
+			actions = append(actions, [2]string{"j/k", "scroll"}, [2]string{"a", "follow"})
 		}
-	} else {
-		keys = [][2]string{
-			{"tab", "switch"},
-			{"↑/↓", "scroll"},
-			{"a", "follow"},
-			{"f", "fullscreen"},
-			{"/", "filter"},
-			{"?", "about"},
-			{"q", "quit"},
-		}
+
+		return renderFooterKeys(navigation) + "\n" + renderFooterKeys(actions)
 	}
 
+	return renderFooterKeys([][2]string{
+		{"tab", "switch"},
+		{"↑/↓", "scroll"},
+		{"a", "follow"},
+		{"f", "fullscreen"},
+		{"/", "filter"},
+		{"?", "about"},
+		{"q", "quit"},
+	})
+}
+
+func renderFooterKeys(keys [][2]string) string {
 	parts := make([]string, 0, len(keys))
 	for _, key := range keys {
 		parts = append(parts, footerKeyStyle.Render(key[0])+footerDescStyle.Render(" "+key[1]))

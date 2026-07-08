@@ -73,6 +73,19 @@ func (f *Forwarder) GetStopChannel() chan struct{} {
 	return f.stopChannel
 }
 
+// Reconnect kills the current SSH tunnel so a fresh one is established by the
+// connection loop
+func (f *Forwarder) Reconnect() error {
+	f.mux.Lock()
+	defer f.mux.Unlock()
+
+	if f.cmd != nil && f.cmd.Process != nil {
+		return f.cmd.Process.Kill()
+	}
+
+	return nil
+}
+
 func (f *Forwarder) Forward(_ context.Context) error {
 	if f.remote == "" {
 		return fmt.Errorf("Please provide a 'remote' attribute specifing the host you want to SSH on")

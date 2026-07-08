@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/eko/monday/pkg/config"
@@ -295,6 +296,47 @@ func TestForwardTypeRemote(t *testing.T) {
 	patched, err := clientSet.AppsV1().Deployments("backend").Get(ctx, "my-remote-app-deployment", metav1.GetOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, ProxyDockerImage, patched.Spec.Template.Spec.Containers[0].Image)
+}
+
+func TestStreamPodLogs(t *testing.T) {
+	// Given
+	ctx := context.Background()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	initKubeConfig(t)
+	defer os.Remove(defaultKubeConfigPath)
+
+	view := ui.NewMockView(ctrl)
+
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, "test-forward", "context-test", "backend", []string{"8080:8080"}, map[string]string{
+		"app": "my-test-app",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	forwarder.clientSet = fake.NewClientset(&corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-test-app-bd4sk",
+			Namespace: "backend",
+			Labels:    map[string]string{"app": "my-test-app"},
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			Conditions: []corev1.PodCondition{
+				{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+			},
+		},
+	})
+
+	// When
+	var output strings.Builder
+	err = forwarder.StreamPodLogs(ctx, &output)
+
+	// Then: the fake clientset streams a static log body
+	assert.Nil(t, err)
+	assert.Equal(t, "fake logs", output.String())
 }
 
 func TestSelectPod(t *testing.T) {
