@@ -336,6 +336,24 @@ func (m *model) updateKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.scrollFocused(scrollStep)
 		}
 
+	case "ctrl+up":
+		// Jump to the first visible row, then a full page up
+		if pane := m.focusedPane(); pane.table != nil {
+			pane.table.jumpSelection(-1)
+			m.refreshContents()
+		} else {
+			m.scrollFocused(-m.focusedPane().viewport.Height)
+		}
+
+	case "ctrl+down":
+		// Jump to the last visible row, then a full page down
+		if pane := m.focusedPane(); pane.table != nil {
+			pane.table.jumpSelection(1)
+			m.refreshContents()
+		} else {
+			m.scrollFocused(m.focusedPane().viewport.Height)
+		}
+
 	case "enter", " ":
 		if pane := m.focusedPane(); pane.table != nil {
 			pane.table.toggleSelected()
@@ -358,21 +376,41 @@ func (m *model) updateKeys(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "j":
 		m.scrollFocused(scrollStep)
 
+	// The Globe/fn key on macOS sends page up/down for 🌐+↑/↓
 	case "pgup":
-		m.scrollFocused(-m.focusedPane().viewport.Height)
+		if pane := m.focusedPane(); pane.table != nil {
+			pane.table.jumpSelection(-1)
+			m.refreshContents()
+		} else {
+			m.scrollFocused(-m.focusedPane().viewport.Height)
+		}
 
 	case "pgdown":
-		m.scrollFocused(m.focusedPane().viewport.Height)
+		if pane := m.focusedPane(); pane.table != nil {
+			pane.table.jumpSelection(1)
+			m.refreshContents()
+		} else {
+			m.scrollFocused(m.focusedPane().viewport.Height)
+		}
 
+	// The Globe/fn key on macOS sends home/end for 🌐+←/→
 	case "g", "home":
-		pane := m.focusedPane()
-		pane.autoscroll = false
-		pane.viewport.GotoTop()
+		if pane := m.focusedPane(); pane.table != nil {
+			pane.table.moveSelection(-pane.table.tableCount())
+			m.refreshContents()
+		} else {
+			pane.autoscroll = false
+			pane.viewport.GotoTop()
+		}
 
 	case "G", "end":
-		pane := m.focusedPane()
-		pane.autoscroll = true
-		pane.viewport.GotoBottom()
+		if pane := m.focusedPane(); pane.table != nil {
+			pane.table.moveSelection(pane.table.tableCount())
+			m.refreshContents()
+		} else {
+			pane.autoscroll = true
+			pane.viewport.GotoBottom()
+		}
 
 	case "a":
 		pane := m.focusedPane()
@@ -885,6 +923,7 @@ func (m *model) footerView() string {
 		keys = [][2]string{
 			{"tab", "switch"},
 			{"↑/↓", "select"},
+			{"⌃/🌐↑↓", "jump"},
 			{"⏎/␣", "details"},
 			{"l", "logs"},
 			{"f", "fullscreen"},
@@ -894,7 +933,7 @@ func (m *model) footerView() string {
 		}
 
 		if pane.showLog {
-			keys = append(keys[:4:4], append([][2]string{{"j/k", "scroll"}, {"a", "follow"}}, keys[4:]...)...)
+			keys = append(keys[:5:5], append([][2]string{{"j/k", "scroll"}, {"a", "follow"}}, keys[5:]...)...)
 		}
 	} else {
 		keys = [][2]string{

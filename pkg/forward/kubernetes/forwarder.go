@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/eko/monday/pkg/config"
+	"github.com/eko/monday/pkg/helper"
 	"github.com/eko/monday/pkg/log"
 	"github.com/eko/monday/pkg/ui"
 	appsv1 "k8s.io/api/apps/v1"
@@ -322,6 +323,8 @@ func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 	defer close(monitorDone)
 
 	go func() {
+		defer helper.RecoverAndLog(f.view, fmt.Sprintf("pod monitor '%s'", f.name))
+
 		select {
 		case <-readyChannel:
 			f.readyOnce.Do(func() {

@@ -10,15 +10,12 @@ import (
 )
 
 var (
-	networkInterface = ""
+	networkInterface    = ""
+	networkInterfaceErr error
 )
 
 func init() {
-	var err error
-	networkInterface, err = getNetworkInterface()
-	if err != nil {
-		panic(err)
-	}
+	networkInterface, networkInterfaceErr = getNetworkInterface()
 }
 
 func getNetworkInterface() (string, error) {
@@ -39,7 +36,7 @@ func getNetworkInterface() (string, error) {
 
 // getAddIPCommandWithArgs returns the command (ifconfig, ip, ...) that will be used for the current OS
 // and its associated arguments
-func getAddIPCommandWithArgs(ip string) (string, []string) {
+func getAddIPCommandWithArgs(ip string) (string, []string, error) {
 	var command = "ifconfig"
 	var args []string
 
@@ -60,13 +57,17 @@ func getAddIPCommandWithArgs(ip string) (string, []string) {
 		}
 
 	default:
-		panic(fmt.Sprintf("Sorry, it seems your OS (%s) is not available yet.", runtime.GOOS))
+		return "", nil, fmt.Errorf("sorry, it seems your OS (%s) is not available yet", runtime.GOOS)
 	}
 
-	return command, args
+	return command, args, nil
 }
 
 func assignIpToPort(a, b, c, d byte, port string) (byte, byte, byte, byte, error) {
+	if networkInterfaceErr != nil {
+		return a, b, c, d, fmt.Errorf("unable to resolve the network interface to attribute IP addresses: %w", networkInterfaceErr)
+	}
+
 	// Retrieve network interface
 	iface, err := net.InterfaceByName(networkInterface)
 	if err != nil {
@@ -88,7 +89,10 @@ func assignIpToPort(a, b, c, d byte, port string) (byte, byte, byte, byte, error
 
 		// In case IP is already assigned to network interface, don't try to create it again
 		if !isAlreadyAssigned(ip, addrs) {
-			command, args := getAddIPCommandWithArgs(ip.String())
+			command, args, err := getAddIPCommandWithArgs(ip.String())
+			if err != nil {
+				return a, b, c, d, err
+			}
 
 			if err := exec.Command(command, args...).Run(); err != nil {
 				return a, b, c, d, fmt.Errorf("error while trying to run ifconfig/ip command to add new IP address (%s) on network interface '%s': %v", ip.String(), networkInterface, err)

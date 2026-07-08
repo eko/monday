@@ -60,7 +60,7 @@ func Load() (*Config, error) {
 
 	err = yaml.Unmarshal(file, &conf)
 	if err != nil {
-		panic(fmt.Sprintf("An error has occured while reading configuration file:\n%v", err))
+		return nil, fmt.Errorf("an error has occured while reading the configuration file:\n%v", err)
 	}
 
 	// Override GOPATH environment variable if defined in configuration

@@ -34,6 +34,10 @@ type combinedTable struct {
 	offset   int
 	expanded map[string]bool
 
+	// visibleCount is the number of rows displayed by the last render, used to
+	// jump navigate by a full page
+	visibleCount int
+
 	// filter narrows the displayed rows to the ones matching it
 	filter string
 }
@@ -277,6 +281,7 @@ func (t *combinedTable) window(blocks [][]string, budget int) ([]string, int, in
 
 	if total <= budget {
 		t.offset = 0
+		t.visibleCount = len(blocks)
 
 		lines := make([]string, 0, total)
 		for _, block := range blocks {
@@ -340,7 +345,47 @@ func (t *combinedTable) window(blocks [][]string, budget int) ([]string, int, in
 		shown++
 	}
 
+	t.visibleCount = shown - t.offset
+
 	return lines, t.offset, len(blocks) - shown
+}
+
+// jumpSelection moves the selection to the first or last visible row, then by
+// a full page when already on it, allowing a faster navigation
+func (t *combinedTable) jumpSelection(direction int) {
+	count := len(t.rows())
+	if count == 0 {
+		return
+	}
+
+	page := t.visibleCount
+	if page < 1 {
+		page = count
+	}
+
+	first := t.offset
+	last := t.offset + page - 1
+	if last > count-1 {
+		last = count - 1
+	}
+
+	switch {
+	case direction < 0 && t.selected > first:
+		t.selected = first
+	case direction < 0:
+		t.selected -= page
+	case direction > 0 && t.selected < last:
+		t.selected = last
+	default:
+		t.selected += page
+	}
+
+	if t.selected < 0 {
+		t.selected = 0
+	}
+	if t.selected > count-1 {
+		t.selected = count - 1
+	}
 }
 
 // renderMainLine renders a selectable row: a forward line (kept identical to

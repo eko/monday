@@ -288,6 +288,99 @@ func TestModelFilterAppliesToCombinedTable(t *testing.T) {
 	assert.Contains(t, rendered, "cast-api-forward")
 }
 
+func TestCombinedTableJumpSelection(t *testing.T) {
+	// Given: 8 forwards displayed in a window of 4 rows
+	table, forwards, _ := newTestCombinedTable()
+
+	for _, name := range []string{"a-fwd", "b-fwd", "c-fwd", "d-fwd", "e-fwd", "f-fwd", "g-fwd", "h-fwd"} {
+		forwards.Register(name, "kubernetes", []string{"8080:8080"})
+	}
+
+	// Render once with room for 4 rows (summary + header + 4 rows + separator + indicator)
+	table.tableLines(120, 8, true)
+	assert.Equal(t, 4, table.visibleCount)
+
+	// When: jumping down from the first row
+	table.jumpSelection(1)
+
+	// Then: the selection is on the last visible row
+	assert.Equal(t, 3, table.selected)
+
+	// When: jumping down again from the last visible row
+	table.jumpSelection(1)
+
+	// Then: a full page down
+	assert.Equal(t, 7, table.selected)
+
+	// Jumping down at the end stays clamped
+	table.tableLines(120, 8, true)
+	table.jumpSelection(1)
+	assert.Equal(t, 7, table.selected)
+
+	// When: jumping up, back to the first visible row of the current window
+	table.tableLines(120, 8, true)
+	table.jumpSelection(-1)
+	assert.Equal(t, table.offset, table.selected)
+
+	// Jumping up repeatedly reaches the very first row
+	for i := 0; i < 3; i++ {
+		table.tableLines(120, 8, true)
+		table.jumpSelection(-1)
+	}
+	assert.Equal(t, 0, table.selected)
+}
+
+func TestModelCtrlArrowsJumpSelection(t *testing.T) {
+	// Given
+	layout := NewLayout(true)
+	layout.Init()
+
+	for _, name := range []string{"a-fwd", "b-fwd", "c-fwd", "d-fwd"} {
+		layout.GetForwardStatuses().Register(name, "kubernetes", []string{"8080:8080"})
+	}
+
+	model := newModel(
+		"my-project",
+		"",
+		[]*view{layout.logsView, layout.forwardsView},
+		layout.forwardStatuses,
+		layout.proxyStatuses,
+		&layout.dirty,
+	)
+	model.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+
+	table := model.focusedPane().table
+	if table == nil {
+		t.Fatal("expected the combined table to be focused")
+	}
+
+	// When: all rows fit, ctrl+down jumps to the last row
+	model.Update(tea.KeyMsg{Type: tea.KeyCtrlDown})
+
+	// Then
+	assert.Equal(t, 3, table.selected)
+
+	// When: ctrl+up jumps back to the first row
+	model.Update(tea.KeyMsg{Type: tea.KeyCtrlUp})
+
+	// Then
+	assert.Equal(t, 0, table.selected)
+
+	// The Globe/fn key on macOS sends page down for 🌐+↓: same jump behavior
+	model.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+	assert.Equal(t, 3, table.selected)
+
+	model.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	assert.Equal(t, 0, table.selected)
+
+	// 🌐+→ (end) selects the very last row, 🌐+← (home) the first one
+	model.Update(tea.KeyMsg{Type: tea.KeyEnd})
+	assert.Equal(t, 3, table.selected)
+
+	model.Update(tea.KeyMsg{Type: tea.KeyHome})
+	assert.Equal(t, 0, table.selected)
+}
+
 func TestCombinedTableWindowFollowsSelection(t *testing.T) {
 	// Given: more rows than the table can display
 	table, forwards, _ := newTestCombinedTable()

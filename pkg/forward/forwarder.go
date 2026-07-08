@@ -12,6 +12,7 @@ import (
 	"github.com/eko/monday/pkg/config"
 	"github.com/eko/monday/pkg/forward/kubernetes"
 	"github.com/eko/monday/pkg/forward/ssh"
+	"github.com/eko/monday/pkg/helper"
 	"github.com/eko/monday/pkg/proxy"
 	"github.com/eko/monday/pkg/ui"
 )
@@ -124,6 +125,7 @@ func (f *forwarder) addForwarder(name string, forwarder ForwarderType) {
 
 func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sync.WaitGroup) {
 	defer wg.Done()
+	defer helper.RecoverAndLog(f.view, "forwarder")
 
 	if err := f.checkForwardEnvironment(forward); err != nil {
 		f.view.Writef("❌  %s\n", err.Error())
@@ -255,6 +257,8 @@ func (f *forwarder) forward(ctx context.Context, forward *config.Forward, wg *sy
 			}
 
 			go func(forwarder ForwarderType) {
+				defer helper.RecoverAndLog(f.view, fmt.Sprintf("forward '%s' connection loop", forward.Name))
+
 				for {
 					f.statuses.Set(forward.Name, ui.StateConnecting, "establishing connection...")
 

@@ -2,6 +2,7 @@ package run
 
 import (
 	"os/exec"
+	"sync"
 	"syscall"
 
 	"github.com/eko/monday/pkg/config"
@@ -23,6 +24,7 @@ type runner struct {
 	proxy        proxy.Proxy
 	projectName  string
 	applications []*config.Application
+	mux          sync.Mutex
 	cmds         map[string]*exec.Cmd
 	view         ui.View
 	conf         *config.GlobalRun
@@ -54,6 +56,8 @@ func (r *runner) RunAll() {
 
 // Run launches the application
 func (r *runner) Run(application *config.Application) {
+	defer helper.RecoverAndLog(r.view, "runner")
+
 	if err := helper.CheckPathExists(application.GetPath()); err != nil {
 		r.view.Writef("❌  %s\n", err.Error())
 		return
@@ -92,9 +96,18 @@ func (r *runner) run(application *config.Application) {
 		return
 	}
 
-	r.cmds[application.Name] = cmd
+	if err := cmd.Start(); err != nil {
+		r.view.Writef("❌  Cannot run the application %s on path %s: %v\n", application.Name, applicationPath, err)
+		return
+	}
 
-	if err := cmd.Run(); err != nil {
+	// Register the command once started only, so a stop can always rely on a
+	// non-nil process
+	r.mux.Lock()
+	r.cmds[application.Name] = cmd
+	r.mux.Unlock()
+
+	if err := cmd.Wait(); err != nil {
 		r.view.Writef("❌  Cannot run the application %s on path %s: %v\n", application.Name, applicationPath, err)
 		return
 	}
@@ -116,21 +129,27 @@ func (r *runner) Stop() error {
 }
 
 func (r *runner) stopApplication(application *config.Application) {
-	if cmd, ok := r.cmds[application.Name]; ok {
+	r.mux.Lock()
+	cmd, ok := r.cmds[application.Name]
+	delete(r.cmds, application.Name)
+	r.mux.Unlock()
+
+	// The process can be nil when the application could not be started, and is
+	// reaped by the goroutine that started it: only kill its process group here
+	if ok && cmd.Process != nil {
 		pgid, err := syscall.Getpgid(cmd.Process.Pid)
 		if err == nil {
-			syscall.Kill(-pgid, syscall.SIGKILL)
-			cmd.Wait()
+			_ = syscall.Kill(-pgid, syscall.SIGKILL)
 		}
 	}
 
 	// In case we have stop command, run it
-	if len(application.Run.StopCommands) > 0 {
+	if application.Run != nil && len(application.Run.StopCommands) > 0 {
 		cmd := helper.BuildCmd(application.Run.StopCommands, application.GetPath(), nil, nil)
 		if err := cmd.Run(); err != nil {
 			r.view.Writef("❌  Cannot run stop command for application '%s': %v\n", application.Name, err)
 		}
 
-		cmd.Wait()
+		_ = cmd.Wait()
 	}
 }

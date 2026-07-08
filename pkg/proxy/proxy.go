@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/eko/monday/internal/wait"
+	"github.com/eko/monday/pkg/helper"
 	"github.com/eko/monday/pkg/hostfile"
 	"github.com/eko/monday/pkg/ui"
 )
@@ -192,6 +193,8 @@ func (p *proxy) Stop() error {
 // handleConnections accepts clients on the given listener and proxifies calls
 // to the forwarded target
 func (p *proxy) handleConnections(pf *ProxyForward, listener net.Listener) {
+	defer helper.RecoverAndLog(p.view, fmt.Sprintf("proxy listener '%s'", pf.GetHostname()))
+
 	for {
 		client, err := listener.Accept()
 		if !p.listening.Load() {
@@ -213,6 +216,7 @@ func (p *proxy) handleConnections(pf *ProxyForward, listener net.Listener) {
 // target, waiting for the target to become reachable again if needed (e.g. while
 // an application is being redeployed)
 func (p *proxy) proxifyConnection(pf *ProxyForward, client net.Conn) {
+	defer helper.RecoverAndLog(p.view, fmt.Sprintf("proxy connection '%s'", pf.GetHostname()))
 	defer func() { _ = client.Close() }()
 
 	target, err := p.dialTarget(pf)

@@ -117,6 +117,12 @@ func (w *watcher) watchApplication(application *config.Application) error {
 	done := make(chan bool)
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("❌  Recovered from a panic while watching application '%s': %v\n", application.Name, r)
+			}
+		}()
+
 		for {
 			select {
 			case event := <-fileWatcher.Event:

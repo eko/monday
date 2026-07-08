@@ -139,9 +139,10 @@ func selectProject(conf *config.Config) string {
 		if err.Error() == "^C" {
 			fmt.Println("\n👋  Bye")
 			os.Exit(0)
-		} else {
-			panic(fmt.Sprintf("selection error:\n%v", err))
 		}
+
+		fmt.Printf("❌  An error has occured during the project selection: %v\n", err)
+		os.Exit(1)
 	}
 
 	fmt.Print("\n")
@@ -158,7 +159,9 @@ func runProject(ctx context.Context, conf *config.Config, choice string) {
 	// Retrieve selected project configuration by its name
 	project, err := conf.GetProjectByName(choice)
 	if err != nil {
-		panic(err)
+		fmt.Printf("❌  %v\n", err)
+		fmt.Printf("Run '%s' to see the available projects\n", projectNameStyle.Render("monday list"))
+		os.Exit(1)
 	}
 
 	// Prepend global configurations
@@ -168,7 +171,8 @@ func runProject(ctx context.Context, conf *config.Config, choice string) {
 	// Initializes hosts file manager
 	hostfile, err := hostfile.NewClient()
 	if err != nil {
-		panic(err)
+		fmt.Printf("❌  Unable to open the hosts file (try running monday with elevated privileges): %v\n", err)
+		os.Exit(1)
 	}
 
 	proxyfier = proxy.NewProxy(layout.GetProxyView(), layout.GetProxyStatuses(), hostfile)
@@ -202,6 +206,15 @@ func handleExitSignal(ctx context.Context) {
 
 func stopAll(ctx context.Context) {
 	fmt.Println("\n👋  Bye, closing your local applications and remote connections now")
+
+	// The shutdown must always complete: report an unexpected panic from one
+	// of the components instead of crashing with a corrupted terminal
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("❌  An error has occured while shutting down: %v\n", r)
+			os.Exit(1)
+		}
+	}()
 
 	watcher.Stop()
 	forwarder.Stop(ctx)

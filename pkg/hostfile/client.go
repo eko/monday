@@ -16,12 +16,12 @@ type hostfile struct {
 func NewClient() (*hostfile, error) {
 	hosts, err := txeh.NewHostsDefault()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &hostfile{
 		hosts: hosts,
-	}, err
+	}, nil
 }
 
 // AddHost adds a new host / ip entry into the hosts file
