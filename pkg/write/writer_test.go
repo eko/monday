@@ -9,8 +9,8 @@ import (
 	"github.com/eko/monday/pkg/ui"
 	"github.com/eko/monday/pkg/write/content"
 	"github.com/eko/monday/pkg/write/copy"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNewWriter(t *testing.T) {
