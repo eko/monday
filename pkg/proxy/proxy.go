@@ -88,7 +88,9 @@ type proxy struct {
 	lastIpByteC        byte
 	lastIpByteD        byte
 	attributedIPs      map[string]string
-	view               ui.View
+	// aliases lists the loopback IP aliases added by this proxy, removed on stop
+	aliases []string
+	view    ui.View
 }
 
 // NewProxy initializes a new proxy component instance
@@ -187,7 +189,24 @@ func (p *proxy) Stop() error {
 		}
 	}
 
+	p.removeAliases()
+
 	return nil
+}
+
+// removeAliases removes the loopback IP aliases added by this proxy so they
+// do not pile up on the network interface between runs
+func (p *proxy) removeAliases() {
+	p.addProxyForwardMux.Lock()
+	aliases := p.aliases
+	p.aliases = nil
+	p.addProxyForwardMux.Unlock()
+
+	for _, ip := range aliases {
+		if err := RemoveLoopbackAlias(ip); err != nil {
+			p.view.Writef("❌  An error has occured while removing IP address '%s' from the loopback interface: %v\n", ip, err)
+		}
+	}
 }
 
 // handleConnections accepts clients on the given listener and proxifies calls
@@ -357,8 +376,6 @@ func (p *proxy) AddProxyForward(name string, proxyForward *ProxyForward) {
 }
 
 func (p *proxy) generateIP(pf *ProxyForward) error {
-	var err error
-
 	if attributedIP, ok := p.attributedIPs[pf.GetHostname()]; ok {
 		pf.SetLocalIP(attributedIP)
 		return nil
@@ -371,7 +388,8 @@ func (p *proxy) generateIP(pf *ProxyForward) error {
 	p.lastIpByteC = c
 	p.lastIpByteD = d
 
-	a, b, c, d, err = assignIpToPort(a, b, c, d, pf.LocalPort)
+	a, b, c, d, added, err := assignIpToPort(a, b, c, d, pf.LocalPort)
+	p.aliases = append(p.aliases, added...)
 	if err != nil {
 		return err
 	}

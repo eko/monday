@@ -19,6 +19,7 @@ import (
 type MockHostfile struct {
 	ctrl     *gomock.Controller
 	recorder *MockHostfileMockRecorder
+	isgomock struct{}
 }
 
 // MockHostfileMockRecorder is the mock recorder for MockHostfile.
@@ -50,6 +51,20 @@ func (m *MockHostfile) AddHost(ip, hostname string) error {
 func (mr *MockHostfileMockRecorder) AddHost(ip, hostname any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddHost", reflect.TypeOf((*MockHostfile)(nil).AddHost), ip, hostname)
+}
+
+// HasHost mocks base method.
+func (m *MockHostfile) HasHost(hostname string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasHost", hostname)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// HasHost indicates an expected call of HasHost.
+func (mr *MockHostfileMockRecorder) HasHost(hostname any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasHost", reflect.TypeOf((*MockHostfile)(nil).HasHost), hostname)
 }
 
 // RemoveHost mocks base method.

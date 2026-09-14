@@ -100,6 +100,9 @@ func main() {
 		}
 	}
 
+	cleanCmd.Flags().Bool("dry-run", false, "Only display what would be removed")
+
+	rootCmd.AddCommand(cleanCmd)
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(editCmd)
 	rootCmd.AddCommand(initCmd)
