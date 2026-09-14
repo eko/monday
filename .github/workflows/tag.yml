@@ -45,17 +45,13 @@ jobs:
       - name: Docker buildx available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
 
-      - name: Get the version
-        id: get_version
-        run: echo ::set-output name=TAG_NAME::${GITHUB_REF/refs\/tags\//}
-
       - name: Run docker buildx build
         run: |
           docker buildx build \
-            --build-arg Version=${{ github.ref }} \
+            --build-arg Version=${{ github.ref_name }} \
             --platform linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64 \
             --output=type=registry \
-            --tag ekofr/monday:${{ steps.get_version.outputs.TAG_NAME }} \
+            --tag ekofr/monday:${{ github.ref_name }} \
             .
 
   release:
@@ -138,8 +134,11 @@ jobs:
       - name: Download go dependencies
         run: go get -t -v ./...
 
-      - name: Create release
-        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "-s -w -X main.Version=${{ github.ref }}" -o monday-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd
+      - name: Build binary
+        run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "-s -w -X main.Version=${{ github.ref_name }}" -o monday-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd
+
+      - name: Compute checksum
+        run: shasum -a 256 monday-${{ matrix.goos }}-${{ matrix.goarch }} > monday-${{ matrix.goos }}-${{ matrix.goarch }}.sha256
 
       - name: Upload release assets
         id: upload-release-asset
@@ -151,3 +150,13 @@ jobs:
           asset_path: ./monday-${{ matrix.goos }}-${{ matrix.goarch }}
           asset_name: monday-${{ matrix.goos }}-${{ matrix.goarch }}
           asset_content_type: application/octet-stream
+
+      - name: Upload release checksum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ./monday-${{ matrix.goos }}-${{ matrix.goarch }}.sha256
+          asset_name: monday-${{ matrix.goos }}-${{ matrix.goarch }}.sha256
+          asset_content_type: text/plain

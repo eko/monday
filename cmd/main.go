@@ -67,7 +67,15 @@ func resolveUIEnabled(cmd *cobra.Command) bool {
 	return term.IsTerminal(int(os.Stdout.Fd()))
 }
 
+// normalizeVersion strips the Git reference prefix a release build may carry
+// (refs/tags/v2.6.1) to keep the plain version (v2.6.1)
+func normalizeVersion(version string) string {
+	return strings.TrimPrefix(strings.TrimSpace(version), "refs/tags/")
+}
+
 func main() {
+	Version = normalizeVersion(Version)
+
 	ctx := context.Background()
 	runtime.InitRuntimeEnvironment()
 
