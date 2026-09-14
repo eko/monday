@@ -52,8 +52,6 @@ const (
 )
 
 var (
-	defaultKubeConfigPath = fmt.Sprintf("%s/%s", os.Getenv("HOME"), "/.kube/config")
-
 	// ErrNoSelectorLabel is returned when no selector label is provided in the configuration file.
 	ErrNoSelectorLabel = errors.New("please provide a selector of labels in order to use Kubernetes forwarding")
 )
@@ -536,11 +534,20 @@ func (f *Forwarder) getSelector() string {
 	return selector
 }
 
-func initializeClientConfig(context string, kubeConfigPath string) (*restclient.Config, error) {
+// initializeClientConfig builds the Kubernetes client configuration for the
+// given context: from the explicitly given kubeconfig file when there is one,
+// elsewhere following the standard resolution (the KUBECONFIG environment
+// variable, possibly listing several files, then ~/.kube/config)
+func initializeClientConfig(context string, explicitKubeConfigPath string) (*restclient.Config, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if explicitKubeConfigPath != "" {
+		loadingRules.ExplicitPath = explicitKubeConfigPath
+	}
+
 	overrides := &clientcmd.ConfigOverrides{CurrentContext: context}
 
 	clientConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeConfigPath},
+		loadingRules,
 		overrides,
 	).ClientConfig()
 	if err != nil {
@@ -564,10 +571,9 @@ func buildPath(request *restclient.Request) string {
 	return parts[0] + "/api/v1/namespaces" + parts[1]
 }
 
+// getKubeConfigPath returns the kubeconfig file explicitly set with the
+// MONDAY_KUBE_CONFIG environment variable (also fed by the "kubeconfig"
+// configuration key), or an empty string to rely on the standard resolution
 func getKubeConfigPath() string {
-	if value := os.Getenv("MONDAY_KUBE_CONFIG"); value != "" {
-		return value
-	}
-
-	return defaultKubeConfigPath
+	return os.Getenv("MONDAY_KUBE_CONFIG")
 }

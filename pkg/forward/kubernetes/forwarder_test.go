@@ -2,11 +2,11 @@ package kubernetes
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -36,7 +36,6 @@ func TestNewForwarder(t *testing.T) {
 	}
 
 	initKubeConfig(t)
-	defer os.Remove(defaultKubeConfigPath)
 
 	view := ui.NewMockView(ctrl)
 
@@ -58,11 +57,49 @@ func TestNewForwarder(t *testing.T) {
 }
 
 func TestGetKubeConfigPathWhenDefault(t *testing.T) {
+	// Given
+	t.Setenv("MONDAY_KUBE_CONFIG", "")
+
 	// When
 	configPath := getKubeConfigPath()
 
+	// Then: the standard KUBECONFIG resolution is used
+	assert.Equal(t, "", configPath)
+}
+
+func TestNewForwarderWhenKubeconfigEnvironmentVariable(t *testing.T) {
+	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Setenv("MONDAY_KUBE_CONFIG", "")
+	t.Setenv("KUBECONFIG", testKubeConfigPath(t))
+
+	view := ui.NewMockView(ctrl)
+
+	// When
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, "test-forward", "context-test", "platform", []string{"8080:8080"}, nil)
+
 	// Then
-	assert.Equal(t, configPath, defaultKubeConfigPath)
+	assert.NoError(t, err)
+	assert.IsType(t, new(Forwarder), forwarder)
+}
+
+func TestNewForwarderWhenKubeconfigNotFound(t *testing.T) {
+	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	t.Setenv("MONDAY_KUBE_CONFIG", "/tmp/does/not/exist/config")
+
+	view := ui.NewMockView(ctrl)
+
+	// When
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, "test-forward", "context-test", "platform", []string{"8080:8080"}, nil)
+
+	// Then
+	assert.Error(t, err)
+	assert.Nil(t, forwarder)
 }
 
 func TestGetKubeConfigPathWhenCustom(t *testing.T) {
@@ -83,7 +120,6 @@ func TestGetForwardType(t *testing.T) {
 	defer ctrl.Finish()
 
 	initKubeConfig(t)
-	defer os.Remove(defaultKubeConfigPath)
 
 	view := ui.NewMockView(ctrl)
 
@@ -107,7 +143,6 @@ func TestGetSelector(t *testing.T) {
 	defer ctrl.Finish()
 
 	initKubeConfig(t)
-	defer os.Remove(defaultKubeConfigPath)
 
 	view := ui.NewMockView(ctrl)
 
@@ -131,7 +166,6 @@ func TestGetReadyChannel(t *testing.T) {
 	defer ctrl.Finish()
 
 	initKubeConfig(t)
-	defer os.Remove(defaultKubeConfigPath)
 
 	view := ui.NewMockView(ctrl)
 
@@ -153,7 +187,6 @@ func TestGetStopChannel(t *testing.T) {
 	defer ctrl.Finish()
 
 	initKubeConfig(t)
-	defer os.Remove(defaultKubeConfigPath)
 
 	view := ui.NewMockView(ctrl)
 
@@ -192,7 +225,6 @@ func TestForwardTypeLocal(t *testing.T) {
 	defer ctrl.Finish()
 
 	initKubeConfig(t)
-	defer os.Remove(defaultKubeConfigPath)
 
 	view := ui.NewMockView(ctrl)
 
@@ -229,7 +261,6 @@ func TestForwardTypeRemote(t *testing.T) {
 	defer ctrl.Finish()
 
 	initKubeConfig(t)
-	defer os.Remove(defaultKubeConfigPath)
 
 	view := ui.NewMockView(ctrl)
 	view.EXPECT().Writef("📡  Setting up proxy on application '%s', please wait some seconds for pod to be ready...\n", "my-remote-app-deployment")
@@ -305,7 +336,6 @@ func TestStreamPodLogs(t *testing.T) {
 	defer ctrl.Finish()
 
 	initKubeConfig(t)
-	defer os.Remove(defaultKubeConfigPath)
 
 	view := ui.NewMockView(ctrl)
 
@@ -432,32 +462,31 @@ func TestSelectPod(t *testing.T) {
 }
 
 // Initializes a Kubernetes configuration for test environment
+// initKubeConfig points MONDAY_KUBE_CONFIG to a copy of the test kubeconfig file
 func initKubeConfig(t *testing.T) {
-	directoryKubeConfig := "/tmp/.kube"
-	defaultKubeConfigPath = directoryKubeConfig + "/config"
+	t.Helper()
 
-	err := os.MkdirAll(directoryKubeConfig, os.ModePerm)
+	content, err := os.ReadFile(testKubeConfigPath(t))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	file, err := os.Create(defaultKubeConfigPath)
+	kubeConfigPath := filepath.Join(t.TempDir(), "config")
+	if err := os.WriteFile(kubeConfigPath, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("MONDAY_KUBE_CONFIG", kubeConfigPath)
+}
+
+// testKubeConfigPath returns the path of the kubeconfig fixture
+func testKubeConfigPath(t *testing.T) string {
+	t.Helper()
+
+	dir, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer file.Close()
 
-	dir, _ := os.Getwd()
-	configFile := dir + "/../../../internal/test/forwarder/kubernetes/config"
-
-	from, err := os.OpenFile(configFile, os.O_RDONLY, 0666)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer from.Close()
-
-	_, err = io.Copy(file, from)
-	if err != nil {
-		t.Fatal(err)
-	}
+	return filepath.Join(dir, "..", "..", "..", "internal", "test", "forwarder", "kubernetes", "config")
 }
