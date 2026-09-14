@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
+	"syscall"
 
 	"github.com/eko/monday/internal/runtime"
 	"github.com/eko/monday/pkg/build"
@@ -39,6 +41,7 @@ var (
 	watcher   watch.Watcher
 
 	uiEnabled bool
+	stopOnce  sync.Once
 )
 
 // resolveUIEnabled returns whether the terminal UI must be enabled: it is the
@@ -82,8 +85,6 @@ func main() {
 			printBanner()
 
 			runProject(ctx, conf, selectProject(conf))
-
-			handleExitSignal(ctx)
 		},
 	}
 
@@ -109,7 +110,7 @@ func main() {
 	rootCmd.AddCommand(versionCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("❌  An error has occured during 'edit' command: %v\n", err)
+		fmt.Printf("❌  An error has occured: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -152,6 +153,7 @@ func selectProject(conf *config.Config) string {
 	return choice
 }
 
+// runProject starts the given project and blocks until it is stopped
 func runProject(ctx context.Context, conf *config.Config, choice string) {
 	layout := ui.NewLayout(uiEnabled)
 	layout.Init()
@@ -192,43 +194,63 @@ func runProject(ctx context.Context, conf *config.Config, choice string) {
 	watcher = watch.NewWatcher(setuper, builder, writer, runner, forwarder, conf.Watch, project)
 	go watcher.Watch(ctx)
 
+	waitForExit(ctx, layout)
+}
+
+// waitForExit blocks until the project must be stopped: the terminal UI is
+// left, or an exit signal is received. Everything is then shut down properly
+// (local applications, remote connections, hosts file entries, IP aliases).
+func waitForExit(ctx context.Context, layout *ui.Layout) {
+	exit := make(chan os.Signal, 1)
+
 	if uiEnabled {
+		// The terminal UI handles SIGINT and SIGTERM itself and restores the
+		// terminal before returning: only a hangup (terminal closed) has to
+		// be relayed so the shutdown still happens
+		signal.Notify(exit, syscall.SIGHUP)
+
+		go func() {
+			<-exit
+			layout.Quit()
+		}()
+
 		if err := layout.Run(); err != nil {
 			fmt.Printf("❌  An error has occured while running the terminal UI: %v\n", err)
 		}
 
 		stopAll(ctx)
+
+		return
 	}
-}
 
-// Handle for an exit signal in order to quit application on a proper way (shutting down connections and servers).
-func handleExitSignal(ctx context.Context) {
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, os.Kill)
-
-	<-stop
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
+	<-exit
 
 	stopAll(ctx)
 }
 
+// stopAll shuts down every component then exits, it runs at most once even
+// when several exit conditions happen at the same time
 func stopAll(ctx context.Context) {
-	fmt.Println("\n👋  Bye, closing your local applications and remote connections now")
+	stopOnce.Do(func() {
+		fmt.Println("\n👋  Bye, closing your local applications and remote connections now")
 
-	// The shutdown must always complete: report an unexpected panic from one
-	// of the components instead of crashing with a corrupted terminal
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("❌  An error has occured while shutting down: %v\n", r)
-			os.Exit(1)
-		}
-	}()
+		// The shutdown must always complete: report an unexpected panic from one
+		// of the components instead of crashing with a corrupted terminal
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("❌  An error has occured while shutting down: %v\n", r)
+				os.Exit(1)
+			}
+		}()
 
-	watcher.Stop()
-	forwarder.Stop(ctx)
-	proxyfier.Stop()
-	runner.Stop()
+		watcher.Stop()
+		forwarder.Stop(ctx)
+		proxyfier.Stop()
+		runner.Stop()
 
-	os.Exit(0)
+		os.Exit(0)
+	})
 }
 
 // printConfigError displays a configuration error, one problem per line

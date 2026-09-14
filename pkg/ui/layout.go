@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"sync/atomic"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -138,7 +139,28 @@ func (l *Layout) Run() error {
 
 	_, err := program.Run()
 
+	// Being interrupted or killed by a signal is a regular way to leave the
+	// terminal UI, the terminal has been restored by the program already
+	if errors.Is(err, tea.ErrProgramPanic) {
+		return err
+	}
+
+	if errors.Is(err, tea.ErrInterrupted) || errors.Is(err, tea.ErrProgramKilled) {
+		return nil
+	}
+
 	return err
+}
+
+// Quit asks the running terminal UI to exit, it is a no-op when the UI is not
+// running
+func (l *Layout) Quit() {
+	program := l.program.Load()
+	if program == nil {
+		return
+	}
+
+	program.Quit()
 }
 
 // notify nudges the running program that new view content is available, taking

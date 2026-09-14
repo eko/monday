@@ -34,7 +34,6 @@ func runCmd(ctx context.Context) *cobra.Command {
 			}
 
 			runProject(ctx, conf, choice)
-			handleExitSignal(ctx)
 		},
 	}
 }
