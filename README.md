@@ -77,7 +77,13 @@ Please note that you can also split this configuration in multiple files by resp
 * `~/monday.forwards.yaml`
 * `~/monday.projects.yaml`
 
-This will help you navigate more easily in your configuration files.
+This will help you navigate more easily in your configuration files. These files are merged in memory when Monday starts (YAML anchors can be shared between them), nothing is written back to your configuration directory.
+
+Monday checks your configuration when it starts: an unknown field (a typo, for instance) is reported with its file and line instead of being silently ignored. You can also check your files at any time with:
+
+```bash
+$ monday validate
+```
 
 ### Define a local project
 
@@ -188,6 +194,18 @@ When you want to edit your configuration again, simply run this command to open 
 $ monday edit
 ```
 
+Monday cleans up the hosts file entries and the loopback IP aliases it created when it stops. If a crash or a forced kill left some behind, remove them with (add `--dry-run` to only list them):
+
+```bash
+$ monday clean
+```
+
+To upgrade Monday to the latest release (the checksum of the downloaded binary is verified), run:
+
+```bash
+$ monday upgrade
+```
+
 
 ## Environment variables
 
@@ -200,7 +218,7 @@ The following environment variables can be used to tweak your Monday configurati
 | MONDAY_EDITOR                | Specify which editor you want to use in order to edit configuration files                 |
 | MONDAY_EDITOR_ARGS           | Specify the editor arguments you want to pass (separated by coma), example: -t,--wite     |
 | MONDAY_ENABLE_UI             | Specify that you want to use the terminal UI instead of simply logging to stdout          |
-| MONDAY_KUBE_CONFIG           | Specify the location of your Kubernetes config file  (if not in your home directory)      |
+| MONDAY_KUBE_CONFIG           | Force a specific Kubernetes config file. By default, the standard `KUBECONFIG` variable is honored, then `~/.kube/config` |
 
 ## Community
 
