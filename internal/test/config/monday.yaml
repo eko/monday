@@ -30,12 +30,10 @@ watch: # Optional
   path: github.com/eko/graphql
   watch: true
   hostname: graphql.svc.local
-  executable: go
-  args:
-    - run
-    - cmd/main.go
-  env:
-    HTTP_PORT: 8005
+  run:
+    command: go run cmd/main.go
+    env:
+      HTTP_PORT: 8005
   setup:
     commands:
       - go get github.com/eko/graphql

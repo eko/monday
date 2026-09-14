@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/eko/monday/pkg/config"
 	"github.com/spf13/cobra"
@@ -13,8 +14,9 @@ var listCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		conf, err := config.Load()
 		if err != nil {
-			fmt.Printf("❌  %v\n", err)
-			return
+			printConfigError(err)
+			printValidateHint()
+			os.Exit(1)
 		}
 
 		printBanner()

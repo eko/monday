@@ -12,7 +12,7 @@
       - go get github.com/eko/graphql
       - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
     env: # Also optional, in case you need to specify some environment variables
-      GOPRIVATE=*.acme.tld
+      GOPRIVATE: "*.acme.tld"
     env_file: ~/my/project/.env # Or, via an environment file...
   build: # Optionally, you can define a build section to build your application before running it
     commands:
@@ -51,7 +51,7 @@
       - go get github.com/eko/grpc-api
       - echo You can use ~/path syntax and environment variables like $GOPATH in your commands
     env: # Also optional, in case you need to specify some environment variables
-      GOPRIVATE=*.acme.tld
+      GOPRIVATE: "*.acme.tld"
     env_file: ~/my/project/.env # Or, via an environment file...
   run:
     command: go run main.go

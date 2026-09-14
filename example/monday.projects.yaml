@@ -24,7 +24,7 @@ local:
   - *grafana-global
   - *prometheus-global
 forward:
-  - *graylog-forward-kubernetes # Not declared in this configuration
+  - *graylog-forward-kubernetes # Declared in the monday.forward.yaml file
 
 #
 # Projects

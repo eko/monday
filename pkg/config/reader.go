@@ -3,12 +3,8 @@ package config
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
-	"strings"
-
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -30,89 +26,98 @@ var (
 	MultipleFilepath string
 )
 
+// Loaded is a configuration loaded from disk, with details about its sources
+type Loaded struct {
+	Config *Config
+
+	// Files lists the configuration files that were merged, in order
+	Files []string
+
+	// IgnoredKeys lists the top-level keys that are not part of the
+	// configuration and were ignored: they usually hold the YAML anchors
+	// reused in projects
+	IgnoredKeys []string
+}
+
 func init() {
 	setConfigFilePaths()
 }
 
-// Load method loads the configuration from the YAML configuration file
+// Load loads and validates the configuration from the YAML configuration files
 func Load() (*Config, error) {
-	files := FindMultipleConfigFiles()
-
-	if len(files) > 0 {
-		err := createConfigFromMultiple(files)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	err := CheckConfigFileExists()
+	loaded, err := LoadDetailed()
 	if err != nil {
 		return nil, err
 	}
 
-	// Check for multiple config files
-	var conf Config
+	return loaded.Config, nil
+}
 
-	file, err := os.ReadFile(Filepath)
+// LoadDetailed loads and validates the configuration from the YAML
+// configuration files, and reports which files and keys were used. When an
+// error is returned, the files that were read are still reported.
+func LoadDetailed() (*Loaded, error) {
+	files, err := ConfigFiles()
 	if err != nil {
-		log.Printf("Error while reading config file: #%v", err)
+		return nil, err
 	}
 
-	err = yaml.Unmarshal(file, &conf)
+	loaded := &Loaded{Files: files}
+
+	sources := make([]Source, 0, len(files))
+	for _, file := range files {
+		content, err := os.ReadFile(file)
+		if err != nil {
+			return loaded, fmt.Errorf("unable to read the configuration file: %w", err)
+		}
+
+		sources = append(sources, Source{Name: file, Content: content})
+	}
+
+	conf, ignored, err := Parse(sources)
+	loaded.IgnoredKeys = ignored
 	if err != nil {
-		return nil, fmt.Errorf("an error has occured while reading the configuration file:\n%v", err)
+		return loaded, err
 	}
 
-	// Override GOPATH environment variable if defined in configuration
-	if conf.GoPath != "" {
-		os.Setenv("GOPATH", conf.GoPath)
+	if err := conf.Validate(); err != nil {
+		return loaded, err
 	}
 
-	// Set Kubeconfig filepath if defined in configuration
-	if conf.KubeConfig != "" {
-		os.Setenv("MONDAY_KUBE_CONFIG", conf.KubeConfig)
+	applyEnvironment(conf)
+	loaded.Config = conf
+
+	return loaded, nil
+}
+
+// ConfigFiles returns the configuration files to load: the multiple
+// "monday*.yaml" files when some exist, elsewhere the single "monday.yaml" file
+func ConfigFiles() ([]string, error) {
+	if files := FindMultipleConfigFiles(); len(files) > 0 {
+		return files, nil
 	}
 
-	return &conf, nil
+	if err := CheckConfigFileExists(); err != nil {
+		return nil, err
+	}
+
+	return []string{Filepath}, nil
 }
 
 // FindMultipleConfigFiles finds if multiple configuration files has been created
 func FindMultipleConfigFiles() []string {
 	matches, _ := filepath.Glob(MultipleFilepath)
 
-	for i, match := range matches {
-		if strings.Contains(match, Filepath) {
-			matches = append(matches[:i], matches[i+1:]...)
-		}
-	}
-
-	return matches
-}
-
-// Merge multiple configuration files into a single one
-func createConfigFromMultiple(matches []string) error {
-	configFile, err := os.Create(Filepath)
-	if err != nil {
-		return err
-	}
-	defer configFile.Close()
-
-	added := 0
+	files := make([]string, 0, len(matches))
 	for _, match := range matches {
-		file, err := os.ReadFile(match)
-		if err != nil {
+		if filepath.Clean(match) == filepath.Clean(Filepath) {
 			continue
 		}
 
-		configFile.Write(file)
-		added++
+		files = append(files, match)
 	}
 
-	if added == 0 {
-		return errors.New("Unable to process any configuration file")
-	}
-
-	return nil
+	return files
 }
 
 // CheckConfigFileExists ensures that config file is present before going further
@@ -122,6 +127,19 @@ func CheckConfigFileExists() error {
 	}
 
 	return nil
+}
+
+// applyEnvironment exports the environment variables driven by the configuration
+func applyEnvironment(conf *Config) {
+	// Override GOPATH environment variable if defined in configuration
+	if conf.GoPath != "" {
+		os.Setenv("GOPATH", conf.GoPath)
+	}
+
+	// Set Kubeconfig filepath if defined in configuration
+	if conf.KubeConfig != "" {
+		os.Setenv("MONDAY_KUBE_CONFIG", conf.KubeConfig)
+	}
 }
 
 // GetProjectNames returns the project names as a list

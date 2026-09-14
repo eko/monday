@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -12,6 +13,11 @@ const (
 	ForwarderProxy            = "proxy"
 	ForwarderSSH              = "ssh"
 	ForwarderSSHRemote        = "ssh-remote"
+
+	// FileTypeContent writes a file from a templated content
+	FileTypeContent = "content"
+	// FileTypeCopy copies an existing file
+	FileTypeCopy = "copy"
 )
 
 var (
@@ -88,6 +94,52 @@ func (p *Project) PrependApplications(applications []*Application) {
 // PrependForwards prepends some global forwards to the current project.
 func (p *Project) PrependForwards(forwards []*Forward) {
 	p.Forwards = append(forwards, p.Forwards...)
+}
+
+// Hostnames returns every hostname Monday maps locally for this configuration,
+// across the global entries and all the projects, sorted and without duplicates
+func (c *Config) Hostnames() []string {
+	seen := make(map[string]bool)
+
+	collect := func(applications []*Application, forwards []*Forward) {
+		for _, application := range applications {
+			if application != nil && application.Hostname != "" {
+				seen[application.Hostname] = true
+			}
+		}
+
+		for _, forward := range forwards {
+			if forward == nil || !forward.IsProxified() {
+				continue
+			}
+
+			hostname := forward.Values.Hostname
+			if hostname == "" {
+				hostname = forward.Name
+			}
+
+			if hostname != "" {
+				seen[hostname] = true
+			}
+		}
+	}
+
+	collect(c.Applications, c.Forwards)
+
+	for _, project := range c.Projects {
+		if project != nil {
+			collect(project.Applications, project.Forwards)
+		}
+	}
+
+	hostnames := make([]string, 0, len(seen))
+	for hostname := range seen {
+		hostnames = append(hostnames, hostname)
+	}
+
+	sort.Strings(hostnames)
+
+	return hostnames
 }
 
 // Application represents application information

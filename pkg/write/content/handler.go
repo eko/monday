@@ -10,7 +10,7 @@ import (
 
 const (
 	// HandlerType declares the content file writter handler type name
-	HandlerType = "content"
+	HandlerType = config.FileTypeContent
 )
 
 // Handle handles a given File object in order to write it

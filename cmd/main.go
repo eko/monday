@@ -74,8 +74,9 @@ func main() {
 
 			conf, err := config.Load()
 			if err != nil {
-				fmt.Printf("❌  %v\n", err)
-				return
+				printConfigError(err)
+				printValidateHint()
+				os.Exit(1)
 			}
 
 			printBanner()
@@ -104,6 +105,7 @@ func main() {
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(runCommand)
 	rootCmd.AddCommand(upgradeCmd)
+	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(versionCmd)
 
 	if err := rootCmd.Execute(); err != nil {
@@ -227,4 +229,25 @@ func stopAll(ctx context.Context) {
 	runner.Stop()
 
 	os.Exit(0)
+}
+
+// printConfigError displays a configuration error, one problem per line
+func printConfigError(err error) {
+	lines := strings.Split(err.Error(), "\n")
+
+	if len(lines) == 1 {
+		fmt.Printf("❌  %s\n", lines[0])
+		return
+	}
+
+	fmt.Println("❌  Invalid configuration:")
+
+	for _, line := range lines {
+		fmt.Printf("   • %s\n", line)
+	}
+}
+
+// printValidateHint suggests the validate command after a configuration error
+func printValidateHint() {
+	fmt.Printf("\nRun '%s' to check your configuration files\n", projectNameStyle.Render("monday validate"))
 }

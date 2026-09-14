@@ -2,23 +2,33 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func testConfigDir(t *testing.T) string {
+	t.Helper()
+
+	dir, err := os.Getwd()
+	require.NoError(t, err)
+
+	return filepath.Clean(dir + "/../../internal/test/config")
+}
 
 func TestLoadSingleFile(t *testing.T) {
 	// Given
-	dir, _ := os.Getwd()
-	Filepath = dir + "/../../internal/test/config/monday.yaml"
-	MultipleFilepath = dir + "/../../internal/test/config/monday.unknown.*.yaml"
+	Filepath = testConfigDir(t) + "/monday.yaml"
+	MultipleFilepath = testConfigDir(t) + "/monday.unknown.*.yaml"
 
 	// When
 	conf, err := Load()
 
 	// Then
+	require.NoError(t, err)
 	assert.IsType(t, new(Config), conf)
-	assert.Nil(t, err)
 
 	assert.Len(t, conf.Projects, 2)
 	assert.Equal(t, conf.Watch.Exclude, []string{
@@ -29,64 +39,114 @@ func TestLoadSingleFile(t *testing.T) {
 
 func TestLoadMultipleFiles(t *testing.T) {
 	// Given
-	dir, _ := os.Getwd()
-	Filepath = dir + "/../../internal/test/config/unknown.yaml"
-	MultipleFilepath = dir + "/../../internal/test/config/monday.multiple.*.yaml"
-
-	// Remove single config created file after test
-	defer os.Remove(Filepath)
+	Filepath = testConfigDir(t) + "/monday.yaml"
+	MultipleFilepath = testConfigDir(t) + "/monday.multiple.*.yaml"
 
 	// When
-	conf, err := Load()
+	loaded, err := LoadDetailed()
 
 	// Then
-	assert.IsType(t, new(Config), conf)
-	assert.Nil(t, err)
+	require.NoError(t, err)
+	assert.IsType(t, new(Config), loaded.Config)
 
-	assert.Len(t, conf.Projects, 4)
-	assert.Equal(t, conf.Watch.Exclude, []string{
+	assert.Equal(t, []string{
+		testConfigDir(t) + "/monday.multiple.forward.yaml",
+		testConfigDir(t) + "/monday.multiple.local.yaml",
+		testConfigDir(t) + "/monday.multiple.project.yaml",
+	}, loaded.Files)
+
+	assert.Empty(t, loaded.IgnoredKeys)
+
+	assert.Len(t, loaded.Config.Projects, 4)
+	assert.Equal(t, loaded.Config.Watch.Exclude, []string{
 		".git",
 		"node_modules",
 		"/event/an/absolute/path/in/multiple/files",
 	})
+
+	// No merged file must have been written on disk
+	_, err = os.Stat(testConfigDir(t) + "/unknown.yaml")
+	assert.True(t, os.IsNotExist(err))
 }
 
 func TestLoadWhenCustomDirectory(t *testing.T) {
 	// Given
-	dir, _ := os.Getwd()
-	os.Setenv("MONDAY_CONFIG_PATH", dir+"/../../internal/test/config")
+	t.Setenv("MONDAY_CONFIG_PATH", testConfigDir(t))
 
 	setConfigFilePaths() // Normally run during package init()
 
-	Filepath = dir + "/../../internal/test/config/unknown.yaml" // don't read the single file
+	// When
+	loaded, err := LoadDetailed()
+
+	// Then
+	require.NoError(t, err)
+
+	// The single "monday.yaml" file is ignored when multiple files exist
+	assert.Len(t, loaded.Files, 3)
+	assert.Len(t, loaded.Config.Projects, 4)
+}
+
+func TestLoadWhenNoConfigFile(t *testing.T) {
+	// Given
+	Filepath = testConfigDir(t) + "/does-not-exist.yaml"
+	MultipleFilepath = testConfigDir(t) + "/does-not-exist.*.yaml"
 
 	// When
 	conf, err := Load()
 
 	// Then
-	assert.IsType(t, new(Config), conf)
-	assert.Nil(t, err)
+	assert.Nil(t, conf)
+	assert.EqualError(t, err, "Configuration file not found. If you run for the first time, please use 'init' command")
+}
 
-	assert.Len(t, conf.Projects, 2)
-	assert.Equal(t, conf.Watch.Exclude, []string{
-		".git",
-		"node_modules",
-	})
+func TestLoadWhenInvalidConfiguration(t *testing.T) {
+	// Given
+	dir := t.TempDir()
+
+	err := os.WriteFile(dir+"/monday.yaml", []byte(`
+<: &api-local
+  name: api
+  hostnme: api.svc.local
+  run:
+    command: go run main.go
+
+projects:
+  - name: api
+    local:
+      - *api-local
+    forward:
+      - name: db
+        type: kube
+        values:
+          ports:
+            - 5432:5432
+`), 0o600)
+	require.NoError(t, err)
+
+	Filepath = dir + "/monday.yaml"
+	MultipleFilepath = dir + "/monday.*.yaml"
+
+	// When
+	loaded, err := LoadDetailed()
+
+	// Then
+	assert.EqualError(t, err, `monday.yaml:4: unknown field "hostnme" in application (did you mean "hostname"?)`)
+	assert.Equal(t, []string{dir + "/monday.yaml"}, loaded.Files)
+	assert.Nil(t, loaded.Config)
 }
 
 func TestGetProjectNames(t *testing.T) {
 	// Given
-	dir, _ := os.Getwd()
-	Filepath = dir + "/../../internal/test/config/unknown.yaml"
-	MultipleFilepath = dir + "/../../internal/test/config/monday.*.yaml"
+	Filepath = testConfigDir(t) + "/monday.yaml"
+	MultipleFilepath = testConfigDir(t) + "/monday.multiple.*.yaml"
 
 	conf, err := Load()
+	require.NoError(t, err)
 
 	// When
 	projectNames := conf.GetProjectNames()
 
 	// Then
-	assert.Nil(t, err)
 	assert.Equal(t, []string{
 		"full",
 		"graphql",
@@ -97,11 +157,11 @@ func TestGetProjectNames(t *testing.T) {
 
 func TestGetProjectByName(t *testing.T) {
 	// Given
-	dir, _ := os.Getwd()
-	Filepath = dir + "/../../internal/test/config/unknown.yaml"
-	MultipleFilepath = dir + "/../../internal/test/config/monday.*.yaml"
+	Filepath = testConfigDir(t) + "/monday.yaml"
+	MultipleFilepath = testConfigDir(t) + "/monday.multiple.*.yaml"
 
 	conf, err := Load()
+	require.NoError(t, err)
 
 	// When
 	project, err := conf.GetProjectByName("forward-only")
@@ -111,7 +171,7 @@ func TestGetProjectByName(t *testing.T) {
 	assert.Equal(t, &Project{
 		Name: "forward-only",
 		Forwards: []*Forward{
-			&Forward{
+			{
 				Name: "graphql",
 				Type: "kubernetes",
 				Values: ForwardValues{
@@ -126,7 +186,7 @@ func TestGetProjectByName(t *testing.T) {
 					},
 				},
 			},
-			&Forward{
+			{
 				Name: "grpc-api",
 				Type: "kubernetes",
 				Values: ForwardValues{
@@ -147,11 +207,11 @@ func TestGetProjectByName(t *testing.T) {
 
 func TestGetProjectByNameWhenProjectNotFound(t *testing.T) {
 	// Given
-	dir, _ := os.Getwd()
-	Filepath = dir + "/../../internal/test/config/monday.yaml"
-	MultipleFilepath = dir + "/../../internal/test/config/monday.unknown.*.yaml"
+	Filepath = testConfigDir(t) + "/monday.yaml"
+	MultipleFilepath = testConfigDir(t) + "/monday.unknown.*.yaml"
 
 	conf, err := Load()
+	require.NoError(t, err)
 
 	// When
 	project, err := conf.GetProjectByName("unknown-project")
@@ -161,4 +221,42 @@ func TestGetProjectByNameWhenProjectNotFound(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Equal(t, "Unable to find project name 'unknown-project' in the configuration", err.Error())
+}
+
+func TestHostnames(t *testing.T) {
+	// Given
+	conf := &Config{
+		Applications: []*Application{
+			{Name: "grafana", Hostname: "grafana.svc.local"},
+		},
+		Forwards: []*Forward{
+			{Name: "graylog", Type: ForwarderKubernetes},
+		},
+		Projects: []*Project{
+			{
+				Name: "api",
+				Applications: []*Application{
+					{Name: "api", Hostname: "api.svc.local"},
+					{Name: "worker"},
+				},
+				Forwards: []*Forward{
+					{Name: "db", Type: ForwarderKubernetes, Values: ForwardValues{Hostname: "db.svc.local"}},
+					{Name: "db", Type: ForwarderKubernetes, Values: ForwardValues{Hostname: "db.svc.local"}},
+					{Name: "website", Type: ForwarderSSHRemote},
+					{Name: "cache", Type: ForwarderKubernetes, Values: ForwardValues{DisableProxy: true}},
+				},
+			},
+		},
+	}
+
+	// When
+	hostnames := conf.Hostnames()
+
+	// Then
+	assert.Equal(t, []string{
+		"api.svc.local",
+		"db.svc.local",
+		"grafana.svc.local",
+		"graylog",
+	}, hostnames)
 }

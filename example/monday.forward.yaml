@@ -52,6 +52,19 @@
     ports:
      - 8080:8080
 
+# Example of a forward declared globally in the projects file: it is launched for every project
+<: &graylog-forward-kubernetes
+  name: graylog
+  type: kubernetes
+  values:
+    context: *kubernetes-context
+    namespace: monitoring
+    labels:
+      app: graylog
+    hostname: graylog.svc.local # Optional
+    ports:
+     - 9000:9000
+
 # SSH Forwards
 
 # Example of SSH local forward: forward a specific remote port locally

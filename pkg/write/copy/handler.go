@@ -10,7 +10,7 @@ import (
 
 const (
 	// HandlerType declares the copy file writter handler type name
-	HandlerType = "copy"
+	HandlerType = config.FileTypeCopy
 )
 
 // Handle handles a given File object in order to write it
