@@ -1,4 +1,4 @@
-FROM alpine:3.24.2
+FROM alpine:3.24.3
 
 # SSH server used as a proxy inside the cluster by the "kubernetes-remote"
 # forward type: Monday port-forwards its SSH port locally and opens a remote
