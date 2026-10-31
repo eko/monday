@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"hash/fnv"
 	"io"
+	"sync"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/eko/monday/pkg/ui"
@@ -31,7 +32,11 @@ var (
 	stderrNameStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#E06C75"))
 )
 
+// Streamer writes the lines it receives to a view. It is safe for concurrent
+// use: the Kubernetes port-forward client writes to it from one goroutine per
+// forwarded connection
 type Streamer struct {
+	mux     sync.Mutex
 	buf     *bytes.Buffer
 	stdType string
 	name    string
@@ -74,6 +79,9 @@ func nameStyle(name string) lipgloss.Style {
 }
 
 func (l *Streamer) Write(p []byte) (n int, err error) {
+	l.mux.Lock()
+	defer l.mux.Unlock()
+
 	if n, err = l.buf.Write(p); err != nil {
 		return
 	}
@@ -84,11 +92,21 @@ func (l *Streamer) Write(p []byte) (n int, err error) {
 }
 
 func (l *Streamer) Close() {
-	_ = l.Flush()
+	l.mux.Lock()
+	defer l.mux.Unlock()
+
+	_ = l.flush()
 	l.buf = nil
 }
 
 func (l *Streamer) Flush() error {
+	l.mux.Lock()
+	defer l.mux.Unlock()
+
+	return l.flush()
+}
+
+func (l *Streamer) flush() error {
 	if l.buf == nil {
 		return nil
 	}
