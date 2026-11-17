@@ -6,15 +6,25 @@ updates:
     interval: daily
     time: "04:00"
   open-pull-requests-limit: 10
+  groups:
+    # k8s.io/api, apimachinery and client-go are released together and do not
+    # build when only one of them is upgraded
+    kubernetes:
+      patterns:
+      - "k8s.io/*"
+    golang-x:
+      patterns:
+      - "golang.org/x/*"
 - package-ecosystem: docker
-  directory: "/"
+  directories:
+  - "/"
+  - "/docker-proxy"
   schedule:
     interval: daily
     time: "04:00"
   open-pull-requests-limit: 10
-- package-ecosystem: docker
-  directory: "/docker-proxy"
-  schedule:
-    interval: daily
-    time: "04:00"
-  open-pull-requests-limit: 10
+  groups:
+    # Both images share the same alpine base: upgrade them in a single PR
+    alpine:
+      patterns:
+      - "alpine"
