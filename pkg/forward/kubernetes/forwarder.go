@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -195,23 +197,27 @@ func (f *Forwarder) Forward(ctx context.Context) (err error) {
 
 // Stop stops the current forwarder
 func (f *Forwarder) Stop(ctx context.Context) error {
+	// The connection loop may still be registering a port-forward or a
+	// deployment backup: take a copy of both under the lock
 	f.mux.Lock()
 	f.stopped = true
 	if f.stopChannel != nil {
 		close(f.stopChannel)
 		f.stopChannel = nil
 	}
+	portForwarders := slices.Collect(maps.Values(f.portForwarders))
+	backups := slices.Collect(maps.Values(f.deployments))
 	f.mux.Unlock()
 
 	// Close port-forwards currently active connections
-	for _, portForwarder := range f.portForwarders {
+	for _, portForwarder := range portForwarders {
 		portForwarder.Close()
 	}
 
 	deploymentsClient := f.clientSet.AppsV1().Deployments(f.namespace)
 
 	// Reset currently active remote-forward deployment proxies
-	for _, backup := range f.deployments {
+	for _, backup := range backups {
 		selector := f.getSelector()
 
 		deployments, err := deploymentsClient.List(ctx, metav1.ListOptions{LabelSelector: selector})
@@ -332,7 +338,9 @@ func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 		return err
 	}
 
-	f.portForwarders[f.name] = fw
+	if !f.registerPortForwarder(fw) {
+		return nil
+	}
 
 	// Signal the persistent ready channel once the attempt is ready and start
 	// monitoring the forwarded pod to reconnect as soon as it goes away
@@ -366,6 +374,21 @@ func (f *Forwarder) forwardLocal(ctx context.Context, selector string) error {
 	}
 
 	return fmt.Errorf("connection to pod '%s' has been closed", runningPod.Name)
+}
+
+// registerPortForwarder keeps track of the given port-forward so Stop can close
+// it, it returns false when the forwarder has already been stopped
+func (f *Forwarder) registerPortForwarder(portForwarder *portforward.PortForwarder) bool {
+	f.mux.Lock()
+	defer f.mux.Unlock()
+
+	if f.stopped {
+		return false
+	}
+
+	f.portForwarders[f.name] = portForwarder
+
+	return true
 }
 
 // StreamPodLogs streams the logs of the pod currently targeted by this forward
@@ -476,14 +499,19 @@ func (f *Forwarder) forwardRemote(ctx context.Context, selector string) error {
 	deployment := deployments.Items[0]
 	container := deployment.Spec.Template.Spec.Containers[0]
 
-	if _, ok := f.deployments[f.name]; !ok {
-		f.view.Writef("📡  Setting up proxy on application '%s', please wait some seconds for pod to be ready...\n", deployment.Name)
-
+	f.mux.Lock()
+	_, backedUp := f.deployments[f.name]
+	if !backedUp {
 		f.deployments[f.name] = &DeploymentBackup{
 			OldImage:   container.Image,
 			OldPorts:   container.Ports,
 			Deployment: &deployment,
 		}
+	}
+	f.mux.Unlock()
+
+	if !backedUp {
+		f.view.Writef("📡  Setting up proxy on application '%s', please wait some seconds for pod to be ready...\n", deployment.Name)
 	}
 
 	container.Image = ProxyDockerImage

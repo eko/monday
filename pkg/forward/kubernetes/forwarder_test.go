@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/eko/monday/pkg/config"
@@ -19,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/util/flowcontrol"
 )
 
@@ -200,6 +202,39 @@ func TestGetStopChannel(t *testing.T) {
 	// Then
 	assert.IsType(t, make(chan struct{}), channel)
 	assert.Nil(t, err)
+}
+
+func TestStopWhileRegisteringPortForwarders(t *testing.T) {
+	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	initKubeConfig(t)
+
+	view := ui.NewMockView(ctrl)
+
+	forwarder, err := NewForwarder(view, config.ForwarderKubernetes, "test-forward", "context-test", "platform", []string{"8080:8080"}, map[string]string{
+		"app": "my-test-app",
+	})
+	assert.Nil(t, err)
+
+	// When
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		for forwarder.registerPortForwarder(&portforward.PortForwarder{}) {
+		}
+	}()
+
+	err = forwarder.Stop(context.Background())
+	wg.Wait()
+
+	// Then
+	assert.Nil(t, err)
+	assert.False(t, forwarder.registerPortForwarder(&portforward.PortForwarder{}))
 }
 
 // newRestClientMock returns a REST client pointing to a local test server
