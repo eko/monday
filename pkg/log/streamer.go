@@ -70,12 +70,16 @@ func Prefix(stdType, name string) string {
 
 // nameStyle returns the style assigned to the given name, stable across calls
 func nameStyle(name string) lipgloss.Style {
+	return lipgloss.NewStyle().Bold(true).Foreground(namePalette[paletteIndex(name)])
+}
+
+// paletteIndex returns the palette entry assigned to the given name. The hash
+// stays unsigned: converted to int first, it can be negative on 32-bit platforms
+func paletteIndex(name string) int {
 	hash := fnv.New32a()
 	hash.Write([]byte(name))
 
-	color := namePalette[int(hash.Sum32())%len(namePalette)]
-
-	return lipgloss.NewStyle().Bold(true).Foreground(color)
+	return int(hash.Sum32() % uint32(len(namePalette)))
 }
 
 func (l *Streamer) Write(p []byte) (n int, err error) {
