@@ -86,3 +86,25 @@ func TestStreamerConcurrentWrites(t *testing.T) {
 		assert.True(t, strings.HasSuffix(line, "Handling connection for 5000\n"), line)
 	}
 }
+
+func TestPaletteIndex(t *testing.T) {
+	testCases := []struct {
+		name string
+	}{
+		{name: "registry-0"},
+		{name: "api"},
+		// Hashes above math.MaxInt32, negative once converted to a 32-bit int
+		{name: "a"},
+		{name: "graphql-gateway"},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			index := paletteIndex(testCase.name)
+
+			assert.GreaterOrEqual(t, index, 0)
+			assert.Less(t, index, len(namePalette))
+			assert.Equal(t, index, paletteIndex(testCase.name))
+		})
+	}
+}
